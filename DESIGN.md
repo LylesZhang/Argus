@@ -33,50 +33,138 @@
 
 ---
 
-## 二、功能列表（按开发时间顺序）
+## 二、开发 Checklist
 
 ### Phase 1：基础插件化（第 1-2 周）
 > 目标：将 demo 转化为可在任意网页运行的浏览器插件
 
-1. **插件脚手架** — 创建 `manifest.json`、Content Script、Background Service Worker、Side Panel
-2. **DOM 文本提取** — Content Script 智能识别正文区域（排除导航、广告），提取干净文本
-3. **视觉辅助移植** — 将 demo 所有功能移植：
-   - Bionic Reading（加粗词首）
-   - Row Shading（行间交替底色）
-   - Reading Ruler（鼠标跟随遮罩尺）
-   - Topic Focus（选词高亮相关句）
-   - Logic Word 高亮
-   - Sentence Labels 标签
-4. **OpenDyslexic 字体** — 在字体选择中加入 OpenDyslexic 选项
-5. **用户偏好持久化** — 所有设置通过 Chrome Storage Sync 跨设备保存
-6. **字间距 / 字母间距控制** — 新增 letter-spacing 和 word-spacing 滑块（dyslexia 核心辅助）
+#### 1.1 插件脚手架
+- [ ] 创建 `manifest.json`（Manifest V3，声明 permissions: storage, activeTab, scripting, sidePanel）
+- [ ] 创建 `content/index.ts`（Content Script 入口，注入页面）
+- [ ] 创建 `background/index.ts`（Service Worker，管理消息路由）
+- [ ] 创建 `panel/panel.html` + `panel.ts`（Side Panel 设置界面）
+- [ ] 创建 `popup/popup.html` + `popup.ts`（Toolbar 弹窗，快速开关）
+- [ ] 配置构建工具（Vite 或 webpack + TypeScript）
+
+#### 1.2 DOM 正文提取
+- [ ] 引入 `@mozilla/readability` 提取页面正文（排除导航、广告、页脚）
+- [ ] 处理动态页面（SPA）：监听 DOM 变化，内容更新后重新提取
+- [ ] 测试：NYT、Wikipedia、Medium 三个典型页面提取效果
+
+#### 1.3 视觉辅助移植（从 demo app.js 移植）
+- [ ] Bionic Reading — `bionicReading.ts`（移植 `bionicN()` + `processWord()` 逻辑）
+- [ ] Row Shading — 按句子交替加 `row-even` / `row-odd` CSS class
+- [ ] Reading Ruler — `ruler.ts`（移植 `updateRuler()` + `setRulerVisible()`）
+- [ ] Topic Focus — `focusMask.ts`（移植 `applyFocusMask()` + `scoreSentence()`）
+- [ ] Logic Word 高亮 — 移植 `LOGIC_WORDS` set + `logic-word` CSS class
+- [ ] Sentence Labels 标签 — 移植 `renderOneSentence()` + `.sentence-tag` 样式
+
+#### 1.4 新增 Dyslexia 排版控件
+- [ ] 字间距滑块（`word-spacing`：0 ~ 0.5em）
+- [ ] 字母间距滑块（`letter-spacing`：0 ~ 0.1em）
+- [ ] 字体选项加入 OpenDyslexic（引入 CDN 或本地字体文件）
+- [ ] 段落最大宽度控制（60ch ~ 80ch，防止过长行）
+
+#### 1.5 用户偏好持久化
+- [ ] 定义 `UserSettings` TypeScript 接口（统一所有状态字段）
+- [ ] 写入：设置变更时调用 `chrome.storage.sync.set()`
+- [ ] 读取：Content Script 和 Side Panel 启动时加载已保存偏好
+- [ ] 默认值：首次安装时写入合理默认配置
+
+---
 
 ### Phase 2：AI 语义分析接入（第 3-4 周）
-> 目标：用 Claude 替换 demo 中的硬编码词表，实现真正的动态语义理解
+> 目标：用 Claude 替换 demo 中的硬编码词表，实现动态语义理解
 
-7. **后端 API 服务** — `/api/analyze` 端点，接收文本，返回语义标注 JSON
-8. **动态情感词检测** — Claude 分析文章中的情感词并返回词→类别映射（替代硬编码 `EMOTION_WORDS`）
-9. **句子结构标注** — Claude 识别 Argument / Evidence / Explanation（替代 demo 中基于 `[Tag]` 前缀的规则）
-10. **关键词抽取与难词标注** — 识别低频词、专业术语，提供简短释义 tooltip（鼠标悬停显示）
-11. **音近词混淆警示** — 检测在上下文中容易与其他词混淆的词（如 there/their/they're），用边框或下划线提示
+#### 2.1 后端 API 服务搭建
+- [ ] 初始化 Node.js + Express 项目（`server/` 目录）
+- [ ] 实现 `POST /api/analyze` 端点（接收文本，返回语义标注 JSON）
+- [ ] 实现 `POST /api/simplify` 端点（接收段落，返回简化版本）
+- [ ] 配置 `.env` 管理 `ANTHROPIC_API_KEY`（禁止前端直接持有 key）
+- [ ] 添加内存 LRU 缓存（相同文本 hash 命中时直接返回，跳过 Claude 调用）
+- [ ] 部署到 Railway / Fly.io，配置 HTTPS
+
+#### 2.2 Claude 语义分析集成
+- [ ] 编写 Analyze Prompt（输出 `emotionWords` / `sentenceTags` / `difficultWords` / `homophoneRisks` / `suggestedFeatures`）
+- [ ] 使用 `claude-haiku-4-5` 作为默认模型（速度/成本优先）
+- [ ] 解析 Claude 返回 JSON，做字段校验和容错处理
+- [ ] Background SW：页面加载后异步发起分析，结果存入 IndexedDB
+
+#### 2.3 动态情感词高亮
+- [ ] 用 Claude 返回的 `emotionWords` 替换 `app.js` 中硬编码的 `EMOTION_WORDS`
+- [ ] 颜色方案沿用现有 CSS 变量（`--emotion-positive` 等），用户仍可自定义颜色
+
+#### 2.4 动态句子结构标注
+- [ ] 用 Claude 返回的 `sentenceTags` 替换基于 `[Tag]` 前缀的规则匹配
+- [ ] 标签样式沿用现有 `.tag-argument` / `.tag-evidence` / `.tag-explanation`
+
+#### 2.5 难词 Tooltip
+- [ ] Content Script 遍历 `difficultWords`，为匹配词添加 `<span class="difficult-word">` 包裹
+- [ ] 鼠标悬停显示浮层，内容为 Claude 返回的 `simpleDefinition`
+- [ ] Tooltip 样式：圆角卡片，最大宽度 220px，不遮挡相邻行
+
+#### 2.6 音近词混淆警示
+- [ ] Content Script 遍历 `homophoneRisks`，为匹配词添加波浪下划线样式
+- [ ] 悬停时显示提示："注意：此词与 ___ 发音相似"
+
+---
 
 ### Phase 3：Dyslexia 专项功能（第 5-6 周）
-> 目标：针对 dyslexia 的核心障碍点设计专属辅助
+> 目标：针对 dyslexia 核心障碍点设计专属辅助
 
-12. **音节分割高亮** — 将长词按音节拆分并用颜色区分，辅助发音识别
-13. **段落简化模式** — 调用 Claude 对选定段落进行语言简化（降低 Flesch 难度级别），以折叠/展开方式呈现
-14. **TTS 跟读模式** — 点击段落自动朗读，逐词高亮跟进（Web Speech API）
-15. **阅读进度线** — 记录并可视化用户阅读位置，防止行丢失（与 Reading Ruler 联动）
-16. **混淆字母警示** — 检测 b/d/p/q 等易混字母较密集的区域，轻微放大或加颜色提示
+#### 3.1 音节分割高亮
+- [ ] 集成 `hypher` 或 `syllable` npm 包进行音节拆分
+- [ ] 渲染时对 5 字母以上单词按音节交替上色（两种颜色循环）
+- [ ] 颜色透明度低（不干扰阅读），用户可在设置中关闭
+
+#### 3.2 段落简化模式
+- [ ] Side Panel 加入"简化此段"按钮（选中段落后激活）
+- [ ] 调用 `POST /api/simplify`，传入原文段落
+- [ ] 返回后在原段落下方插入简化版，以折叠/展开方式呈现
+- [ ] 简化版背景色与原文区分（浅黄色底）
+
+#### 3.3 TTS 跟读模式
+- [ ] 使用 Web Speech API `SpeechSynthesisUtterance`
+- [ ] 点击任意段落触发朗读，逐词触发 `onboundary` 事件
+- [ ] 当前朗读词添加 `tts-active` CSS class（黄色高亮背景）
+- [ ] 工具栏显示播放/暂停/停止按钮及语速滑块
+
+#### 3.4 混淆字母警示
+- [ ] 统计段落中 b/d/p/q 出现密度，密度超阈值的段落加轻微背景提示
+- [ ] 或：对单独的 b/d/p/q 加微小放大效果（`font-size: 1.05em; font-weight: 600`）
+
+---
 
 ### Phase 4：个性化与智能适配（第 7-8 周）
-> 目标：为不同用户群体和材料类型生成不同的辅助策略
+> 目标：为不同用户群体和材料类型生成不同辅助策略
 
-17. **用户档案** — 首次使用引导填写：年龄段（儿童/青少年/成人）、dyslexia 程度（轻/中/重）、主要困难类型
-18. **阅读材料类型检测** — Claude 判断当前页面类型（新闻/学术论文/小说/技术文档/社交媒体），自动调整默认辅助策略
-19. **策略推荐引擎** — 基于用户档案 × 材料类型，自动推荐最优功能组合（如：学术 + 重度 → 开启音节分割 + 句子标注 + 段落简化）
-20. **阅读理解问答** — 用户读完一段后可选择生成 2-3 道理解题（Claude 生成），辅助信息留存
-21. **使用数据统计** — 记录每个功能的使用频率，优化个人化策略（本地存储，不上传）
+#### 4.1 用户档案
+- [ ] 首次安装触发引导页（Onboarding），3 步填写：
+  - [ ] 步骤 1：年龄段（儿童 6-12 / 青少年 13-17 / 成人 18+）
+  - [ ] 步骤 2：dyslexia 主要困难（字母混淆 / 单词识别 / 阅读理解 / 多选）
+  - [ ] 步骤 3：阅读场景（学习 / 工作 / 休闲）
+- [ ] 档案存储到 `chrome.storage.sync`
+- [ ] Side Panel 可随时修改档案
+
+#### 4.2 材料类型检测
+- [ ] Claude `/api/analyze` 响应中包含 `contentType` 字段（news / academic / fiction / technical / social）
+- [ ] 根据 `contentType` 自动调整默认开启的功能组合
+
+#### 4.3 策略推荐引擎
+- [ ] 定义策略矩阵（`userProfile × contentType → featurePreset`）：
+  - 学术 + 重度 → 开启：音节分割、句子标注、段落简化、难词 Tooltip
+  - 新闻 + 轻度 → 开启：Bionic Reading、Row Shading
+  - 小说 + 儿童 → 开启：TTS、字母警示、OpenDyslexic 字体
+- [ ] 首次访问某类页面时，弹出推荐提示（可一键应用或忽略）
+
+#### 4.4 阅读理解问答
+- [ ] 用户读完页面后，工具栏显示"生成理解题"按钮
+- [ ] 调用 Claude 生成 3 道选择题，在 Side Panel 中展示
+- [ ] 答题后显示解析
+
+#### 4.5 使用数据统计
+- [ ] 记录每个功能的开启次数、使用时长（IndexedDB，不上传）
+- [ ] Side Panel 底部显示"最常用功能"小统计，辅助用户了解自己的偏好
 
 ---
 
