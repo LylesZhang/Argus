@@ -6,7 +6,8 @@
 // ── Default settings (must match DEFAULT_SETTINGS in content/index.js) ─
 
 const DEFAULT_SETTINGS = {
-  enabled:              false,
+  typographyEnabled:    false,
+  readingAidsEnabled:   false,
   boldBeginning:        false,
   emotionColor:         false,
   gradientRows:         false,
@@ -38,18 +39,19 @@ function broadcast(changed) {
 // ── Sync all UI controls to match current settings ─────────────────────
 
 function syncUI() {
-  document.getElementById('toggle-enabled').checked   = settings.enabled;
+  document.getElementById('toggle-typography').checked   = settings.typographyEnabled;
+  document.getElementById('toggle-reading-aids').checked = settings.readingAidsEnabled;
   document.getElementById('toggle-bold').checked      = settings.boldBeginning;
   document.getElementById('toggle-emotion').checked   = settings.emotionColor;
   document.getElementById('toggle-gradient').checked  = settings.gradientRows;
   document.getElementById('toggle-logic').checked     = settings.logicAnimation;
   document.getElementById('toggle-ruler').checked     = settings.rulerActive;
 
-  document.getElementById('font-family').value        = settings.fontFamily;
-  document.getElementById('font-size-slider').value   = settings.fontSize;
-  document.getElementById('font-size-value').textContent = settings.fontSize + 'px';
-  document.getElementById('line-height-slider').value = settings.lineHeight;
-  document.getElementById('line-height-value').textContent = settings.lineHeight.toFixed(1);
+  document.getElementById('font-family').value        = settings.fontFamily ?? '';
+  document.getElementById('font-size-slider').value   = settings.fontSize ?? 18;
+  document.getElementById('font-size-value').textContent = (settings.fontSize ?? 18) + 'px';
+  document.getElementById('line-height-slider').value = settings.lineHeight ?? 1.8;
+  document.getElementById('line-height-value').textContent = (settings.lineHeight ?? 1.8).toFixed(1);
   document.getElementById('word-spacing-slider').value   = settings.wordSpacing;
   document.getElementById('word-spacing-value').textContent = settings.wordSpacing.toFixed(2) + 'em';
   document.getElementById('letter-spacing-slider').value = settings.letterSpacing;
@@ -70,9 +72,13 @@ function syncUI() {
 // ── Wire up all controls ───────────────────────────────────────────────
 
 function init() {
-  // Master switch
-  document.getElementById('toggle-enabled').addEventListener('change', e => {
-    broadcast({ enabled: e.target.checked });
+  // Section switches
+  document.getElementById('toggle-typography').addEventListener('change', e => {
+    broadcast({ typographyEnabled: e.target.checked });
+  });
+
+  document.getElementById('toggle-reading-aids').addEventListener('change', e => {
+    broadcast({ readingAidsEnabled: e.target.checked });
   });
 
   // Reading aid toggles

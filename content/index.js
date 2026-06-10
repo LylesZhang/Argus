@@ -39,7 +39,8 @@
   // chrome.storage.sync overwrites these on load.
 
   const DEFAULT_SETTINGS = {
-    enabled:              false,
+    typographyEnabled:    false,
+    readingAidsEnabled:   false,
     boldBeginning:        false,
     emotionColor:         false,
     gradientRows:         false,
@@ -169,18 +170,24 @@
     contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
       if (para.innerText.trim().length < 20) return;
 
-      if (settings.fontSize)      para.style.fontSize     = settings.fontSize + 'px';
-      if (settings.lineHeight)    para.style.lineHeight   = String(settings.lineHeight);
-      if (settings.fontFamily)    para.style.fontFamily   = settings.fontFamily;
-      if (settings.wordSpacing)   para.style.wordSpacing   = settings.wordSpacing + 'em';
-      if (settings.letterSpacing) para.style.letterSpacing = settings.letterSpacing + 'em';
-      if (settings.fontColor)     para.style.color         = settings.fontColor;
+      if (settings.typographyEnabled) {
+        if (settings.fontSize)      para.style.fontSize     = settings.fontSize + 'px';
+        if (settings.lineHeight)    para.style.lineHeight   = String(settings.lineHeight);
+        if (settings.fontFamily)    para.style.fontFamily   = settings.fontFamily;
+        if (settings.wordSpacing)   para.style.wordSpacing   = settings.wordSpacing + 'em';
+        if (settings.letterSpacing) para.style.letterSpacing = settings.letterSpacing + 'em';
+        if (settings.fontColor)     para.style.color         = settings.fontColor;
+      }
 
-      if (!originalHTML.has(para)) originalHTML.set(para, para.innerHTML);
-      para.innerHTML = buildParagraphHTML(para.innerText);
+      if (settings.readingAidsEnabled) {
+        if (!originalHTML.has(para)) originalHTML.set(para, para.innerHTML);
+        para.innerHTML = buildParagraphHTML(para.innerText);
+      }
     });
 
-    if (settings.bgColor) contentArea.style.background = settings.bgColor;
+    if (settings.typographyEnabled && settings.bgColor) {
+      contentArea.style.background = settings.bgColor;
+    }
   }
 
   function removeTransformations() {
@@ -268,9 +275,10 @@
 
   function render() {
     removeTransformations();
-    if (!settings.enabled) return;
 
-    applyTransformations();
+    if (settings.typographyEnabled || settings.readingAidsEnabled) {
+      applyTransformations();
+    }
 
     if (settings.rulerActive) setupRuler();
     else teardownRuler();
