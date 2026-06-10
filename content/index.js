@@ -1,0 +1,300 @@
+// Injected into every webpage by Chrome (configured in manifest.json → content_scripts)
+
+(function () {
+  'use strict';
+
+  // ── Word lists (static for Phase 1; replaced by Claude AI in Phase 2) ─
+
+  const STOP_WORDS = new Set([
+    'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
+    'from','up','about','into','is','are','was','were','be','been','being','have',
+    'has','had','do','does','did','will','would','could','should','may','might',
+    'can','that','this','these','those','it','its','they','them','their','we',
+    'our','you','your','he','she','his','her','not','no','nor','so','yet','both',
+    'if','then','than','as','also','just','only','any','all','each','every','some',
+    'such','even','more','most','other','same','very','i','me','my','who','which',
+    'what','how','when','where','why','one','two','said','says','now','still'
+  ]);
+
+  const LOGIC_WORDS = new Set([
+    'although', 'because', 'since', 'however', 'consequently', 'therefore', 'unless'
+  ]);
+
+  const EMOTION_WORDS = {
+    positive: new Set([
+      'glowing', 'successful', 'bravely', 'determined', 'sincerely',
+      'warm', 'comforting', 'proud', 'relief', 'smile', 'stronger'
+    ]),
+    negative: new Set([
+      'suffocating', 'guilt', 'nervous', 'tense', 'confused',
+      'terrifying', 'anxiety', 'pressure', 'hide'
+    ]),
+    surprise: new Set([
+      'incredulous', 'astonishment', 'overwhelming', 'absolute'
+    ])
+  };
+
+  // ── Default settings ───────────────────────────────────────────────────
+  // These match the keys saved by the Side Panel (panel/panel.js).
+  // chrome.storage.sync overwrites these on load.
+
+  const DEFAULT_SETTINGS = {
+    enabled:              false,
+    boldBeginning:        false,
+    emotionColor:         false,
+    gradientRows:         false,
+    logicAnimation:       false,
+    fontSize:             null,   // null = don't override the page's font size
+    lineHeight:           null,
+    fontFamily:           null,
+    wordSpacing:          0,      // em units
+    letterSpacing:        0,      // em units
+    emotionPositiveColor: '#27ae60',
+    emotionNegativeColor: '#e74c3c',
+    emotionSurpriseColor: '#8e44ad',
+    rulerActive:          false,
+    rulerWindowLines:     1.5,
+  };
+
+  let settings = { ...DEFAULT_SETTINGS };
+
+  // Stores each paragraph's original innerHTML so we can restore it cleanly
+  const originalHTML = new WeakMap();
+
+  let contentArea = null;
+
+  // ── Content area detection ─────────────────────────────────────────────
+  // Tries common semantic selectors before falling back to <body>.
+
+  function findContentArea() {
+    const candidates = [
+      'article',
+      '[role="main"]',
+      'main',
+      '.article-body', '.article-content', '.post-content',
+      '.entry-content', '.story-body', '#article-body', '#main-content',
+    ];
+    for (const sel of candidates) {
+      const el = document.querySelector(sel);
+      if (el && el.innerText.trim().length > 300) return el;
+    }
+    return document.body;
+  }
+
+  // ── Bionic Reading helpers ─────────────────────────────────────────────
+
+  function bionicN(len) {
+    if (len <= 3) return 1;
+    if (len <= 6) return 2;
+    if (len <= 9) return 3;
+    return 4;
+  }
+
+  function cleanWord(raw) {
+    return raw.replace(/^[^a-zA-Z]+|[^a-zA-Z]+$/g, '').toLowerCase();
+  }
+
+  function getEmotionClass(word) {
+    if (EMOTION_WORDS.positive.has(word)) return 'dra-emotion-positive';
+    if (EMOTION_WORDS.negative.has(word)) return 'dra-emotion-negative';
+    if (EMOTION_WORDS.surprise.has(word)) return 'dra-emotion-surprise';
+    return null;
+  }
+
+  // Wraps a single token (word + surrounding punctuation) in the appropriate spans.
+  function processWord(rawToken) {
+    const clean = cleanWord(rawToken);
+    if (!clean) return rawToken;
+
+    const leading  = rawToken.match(/^[^a-zA-Z]*/)[0];
+    const trailing = rawToken.match(/[^a-zA-Z]*$/)[0];
+    const body     = rawToken.slice(leading.length, rawToken.length - trailing.length);
+
+    let inner = body;
+
+    if (settings.boldBeginning) {
+      const N      = bionicN(body.length);
+      const anchor = body.slice(0, N);
+      const rest   = body.slice(N);
+      inner = rest.length <= 1
+        ? `<b>${anchor}</b>${rest}`
+        : `<b>${anchor}</b><span class="dra-bionic-fade">${rest[0]}</span>${rest.slice(1)}`;
+    }
+
+    if (settings.logicAnimation && LOGIC_WORDS.has(clean)) {
+      return `${leading}<span class="dra-logic-word">${inner}</span>${trailing}`;
+    }
+
+    if (settings.emotionColor) {
+      const cls = getEmotionClass(clean);
+      if (cls) return `${leading}<span class="${cls}">${inner}</span>${trailing}`;
+    }
+
+    return `${leading}${inner}${trailing}`;
+  }
+
+  function renderSentence(s) {
+    return s.split(/(\s+)/).map(tok => /^\s+$/.test(tok) ? tok : processWord(tok)).join('');
+  }
+
+  // Turns a paragraph's plain text into annotated HTML.
+  function buildParagraphHTML(plainText) {
+    const sentences = plainText.trim().split(/(?<=[.!?])\s+(?=[A-Z"'\[])/);
+
+    if (settings.gradientRows) {
+      return sentences.map((s, i) => {
+        const cls = i % 2 === 0 ? 'dra-row-even' : 'dra-row-odd';
+        return `<div class="dra-sentence ${cls}">${renderSentence(s)}</div>`;
+      }).join('');
+    }
+
+    return sentences.map(s =>
+      `<span class="dra-sentence">${renderSentence(s)}</span>`
+    ).join(' ');
+  }
+
+  // ── Apply / remove transformations ────────────────────────────────────
+
+  function applyTransformations() {
+    contentArea = findContentArea();
+
+    // Expose emotion colors as CSS variables so content.css can use them
+    document.documentElement.style.setProperty('--dra-positive', settings.emotionPositiveColor);
+    document.documentElement.style.setProperty('--dra-negative', settings.emotionNegativeColor);
+    document.documentElement.style.setProperty('--dra-surprise', settings.emotionSurpriseColor);
+
+    // Typography overrides (only applied when a value is set)
+    if (settings.fontSize)      contentArea.style.fontSize     = settings.fontSize + 'px';
+    if (settings.lineHeight)    contentArea.style.lineHeight   = String(settings.lineHeight);
+    if (settings.fontFamily)    contentArea.style.fontFamily   = settings.fontFamily;
+    if (settings.wordSpacing)   contentArea.style.wordSpacing   = settings.wordSpacing + 'em';
+    if (settings.letterSpacing) contentArea.style.letterSpacing = settings.letterSpacing + 'em';
+
+    // Process each paragraph
+    contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
+      if (para.innerText.trim().length < 20) return;
+
+      // Save original HTML the first time we touch this element
+      if (!originalHTML.has(para)) originalHTML.set(para, para.innerHTML);
+
+      para.innerHTML = buildParagraphHTML(para.innerText);
+    });
+  }
+
+  function removeTransformations() {
+    if (!contentArea) return;
+
+    contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
+      if (originalHTML.has(para)) para.innerHTML = originalHTML.get(para);
+    });
+
+    ['fontSize', 'lineHeight', 'fontFamily', 'wordSpacing', 'letterSpacing'].forEach(prop => {
+      contentArea.style[prop] = '';
+    });
+  }
+
+  // ── Reading Ruler ──────────────────────────────────────────────────────
+
+  function updateRuler(e) {
+    const halfH = Math.round(16 * 1.8 * settings.rulerWindowLines / 2);
+    const topEl = document.getElementById('dra-ruler-top');
+    const botEl = document.getElementById('dra-ruler-bottom');
+    const winEl = document.getElementById('dra-ruler-window');
+    if (!topEl) return;
+
+    topEl.style.height = Math.max(0, e.clientY - halfH) + 'px';
+    botEl.style.top    = (e.clientY + halfH) + 'px';
+    winEl.style.top    = Math.max(0, e.clientY - halfH) + 'px';
+    winEl.style.height = (halfH * 2) + 'px';
+  }
+
+  function setupRuler() {
+    if (document.getElementById('dra-ruler-top')) return;
+    const ids = ['dra-ruler-top', 'dra-ruler-bottom', 'dra-ruler-window'];
+    ids.forEach(id => {
+      const el = document.createElement('div');
+      el.id = id;
+      document.body.appendChild(el);
+    });
+    document.addEventListener('mousemove', updateRuler);
+  }
+
+  function teardownRuler() {
+    ['dra-ruler-top', 'dra-ruler-bottom', 'dra-ruler-window'].forEach(id => {
+      document.getElementById(id)?.remove();
+    });
+    document.removeEventListener('mousemove', updateRuler);
+  }
+
+  // ── Focus Mask ─────────────────────────────────────────────────────────
+
+  function extractKeywords(text) {
+    return text.toLowerCase()
+      .replace(/[^a-z\s]/g, ' ')
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !STOP_WORDS.has(w));
+  }
+
+  function scoreSentence(text, keywords) {
+    const words   = extractKeywords(text);
+    const wordSet = new Set(words);
+    let score = 0;
+    for (const kw of keywords) {
+      if (wordSet.has(kw)) { score += 3; continue; }
+      if (kw.length >= 5) {
+        const stem = kw.slice(0, Math.ceil(kw.length * 0.75));
+        if (words.some(w => w.startsWith(stem))) score += 1;
+      }
+    }
+    return score;
+  }
+
+  function applyFocusMask(keywords) {
+    document.querySelectorAll('.dra-sentence').forEach(el => {
+      el.style.opacity = scoreSentence(el.textContent, keywords) > 0 ? '1' : '0.2';
+    });
+  }
+
+  function clearFocusMask() {
+    document.querySelectorAll('.dra-sentence').forEach(el => {
+      el.style.opacity = '';
+    });
+  }
+
+  // ── Main render ────────────────────────────────────────────────────────
+
+  function render() {
+    removeTransformations();
+    if (!settings.enabled) return;
+
+    applyTransformations();
+
+    if (settings.rulerActive) setupRuler();
+    else teardownRuler();
+  }
+
+  // ── Boot: load saved settings then render ──────────────────────────────
+
+  chrome.storage.sync.get('draSettings', (data) => {
+    if (data.draSettings) settings = { ...DEFAULT_SETTINGS, ...data.draSettings };
+    render();
+  });
+
+  // ── Listen for live setting changes from the Side Panel ────────────────
+
+  chrome.runtime.onMessage.addListener((msg) => {
+    if (msg.type === 'SETTINGS_CHANGED') {
+      settings = { ...settings, ...msg.payload };
+      render();
+    }
+
+    if (msg.type === 'FOCUS_APPLY' && msg.keywords?.length) {
+      applyFocusMask(msg.keywords);
+    }
+
+    if (msg.type === 'FOCUS_CLEAR') {
+      clearFocusMask();
+    }
+  });
+
+})();

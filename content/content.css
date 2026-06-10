@@ -1,0 +1,69 @@
+/* Injected into every webpage alongside content/index.js.
+   All class names are prefixed with "dra-" (Dyslexia Reading Aid) to avoid clashing with the page's own styles. */
+
+/* ── Bionic Reading ──────────────────────────────────────────────────── */
+
+.dra-sentence b    { font-weight: 800; }
+.dra-bionic-fade   { font-weight: 500; }
+
+/* ── Emotion Colors ──────────────────────────────────────────────────── */
+
+.dra-emotion-positive { color: var(--dra-positive); font-weight: 500; }
+.dra-emotion-negative { color: var(--dra-negative); font-weight: 500; }
+.dra-emotion-surprise { color: var(--dra-surprise); font-weight: 500; }
+
+/* ── Logic Word Highlight ────────────────────────────────────────────── */
+
+.dra-logic-word {
+  font-weight: 700;
+  color: #2471a3;
+  border-bottom: 2px solid rgba(36, 113, 163, 0.4);
+}
+
+/* ── Row Shading ─────────────────────────────────────────────────────── */
+
+.dra-row-even {
+  display: block;
+  background: rgba(100, 180, 240, 0.13);
+  padding: 3px 6px;
+  border-radius: 4px;
+  margin: 1px -6px;
+}
+
+.dra-row-odd {
+  display: block;
+  padding: 3px 6px;
+  margin: 1px -6px;
+}
+
+/* ── Focus Mask ──────────────────────────────────────────────────────── */
+
+.dra-sentence {
+  transition: opacity 0.35s ease;
+}
+
+/* ── Reading Ruler ───────────────────────────────────────────────────── */
+
+#dra-ruler-top,
+#dra-ruler-bottom {
+  position: fixed;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.38);
+  pointer-events: none;
+  z-index: 2147483646; /* just below max z-index, above almost everything */
+}
+
+#dra-ruler-top    { top: 0; }
+#dra-ruler-bottom { bottom: 0; }
+
+#dra-ruler-window {
+  position: fixed;
+  left: 0;
+  right: 0;
+  pointer-events: none;
+  z-index: 2147483645;
+  background: rgba(255, 243, 180, 0.18);
+  border-top: 1px solid rgba(200, 170, 0, 0.25);
+  border-bottom: 1px solid rgba(200, 170, 0, 0.25);
+}
