@@ -52,7 +52,8 @@
   - `side_panel` — 侧边栏的 HTML 文件路径
   - `action` — 点击 Chrome 工具栏插件图标时弹出的小窗口
 - [x] 创建 `content/index.js` — 注入任意网页，负责找正文、加标记、实时监听设置变更
-  - `findContentArea()` — 依次尝试 article / main 等选择器找正文
+  - `findContentArea()` — 三层查找：① `PLATFORM_SELECTORS` 按 hostname 精准匹配（Wikipedia、GitHub、HN、Substack、dev.to）→ ② `[itemprop="articleBody"]` 覆盖 CSS-in-JS 新闻站（NYT、BBC、Guardian）→ ③ article / main 等通用选择器，最终兜底 `document.body`
+  - `PLATFORM_SELECTORS` — 收录选择器长期稳定的平台；使用 CSS-in-JS 哈希类名的站点（NYT、BBC、Guardian）不列入，由 Schema.org itemprop 属性处理
   - `processWord()` — 给单词加 Bionic Reading / Emotion / Logic 标记
   - `buildParagraphHTML()` — 把段落文本重建为带标记的 HTML
   - `applyTransformations()` — 排版样式直接设在每个 `<p>` 上（而非容器），避免被网页自身样式覆盖
@@ -79,7 +80,9 @@
 - [x] 创建 `icons/` 目录 — 蓝底白色占位图标，三个尺寸：`icon16.png` / `icon48.png` / `icon128.png`
 
 #### 1.2 DOM 正文提取
-- [x] `findContentArea()` 已内置在 `content/index.js`，依次尝试常见选择器，兜底用 `document.body`
+- [x] `findContentArea()` 已内置在 `content/index.js`，三层查找策略，兜底用 `document.body`
+- [x] `PLATFORM_SELECTORS` 平台专属选择器：Wikipedia（`#mw-content-text`）、GitHub（`.markdown-body`）、HackerNews（`.fatitem`）、Substack（`.reader2-post-body`）、dev.to（`#article-body`）
+- [x] `[itemprop="articleBody"]`（Schema.org）覆盖 CSS-in-JS 新闻站：NYT、BBC、Guardian 等使用哈希类名的平台
 - [ ] 处理动态页面（SPA）：监听 DOM 变化，内容更新后重新提取
 - [ ] 测试：NYT、Wikipedia、Medium 三个典型页面提取效果
 

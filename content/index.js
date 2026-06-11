@@ -65,11 +65,37 @@
   let contentArea = null;
   let lastRulerY  = null;
 
+  // ── Platform-specific selectors ───────────────────────────────────────
+  // Only includes platforms with verified stable selectors (non-hashed class names).
+  // Sites using CSS-in-JS (NYT, BBC, Guardian) are covered by [itemprop="articleBody"] below.
+
+  const PLATFORM_SELECTORS = {
+    'wikipedia.org':        ['#mw-content-text .mw-parser-output', '#mw-content-text'],
+    'github.com':           ['.markdown-body'],
+    'news.ycombinator.com': ['.fatitem'],
+    'substack.com':         ['.reader2-post-body', '.available-content'],
+    'dev.to':               ['#article-body'],
+  };
+
   // ── Content area detection ─────────────────────────────────────────────
-  // Tries common semantic selectors before falling back to <body>.
+  // Layer 1: platform-specific selectors matched by hostname suffix.
+  // Layer 2: [itemprop="articleBody"] covers CSS-in-JS news sites (NYT, BBC, Guardian…).
+  // Layer 3: generic semantic selectors.
+  // Fallback: <body>.
 
   function findContentArea() {
+    const host = window.location.hostname.replace(/^www\./, '');
+    const matchedDomain = Object.keys(PLATFORM_SELECTORS)
+      .find(domain => host === domain || host.endsWith('.' + domain));
+    if (matchedDomain) {
+      for (const sel of PLATFORM_SELECTORS[matchedDomain]) {
+        const el = document.querySelector(sel);
+        if (el && el.innerText.trim().length > 300) return el;
+      }
+    }
+
     const candidates = [
+      '[itemprop="articleBody"]',
       'article',
       '[role="main"]',
       'main',
