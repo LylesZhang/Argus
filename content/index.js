@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  // ── Word lists (static for Phase 1; replaced by Claude AI in Phase 2) ─
+  // ── Static word lists ──────────────────────────────────────────────────
 
   const STOP_WORDS = new Set([
     'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
@@ -34,7 +34,7 @@
     ])
   };
 
-  // ── Default settings ───────────────────────────────────────────────────
+  // ── Default settings & runtime state ──────────────────────────────────
   // These match the keys saved by the Side Panel (panel/panel.js).
   // chrome.storage.sync overwrites these on load.
 
@@ -65,7 +65,7 @@
   let contentArea = null;
   let lastRulerY  = null;
 
-  // ── Platform-specific selectors ───────────────────────────────────────
+  // ── Content area detection ─────────────────────────────────────────────
   // Only includes platforms with verified stable selectors (non-hashed class names).
   // Sites using CSS-in-JS (NYT, BBC, Guardian) are covered by [itemprop="articleBody"] below.
 
@@ -77,7 +77,6 @@
     'dev.to':               ['#article-body'],
   };
 
-  // ── Content area detection ─────────────────────────────────────────────
   // Layer 1: platform-specific selectors matched by hostname suffix.
   // Layer 2: [itemprop="articleBody"] covers CSS-in-JS news sites (NYT, BBC, Guardian…).
   // Layer 3: generic semantic selectors.
@@ -109,7 +108,7 @@
     return document.body;
   }
 
-  // ── Bionic Reading helpers ─────────────────────────────────────────────
+  // ── Word rendering pipeline ────────────────────────────────────────────
 
   function bionicN(len) {
     if (len <= 3) return 1;
@@ -179,59 +178,6 @@
     return sentences.map(s =>
       `<span class="dra-sentence">${renderSentence(s)}</span>`
     ).join(' ');
-  }
-
-  // ── Apply / remove transformations ────────────────────────────────────
-
-  function applyTransformations() {
-    contentArea = findContentArea();
-
-    // Expose emotion colors as CSS variables so content.css can use them
-    document.documentElement.style.setProperty('--dra-positive', settings.emotionPositiveColor);
-    document.documentElement.style.setProperty('--dra-negative', settings.emotionNegativeColor);
-    document.documentElement.style.setProperty('--dra-surprise', settings.emotionSurpriseColor);
-
-    // Process each paragraph — apply typography directly on each element
-    // (setting on contentArea alone doesn't work because child elements
-    // often have their own font-size/line-height rules that take precedence)
-    contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
-      if (para.innerText.trim().length < 20) return;
-
-      if (settings.typographyEnabled) {
-        if (settings.fontSize)      para.style.fontSize     = settings.fontSize + 'px';
-        if (settings.lineHeight)    para.style.lineHeight   = String(settings.lineHeight);
-        if (settings.fontFamily)    para.style.fontFamily   = settings.fontFamily;
-        if (settings.wordSpacing)   para.style.wordSpacing   = settings.wordSpacing + 'em';
-        if (settings.letterSpacing) para.style.letterSpacing = settings.letterSpacing + 'em';
-        if (settings.fontColor)     para.style.color         = settings.fontColor;
-      }
-
-      if (settings.readingAidsEnabled) {
-        if (!originalHTML.has(para)) originalHTML.set(para, para.innerHTML);
-        para.innerHTML = buildParagraphHTML(para.innerText);
-      }
-    });
-
-    if (settings.typographyEnabled && settings.bgColor) {
-      contentArea.style.background = settings.bgColor;
-    }
-
-    if (settings.readingAidsEnabled && settings.rulerActive) setupRuler();
-    else teardownRuler();
-  }
-
-  function removeTransformations() {
-    if (!contentArea) return;
-
-    contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
-      if (originalHTML.has(para)) para.innerHTML = originalHTML.get(para);
-      ['fontSize', 'lineHeight', 'fontFamily', 'wordSpacing', 'letterSpacing', 'color'].forEach(prop => {
-        para.style[prop] = '';
-      });
-    });
-
-    contentArea.style.background = '';
-    teardownRuler();
   }
 
   // ── Reading Ruler ──────────────────────────────────────────────────────
@@ -304,7 +250,60 @@
     });
   }
 
-  // ── Main render ────────────────────────────────────────────────────────
+  // ── Transformations ────────────────────────────────────────────────────
+
+  function applyTransformations() {
+    contentArea = findContentArea();
+
+    // Expose emotion colors as CSS variables so content.css can use them
+    document.documentElement.style.setProperty('--dra-positive', settings.emotionPositiveColor);
+    document.documentElement.style.setProperty('--dra-negative', settings.emotionNegativeColor);
+    document.documentElement.style.setProperty('--dra-surprise', settings.emotionSurpriseColor);
+
+    // Process each paragraph — apply typography directly on each element
+    // (setting on contentArea alone doesn't work because child elements
+    // often have their own font-size/line-height rules that take precedence)
+    contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
+      if (para.innerText.trim().length < 20) return;
+
+      if (settings.typographyEnabled) {
+        if (settings.fontSize)      para.style.fontSize     = settings.fontSize + 'px';
+        if (settings.lineHeight)    para.style.lineHeight   = String(settings.lineHeight);
+        if (settings.fontFamily)    para.style.fontFamily   = settings.fontFamily;
+        if (settings.wordSpacing)   para.style.wordSpacing   = settings.wordSpacing + 'em';
+        if (settings.letterSpacing) para.style.letterSpacing = settings.letterSpacing + 'em';
+        if (settings.fontColor)     para.style.color         = settings.fontColor;
+      }
+
+      if (settings.readingAidsEnabled) {
+        if (!originalHTML.has(para)) originalHTML.set(para, para.innerHTML);
+        para.innerHTML = buildParagraphHTML(para.innerText);
+      }
+    });
+
+    if (settings.typographyEnabled && settings.bgColor) {
+      contentArea.style.background = settings.bgColor;
+    }
+
+    if (settings.readingAidsEnabled && settings.rulerActive) setupRuler();
+    else teardownRuler();
+  }
+
+  function removeTransformations() {
+    if (!contentArea) return;
+
+    contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
+      if (originalHTML.has(para)) para.innerHTML = originalHTML.get(para);
+      ['fontSize', 'lineHeight', 'fontFamily', 'wordSpacing', 'letterSpacing', 'color'].forEach(prop => {
+        para.style[prop] = '';
+      });
+    });
+
+    contentArea.style.background = '';
+    teardownRuler();
+  }
+
+  // ── Render coordinator ─────────────────────────────────────────────────
 
   function render() {
     removeTransformations();
@@ -312,17 +311,14 @@
     if (settings.typographyEnabled || settings.readingAidsEnabled) {
       applyTransformations();
     }
-
   }
 
-  // ── Boot: load saved settings then render ──────────────────────────────
+  // ── Bootstrap ─────────────────────────────────────────────────────────
 
   chrome.storage.sync.get('draSettings', (data) => {
     if (data.draSettings) settings = { ...DEFAULT_SETTINGS, ...data.draSettings };
     render();
   });
-
-  // ── Listen for live setting changes from the Side Panel ────────────────
 
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === 'SETTINGS_CHANGED') {
