@@ -78,28 +78,56 @@ function init() {
   });
 
   document.getElementById('toggle-reading-aids').addEventListener('change', e => {
-    broadcast({ readingAidsEnabled: e.target.checked });
+    const enabled = e.target.checked;
+    if (!enabled) {
+      document.getElementById('toggle-bold').checked    = false;
+      document.getElementById('toggle-emotion').checked = false;
+      document.getElementById('toggle-gradient').checked = false;
+      document.getElementById('toggle-logic').checked   = false;
+      document.getElementById('toggle-ruler').checked   = false;
+      document.getElementById('emotion-colors').classList.remove('active');
+      document.getElementById('ruler-size-control').classList.remove('active');
+      broadcast({
+        readingAidsEnabled: false,
+        boldBeginning: false, emotionColor: false,
+        gradientRows: false,  logicAnimation: false, rulerActive: false,
+      });
+    } else {
+      broadcast({ readingAidsEnabled: true });
+    }
   });
 
-  // Reading aid toggles
+  // Reading aid toggles — auto-enable parent if child is turned on while parent is off
+  function enableReadingAidIfNeeded(on) {
+    if (on && !settings.readingAidsEnabled) {
+      document.getElementById('toggle-reading-aids').checked = true;
+      broadcast({ readingAidsEnabled: true });
+    }
+  }
+
   document.getElementById('toggle-bold').addEventListener('change', e => {
+    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ boldBeginning: e.target.checked });
   });
 
   document.getElementById('toggle-emotion').addEventListener('change', e => {
+    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ emotionColor: e.target.checked });
     document.getElementById('emotion-colors').classList.toggle('active', e.target.checked);
   });
 
   document.getElementById('toggle-gradient').addEventListener('change', e => {
+    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ gradientRows: e.target.checked });
   });
 
   document.getElementById('toggle-logic').addEventListener('change', e => {
+    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ logicAnimation: e.target.checked });
   });
 
   document.getElementById('toggle-ruler').addEventListener('change', e => {
+    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ rulerActive: e.target.checked });
     document.getElementById('ruler-size-control').classList.toggle('active', e.target.checked);
   });
@@ -110,14 +138,24 @@ function init() {
     broadcast({ rulerWindowLines: v });
   });
 
+  // Typography controls — auto-enable parent if any control is adjusted while parent is off
+  function enableTypographyIfNeeded() {
+    if (!settings.typographyEnabled) {
+      document.getElementById('toggle-typography').checked = true;
+      broadcast({ typographyEnabled: true });
+    }
+  }
+
   // Font family
   document.getElementById('font-family').addEventListener('change', e => {
+    enableTypographyIfNeeded();
     broadcast({ fontFamily: e.target.value });
   });
 
   // Font size — stepper
   document.getElementById('font-size-dec').addEventListener('click', () => {
     if (settings.fontSize <= 14) return;
+    enableTypographyIfNeeded();
     const v = settings.fontSize - 1;
     document.getElementById('font-size-slider').value = v;
     document.getElementById('font-size-value').textContent = v + 'px';
@@ -125,12 +163,14 @@ function init() {
   });
   document.getElementById('font-size-inc').addEventListener('click', () => {
     if (settings.fontSize >= 28) return;
+    enableTypographyIfNeeded();
     const v = settings.fontSize + 1;
     document.getElementById('font-size-slider').value = v;
     document.getElementById('font-size-value').textContent = v + 'px';
     broadcast({ fontSize: v });
   });
   document.getElementById('font-size-slider').addEventListener('input', e => {
+    enableTypographyIfNeeded();
     const v = parseInt(e.target.value);
     document.getElementById('font-size-value').textContent = v + 'px';
     broadcast({ fontSize: v });
@@ -139,6 +179,7 @@ function init() {
   // Line height — stepper
   document.getElementById('line-height-dec').addEventListener('click', () => {
     if (settings.lineHeight <= 1.4) return;
+    enableTypographyIfNeeded();
     const v = Math.round((settings.lineHeight - 0.1) * 10) / 10;
     document.getElementById('line-height-slider').value = v;
     document.getElementById('line-height-value').textContent = v.toFixed(1);
@@ -146,12 +187,14 @@ function init() {
   });
   document.getElementById('line-height-inc').addEventListener('click', () => {
     if (settings.lineHeight >= 2.4) return;
+    enableTypographyIfNeeded();
     const v = Math.round((settings.lineHeight + 0.1) * 10) / 10;
     document.getElementById('line-height-slider').value = v;
     document.getElementById('line-height-value').textContent = v.toFixed(1);
     broadcast({ lineHeight: v });
   });
   document.getElementById('line-height-slider').addEventListener('input', e => {
+    enableTypographyIfNeeded();
     const v = Math.round(parseFloat(e.target.value) * 10) / 10;
     document.getElementById('line-height-value').textContent = v.toFixed(1);
     broadcast({ lineHeight: v });
@@ -159,6 +202,7 @@ function init() {
 
   // Word spacing
   document.getElementById('word-spacing-slider').addEventListener('input', e => {
+    enableTypographyIfNeeded();
     const v = parseFloat(e.target.value);
     document.getElementById('word-spacing-value').textContent = v.toFixed(2) + 'em';
     broadcast({ wordSpacing: v });
@@ -166,6 +210,7 @@ function init() {
 
   // Letter spacing
   document.getElementById('letter-spacing-slider').addEventListener('input', e => {
+    enableTypographyIfNeeded();
     const v = parseFloat(e.target.value);
     document.getElementById('letter-spacing-value').textContent = v.toFixed(2) + 'em';
     broadcast({ letterSpacing: v });
@@ -173,9 +218,11 @@ function init() {
 
   // Colors
   document.getElementById('font-color').addEventListener('input', e => {
+    enableTypographyIfNeeded();
     broadcast({ fontColor: e.target.value });
   });
   document.getElementById('bg-color').addEventListener('input', e => {
+    enableTypographyIfNeeded();
     broadcast({ bgColor: e.target.value });
   });
   document.getElementById('emotion-positive-color').addEventListener('input', e => {
