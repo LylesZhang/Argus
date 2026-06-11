@@ -74,7 +74,28 @@ function syncUI() {
 function init() {
   // Section switches
   document.getElementById('toggle-typography').addEventListener('change', e => {
-    broadcast({ typographyEnabled: e.target.checked });
+    const enabled = e.target.checked;
+    if (!enabled) {
+      document.getElementById('font-family').value                  = '';
+      document.getElementById('font-size-slider').value             = 18;
+      document.getElementById('font-size-value').textContent        = '18px';
+      document.getElementById('line-height-slider').value           = 1.8;
+      document.getElementById('line-height-value').textContent      = '1.8';
+      document.getElementById('word-spacing-slider').value          = 0;
+      document.getElementById('word-spacing-value').textContent     = '0.00em';
+      document.getElementById('letter-spacing-slider').value        = 0;
+      document.getElementById('letter-spacing-value').textContent   = '0.00em';
+      document.getElementById('font-color').value                   = '#2c2c2c';
+      document.getElementById('bg-color').value                     = '#ffffff';
+      broadcast({
+        typographyEnabled: false,
+        fontSize: null, lineHeight: null, fontFamily: null,
+        wordSpacing: 0, letterSpacing: 0,
+        fontColor: '#2c2c2c', bgColor: '#ffffff',
+      });
+    } else {
+      broadcast({ typographyEnabled: true });
+    }
   });
 
   document.getElementById('toggle-reading-aids').addEventListener('change', e => {
