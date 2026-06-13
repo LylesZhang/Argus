@@ -25,8 +25,8 @@
 ### 后端 / API 层
 | 模块 | 技术 | 说明 |
 |---|---|---|
-| API 服务器 | Node.js + Express（或 Python FastAPI） | 作为 Claude API 的代理，管理 API Key |
-| AI 模型 | Claude claude-haiku-4-5（快速/低成本）/ claude-sonnet-4-6（高质量） | 语义分析主力 |
+| API 服务器 | Node.js + Express | 作为 Gemini API 的代理，持有 API Key |
+| AI 模型 | Google Gemini `gemini-2.5-flash-lite` | 语义分析主力（速度/成本优先） |
 | 响应缓存 | Redis 或内存 LRU Cache | 避免对相同内容重复调用 AI |
 | 文字转语音 | Web Speech API（浏览器内置，零成本） | TTS 基础功能 |
 | 部署 | Railway / Fly.io / Vercel Functions | 轻量 Serverless 部署 |
@@ -54,7 +54,9 @@
 - [x] 创建 `content/index.js` — 注入任意网页，负责找正文、加标记、实时监听设置变更
   - `findContentArea()` — 三层查找：① `PLATFORM_SELECTORS` 按 hostname 精准匹配（Wikipedia、GitHub、HN、Substack、dev.to）→ ② `[itemprop="articleBody"]` 覆盖 CSS-in-JS 新闻站（NYT、BBC、Guardian）→ ③ article / main 等通用选择器，最终兜底 `document.body`
   - `PLATFORM_SELECTORS` — 收录选择器长期稳定的平台；使用 CSS-in-JS 哈希类名的站点（NYT、BBC、Guardian）不列入，由 Schema.org itemprop 属性处理
-  - `processWord()` — 给单词加 Bionic Reading / Emotion / Logic 标记
+  - `applyBionicToText(text)` — 对任意文本（单词或多词短语）应用 Bionic Reading 粗体
+  - `renderSentence(s)` — 位置感知渲染：在句子字符串上用 regex 找出所有命中的词/短语，按位置排序后分段渲染（支持多词短语高亮）
+  - `generateTransitionHighlights()` — 规则驱动：扫描文章 innerText，返回出现在 `TRANSITION_WORDS` 词表中的所有过渡词条目
   - `buildParagraphHTML()` — 把段落文本重建为带标记的 HTML
   - `applyTransformations()` — 排版样式直接设在每个 `<p>` 上（而非容器），避免被网页自身样式覆盖
   - `removeTransformations()` — 撤销所有变换，逐段落清除内联样式并还原原始 HTML
@@ -91,7 +93,8 @@
 - [x] Row Shading — `dra-row-even` / `dra-row-odd` 已实现
 - [x] Reading Ruler — `setupRuler()` + `updateRuler()` 已实现
 - [x] Topic Focus — `applyFocusMask()` + `scoreSentence()` 已实现
-- [x] Logic Word 高亮 — `LOGIC_WORDS` + `dra-logic-word` 已实现
+- [x] Transition Word 高亮 — `TRANSITION_WORDS` 词表 + `generateTransitionHighlights()` 客户端规则驱动，完全不依赖 AI
+- [x] ~~本地词库~~ 静态 `EMOTION_WORDS` / `LOGIC_WORDS` 词表已移除；Emotion 高亮由 AI 逐次标注，Transition 高亮由本地词表扫描
 - [ ] Sentence Labels 标签 — 待实现（Phase 2 接入 AI 后一起做）
 
 #### 1.4 新增 Dyslexia 排版控件
@@ -109,28 +112,37 @@
 ---
 
 ### Phase 2：AI 语义分析接入（第 3-4 周）
-> 目标：用 Claude 替换 demo 中的硬编码词表，实现动态语义理解
+> 目标：用 AI 替换 demo 中的硬编码词表，实现动态语义理解
 
 #### 2.1 后端 API 服务搭建
-- [ ] 初始化 Node.js + Express 项目（`server/` 目录）
-- [ ] 实现 `POST /api/analyze` 端点（接收文本，返回语义标注 JSON）
+- [x] 初始化 Node.js + Express 项目（`server/` 目录）
+- [x] 实现 `POST /api/analyze` 端点（接收文本，返回 `{ highlights: [{ word, context, category }] }` JSON）
+- [x] 配置 `server/.env` 管理 `GEMINI_API_KEY`（Key 不进代码仓库，已加入 `.gitignore`）
+- [x] Background SW 内存缓存（URL → 结果，TTL 30 分钟），避免重复调用
+- [x] 降级策略：服务器未启动 / API 报错时静默跳过，本地词表正常工作
 - [ ] 实现 `POST /api/simplify` 端点（接收段落，返回简化版本）
-- [ ] 配置 `.env` 管理 `ANTHROPIC_API_KEY`（禁止前端直接持有 key）
-- [ ] 添加内存 LRU 缓存（相同文本 hash 命中时直接返回，跳过 Claude 调用）
 - [ ] 部署到 Railway / Fly.io，配置 HTTPS
 
-#### 2.2 Claude 语义分析集成
-- [ ] 编写 Analyze Prompt（输出 `emotionWords` / `sentenceTags` / `difficultWords` / `homophoneRisks` / `suggestedFeatures`）
-- [ ] 使用 `claude-haiku-4-5` 作为默认模型（速度/成本优先）
-- [ ] 解析 Claude 返回 JSON，做字段校验和容错处理
-- [ ] Background SW：页面加载后异步发起分析，结果存入 IndexedDB
+#### 2.2 Gemini AI 语义分析集成
+- [x] 使用 `gemini-2.5-flash` 模型，`thinkingBudget: 1024`
+- [x] AI **只做 Emotion 标注**（transition 已改为客户端词表，见 2.1）
+- [x] Prompt 两步式：① 判断文章类型（narrative / analytical / mixed）→ 确定 emotion 数量；② 逐次标注词出现（每次出现独立判断）
+- [x] 动态 budget：`Math.floor(wordCount / 100) * 6`，无上限，随文章长度线性缩放
+- [x] **分块并行分析**：`chunkByParagraphs()`（每 8 段一块），`Promise.all()` 并行发送，结果合并，保证全文均匀分布
+- [x] Emotion 三分类：`emotion-positive` / `emotion-negative` / `emotion-complex`
+- [x] `responseMimeType: "application/json"` + `thinkingBudget: 1024`；兜底 strip markdown 代码块
+- [x] Background SW 新增 `ANALYZE_REQUEST` 消息处理（来自 content script）
+- [x] Content script 新增 `requestAIAnalysis()` — 每页只请求一次（`aiAnalysisRequested` 标志位）
+- [x] Content script：`ANALYSIS_RESULT` 收到后合并 AI emotion highlights + 客户端 transition highlights → `articleHighlights`
+- [ ] 解析容错：字段缺失 / 格式异常时不崩溃（现有 try/catch 已覆盖）
+- [ ] Background SW：分析结果存入 IndexedDB 实现跨 SW 重启持久化
 
 #### 2.3 动态情感词高亮
-- [ ] 用 Claude 返回的 `emotionWords` 替换 `app.js` 中硬编码的 `EMOTION_WORDS`
-- [ ] 颜色方案沿用现有 CSS 变量（`--emotion-positive` 等），用户仍可自定义颜色
+- [x] AI 返回 `highlights` 数组（per-occurrence），`processWord(token, sentenceContext)` 通过上下文窗口匹配决定是否高亮；相同词在不同语境下可得到不同结果（如 "Love" 作专有名词不标注），颜色方案复用现有 CSS 变量（`--dra-positive` / `--dra-negative` / `--dra-complex`）
+- [ ] Panel 加入 AI 分析状态提示（加载中 / 已增强 / 服务不可用）
 
 #### 2.4 动态句子结构标注
-- [ ] 用 Claude 返回的 `sentenceTags` 替换基于 `[Tag]` 前缀的规则匹配
+- [ ] 用 AI 返回的 `sentenceTags` 替换基于 `[Tag]` 前缀的规则匹配
 - [ ] 标签样式沿用现有 `.tag-argument` / `.tag-evidence` / `.tag-explanation`
 
 #### 2.5 难词 Tooltip
@@ -288,27 +300,18 @@
                          └────────────────┘
 ```
 
-### 4.2 Claude Prompt 策略
+### 4.2 Gemini Prompt 策略
 
-**Analyze Prompt（语义分析）：**
-```
-你是一个阅读辅助 AI，专门帮助 dyslexia 用户。
-用户档案：{age_group}, {severity}, {difficulty_type}
-内容类型：{content_type}
+**Analyze Prompt（语义标注，当前实现）：**
 
-请分析以下文本，返回 JSON：
-{
-  "emotionWords": {"word": "positive|negative|surprise"},
-  "sentenceTags": [{"id": 0, "type": "argument|evidence|explanation"}],
-  "difficultWords": [{"word": "...", "simpleDefinition": "..."}],
-  "homophoneRisks": ["word1", "word2"],
-  "suggestedFeatures": ["bionic", "syllable", "simplify"]
-}
+- 模型：`gemini-2.5-flash`，端点：`POST /api/analyze`，`thinkingBudget: 1024`
+- 文章截断：前 60,000 字符；分块：`chunkByParagraphs()`（每 8 段），`Promise.all` 并行
+- Budget 计算（服务端）：`Math.floor(wordCount / 100) * 6`，无上限
+- Prompt：判断文章类型（narrative / analytical / mixed）→ 调整 emotion 数量；每条 `{ word, context, category }`
+- 返回格式（AI）：`{ "highlights": [{ "word": "...", "context": "...", "category": "emotion-positive|emotion-negative|emotion-complex" }] }`
+- Transition words 不经过 AI：客户端 `generateTransitionHighlights()` 扫描 `TRANSITION_WORDS` 词表（~60 词/短语，来源 smart-words.org），直接合并进 `articleHighlights`
 
-文本：{article_text}
-```
-
-**Simplify Prompt（段落简化）：**
+**Simplify Prompt（段落简化，待实现）：**
 ```
 将以下段落改写为适合 {age_group} 阅读的简单版本，
 保留核心意思，减少从句，使用常见词汇：
@@ -320,17 +323,19 @@
 Content Script ↔ Background Service Worker 通过 `chrome.runtime.sendMessage`：
 
 ```typescript
-// Content Script 发出请求
-{ type: 'ANALYZE_TEXT', payload: { text, url } }
+// Content Script → Background：请求 AI 分析
+{ type: 'ANALYZE_REQUEST', url: string, text: string }
 
-// Background SW 返回
-{ type: 'ANALYSIS_RESULT', payload: AnnotationJSON }
+// Background → Content Script：AI 分析结果（仅 emotion）
+{ type: 'ANALYSIS_RESULT', highlights: [{ word, context, category }] }
+// Content Script 收到后合并客户端 generateTransitionHighlights() → articleHighlights
 
-// Side Panel 更新设置
+// Side Panel → Background → Content Script：设置变更
 { type: 'SETTINGS_CHANGED', payload: Partial<UserSettings> }
 
-// Content Script 回应设置变更
-{ type: 'RERENDER' }
+// Content Script → Side Panel：Focus 关键词
+{ type: 'FOCUS_APPLY', keywords: string[] }
+{ type: 'FOCUS_CLEAR' }
 ```
 
 ---

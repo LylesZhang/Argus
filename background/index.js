@@ -1,18 +1,54 @@
 // Background Service Worker
 // Runs in the browser background (not inside any webpage).
 // Phase 1 role: relay messages between the Side Panel and content/index.js.
-// Phase 2 role: call Claude API, manage cache, return semantic annotations.
+// Phase 2 role: call proxy server, manage cache, return semantic annotations.
 
-// ── Message relay ──────────────────────────────────────────────────────
-// Side Panel cannot talk to content scripts directly (different environments).
-// Every message from the Side Panel comes here first, then gets forwarded
-// to the content script running in the active tab.
+// ── Analysis cache ─────────────────────────────────────────────────────
+// Keyed by page URL. Cleared when the service worker restarts.
+
+const analysisCache = new Map();
+const CACHE_TTL_MS  = 30 * 60 * 1000; // 30 minutes
+
+async function analyzeText(text, url) {
+  const cached = analysisCache.get(url);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.result;
+  }
+
+  let result;
+  try {
+    const response = await fetch('http://localhost:3000/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, url }),
+    });
+    if (!response.ok) return null;
+    result = await response.json();
+  } catch {
+    // Server not running or network error — degrade silently
+    return null;
+  }
+
+  analysisCache.set(url, { result, timestamp: Date.now() });
+  return result;
+}
+
+// ── Message relay & analysis handler ──────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
-  // Messages that come from a tab (i.e. from content script) are ignored here.
-  // We only relay messages that come from the Side Panel or Popup.
-  if (sender.tab) return;
+  // Messages from content scripts (sender.tab exists)
+  if (sender.tab) {
+    if (msg.type === 'ANALYZE_REQUEST') {
+      analyzeText(msg.text, msg.url).then(result => {
+        if (result) {
+          chrome.tabs.sendMessage(sender.tab.id, { type: 'ANALYSIS_RESULT', ...result });
+        }
+      });
+    }
+    return;
+  }
 
+  // Messages from Side Panel / Popup — forward to active tab
   const forwardToActiveTab = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
@@ -26,7 +62,6 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 });
 
 // ── Side Panel opener ──────────────────────────────────────────────────
-// Open the Side Panel when the user clicks the extension icon in the toolbar.
 
 chrome.sidePanel
   .setPanelBehavior({ openPanelOnActionClick: true })

@@ -10,11 +10,11 @@
 
 .dra-emotion-positive { color: var(--dra-positive); font-weight: 500; }
 .dra-emotion-negative { color: var(--dra-negative); font-weight: 500; }
-.dra-emotion-surprise { color: var(--dra-surprise); font-weight: 500; }
+.dra-emotion-complex  { color: var(--dra-complex);  font-weight: 500; }
 
-/* ── Logic Word Highlight ────────────────────────────────────────────── */
+/* ── Transition Word Highlight ───────────────────────────────────────── */
 
-.dra-logic-word {
+.dra-transition-word {
   font-weight: 700;
   color: #2471a3;
   border-bottom: 2px solid rgba(36, 113, 163, 0.4);

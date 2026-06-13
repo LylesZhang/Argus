@@ -5,6 +5,41 @@
 
   // ── Static word lists ──────────────────────────────────────────────────
 
+  const TRANSITION_WORDS = new Set([
+    // Contrast / Opposition
+    'however','nevertheless','nonetheless','notwithstanding','conversely',
+    'on the other hand','on the contrary','in contrast','by contrast',
+    'that said','even so','be that as it may','then again','rather',
+    // Addition
+    'furthermore','moreover','additionally','likewise','in addition',
+    'by the same token','in like manner','in the same way','in the same fashion',
+    'coupled with','not to mention',
+    // Cause / Result
+    'therefore','thus','hence','consequently','accordingly','henceforth',
+    'as a result','for this reason','thereupon','in effect','owing to',
+    'as a consequence','due to','inasmuch as',
+    // Concession
+    'although','albeit','whereas','regardless','despite','in spite of',
+    'even though','even if','granted that',
+    // Conclusion / Summary
+    'in conclusion','in summary','in short','in brief','to summarize',
+    'overall','all in all','on balance','on the whole','by and large',
+    'in essence','to sum up','in the final analysis','given these points',
+    'all things considered','in a word','for the most part',
+    // Emphasis / Clarification
+    'in fact','indeed','notably','in other words','that is to say',
+    'to put it differently','to put it another way','namely','specifically',
+    'in particular','markedly','above all','most importantly',
+    // Example
+    'for example','for instance','to illustrate','as an illustration',
+    // Sequence / Time
+    'meanwhile','subsequently','eventually','formerly','in the meantime',
+    'sooner or later','in due time',
+    // Condition
+    'provided that','given that','in the event that','as long as',
+    'on the condition that',
+  ]);
+
   const STOP_WORDS = new Set([
     'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
     'from','up','about','into','is','are','was','were','be','been','being','have',
@@ -16,23 +51,6 @@
     'what','how','when','where','why','one','two','said','says','now','still'
   ]);
 
-  const LOGIC_WORDS = new Set([
-    'although', 'because', 'since', 'however', 'consequently', 'therefore', 'unless'
-  ]);
-
-  const EMOTION_WORDS = {
-    positive: new Set([
-      'Faculty', 'glowing', 'successful', 'bravely', 'determined', 'sincerely',
-      'warm', 'comforting', 'proud', 'relief', 'smile', 'stronger'
-    ]),
-    negative: new Set([
-      'suffocating', 'guilt', 'nervous', 'tense', 'confused',
-      'terrifying', 'anxiety', 'pressure', 'hide'
-    ]),
-    surprise: new Set([
-      'incredulous', 'astonishment', 'overwhelming', 'absolute'
-    ])
-  };
 
   // ── Default settings & runtime state ──────────────────────────────────
   // These match the keys saved by the Side Panel (panel/panel.js).
@@ -44,7 +62,7 @@
     boldBeginning:        false,
     emotionColor:         false,
     gradientRows:         false,
-    logicAnimation:       false,
+    transitionAnimation:  false,
     fontSize:             null,   // null = don't override the page's font size
     lineHeight:           null,
     fontFamily:           null,
@@ -52,7 +70,7 @@
     letterSpacing:        0,      // em units
     emotionPositiveColor: '#27ae60',
     emotionNegativeColor: '#e74c3c',
-    emotionSurpriseColor: '#8e44ad',
+    emotionComplexColor:  '#8e44ad',
     rulerActive:          false,
     rulerWindowLines:     1.5,
   };
@@ -62,8 +80,10 @@
   // Stores each paragraph's original innerHTML so we can restore it cleanly
   const originalHTML = new WeakMap();
 
-  let contentArea = null;
-  let lastRulerY  = null;
+  let contentArea         = null;
+  let lastRulerY          = null;
+  let aiAnalysisRequested = false;
+  let articleHighlights   = []; // per-occurrence annotations from AI
 
   // ── Content area detection ─────────────────────────────────────────────
   // Only includes platforms with verified stable selectors (non-hashed class names).
@@ -117,51 +137,64 @@
     return 4;
   }
 
-  function cleanWord(raw) {
-    return raw.replace(/^[^a-zA-Z]+|[^a-zA-Z]+$/g, '').toLowerCase();
-  }
-
-  function getEmotionClass(word) {
-    if (EMOTION_WORDS.positive.has(word)) return 'dra-emotion-positive';
-    if (EMOTION_WORDS.negative.has(word)) return 'dra-emotion-negative';
-    if (EMOTION_WORDS.surprise.has(word)) return 'dra-emotion-surprise';
-    return null;
-  }
-
-  // Wraps a single token (word + surrounding punctuation) in the appropriate spans.
-  function processWord(rawToken) {
-    const clean = cleanWord(rawToken);
-    if (!clean) return rawToken;
-
-    const leading  = rawToken.match(/^[^a-zA-Z]*/)[0];
-    const trailing = rawToken.match(/[^a-zA-Z]*$/)[0];
-    const body     = rawToken.slice(leading.length, rawToken.length - trailing.length);
-
-    let inner = body;
-
-    if (settings.boldBeginning) {
+  function applyBionicToText(text) {
+    return text.split(/(\s+)/).map(tok => {
+      if (/^\s+$/.test(tok)) return tok;
+      const leading  = tok.match(/^[^a-zA-Z]*/)[0];
+      const trailing = tok.match(/[^a-zA-Z]*$/)[0];
+      const body     = tok.slice(leading.length, tok.length - trailing.length);
+      if (!body) return tok;
       const N      = bionicN(body.length);
       const anchor = body.slice(0, N);
       const rest   = body.slice(N);
-      inner = rest.length <= 1
+      const inner  = rest.length <= 1
         ? `<b>${anchor}</b>${rest}`
         : `<b>${anchor}</b><span class="dra-bionic-fade">${rest[0]}</span>${rest.slice(1)}`;
-    }
-
-    if (settings.logicAnimation && LOGIC_WORDS.has(clean)) {
-      return `${leading}<span class="dra-logic-word">${inner}</span>${trailing}`;
-    }
-
-    if (settings.emotionColor) {
-      const cls = getEmotionClass(clean);
-      if (cls) return `${leading}<span class="${cls}">${inner}</span>${trailing}`;
-    }
-
-    return `${leading}${inner}${trailing}`;
+      return `${leading}${inner}${trailing}`;
+    }).join('');
   }
 
   function renderSentence(s) {
-    return s.split(/(\s+)/).map(tok => /^\s+$/.test(tok) ? tok : processWord(tok)).join('');
+    const matches = [];
+    for (const h of articleHighlights) {
+      if (h.context) {
+        const normS   = s.replace(/\s+/g, ' ').toLowerCase();
+        const normCtx = h.context.replace(/\*+/g, '').replace(/\s+/g, ' ').toLowerCase().trim();
+        if (normCtx && !normS.includes(normCtx)) continue;
+      }
+      const escaped = h.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(?<![a-zA-Z-])${escaped}(?![a-zA-Z-])`, 'i');
+      const m = regex.exec(s);
+      if (m) matches.push({ start: m.index, end: m.index + m[0].length, h });
+    }
+
+    matches.sort((a, b) => a.start - b.start);
+    const deduped = [];
+    let lastEnd = 0;
+    for (const m of matches) {
+      if (m.start >= lastEnd) { deduped.push(m); lastEnd = m.end; }
+    }
+
+    const bionic = (t) => settings.boldBeginning ? applyBionicToText(t) : t;
+
+    if (deduped.length === 0) return bionic(s);
+
+    let result = '';
+    let pos = 0;
+    for (const { start, end, h } of deduped) {
+      if (pos < start) result += bionic(s.slice(pos, start));
+      const inner = bionic(s.slice(start, end));
+      if (settings.transitionAnimation && h.category === 'transition') {
+        result += `<span class="dra-transition-word">${inner}</span>`;
+      } else if (settings.emotionColor && h.category.startsWith('emotion')) {
+        result += `<span class="dra-${h.category}">${inner}</span>`;
+      } else {
+        result += inner;
+      }
+      pos = end;
+    }
+    if (pos < s.length) result += bionic(s.slice(pos));
+    return result;
   }
 
   // Turns a paragraph's plain text into annotated HTML.
@@ -250,6 +283,33 @@
     });
   }
 
+  // ── Transition word scanning (rule-based, no AI) ──────────────────────
+
+  function generateTransitionHighlights() {
+    const area = findContentArea();
+    const text = area.innerText.toLowerCase();
+    const highlights = [];
+    for (const phrase of TRANSITION_WORDS) {
+      const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(?<![a-zA-Z-])${escaped}(?![a-zA-Z-])`);
+      if (regex.test(text)) {
+        highlights.push({ word: phrase, category: 'transition' });
+      }
+    }
+    return highlights;
+  }
+
+  // ── AI analysis ───────────────────────────────────────────────────────
+
+  function requestAIAnalysis() {
+    if (aiAnalysisRequested) return;
+    aiAnalysisRequested = true;
+    const area = findContentArea();
+    const text = area.innerText.trim();
+    chrome.runtime.sendMessage({ type: 'ANALYZE_REQUEST', url: window.location.href, text });
+  }
+
+
   // ── Transformations ────────────────────────────────────────────────────
 
   function applyTransformations() {
@@ -258,7 +318,7 @@
     // Expose emotion colors as CSS variables so content.css can use them
     document.documentElement.style.setProperty('--dra-positive', settings.emotionPositiveColor);
     document.documentElement.style.setProperty('--dra-negative', settings.emotionNegativeColor);
-    document.documentElement.style.setProperty('--dra-surprise', settings.emotionSurpriseColor);
+    document.documentElement.style.setProperty('--dra-complex',  settings.emotionComplexColor);
 
     // Process each paragraph — apply typography directly on each element
     // (setting on contentArea alone doesn't work because child elements
@@ -311,12 +371,19 @@
     if (settings.typographyEnabled || settings.readingAidsEnabled) {
       applyTransformations();
     }
+
+    if (settings.readingAidsEnabled) requestAIAnalysis();
   }
 
   // ── Bootstrap ─────────────────────────────────────────────────────────
 
   chrome.storage.sync.get('draSettings', (data) => {
-    if (data.draSettings) settings = { ...DEFAULT_SETTINGS, ...data.draSettings };
+    if (data.draSettings) {
+      settings = { ...DEFAULT_SETTINGS, ...data.draSettings };
+      if (settings.transitionAnimation === undefined && data.draSettings.logicAnimation !== undefined) {
+        settings.transitionAnimation = data.draSettings.logicAnimation;
+      }
+    }
     render();
   });
 
@@ -333,6 +400,13 @@
 
     if (msg.type === 'FOCUS_CLEAR') {
       clearFocusMask();
+    }
+
+    if (msg.type === 'ANALYSIS_RESULT') {
+      const emotionHighlights    = (msg.highlights || []).filter(h => h.category !== 'transition');
+      const transitionHighlights = generateTransitionHighlights();
+      articleHighlights = [...emotionHighlights, ...transitionHighlights];
+      render();
     }
   });
 

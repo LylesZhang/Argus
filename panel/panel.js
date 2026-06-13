@@ -11,7 +11,7 @@ const DEFAULT_SETTINGS = {
   boldBeginning:        false,
   emotionColor:         false,
   gradientRows:         false,
-  logicAnimation:       false,
+  transitionAnimation:  false,
   fontSize:             18,
   lineHeight:           1.8,
   fontFamily:           '',
@@ -21,7 +21,7 @@ const DEFAULT_SETTINGS = {
   bgColor:              '#ffffff',
   emotionPositiveColor: '#27ae60',
   emotionNegativeColor: '#e74c3c',
-  emotionSurpriseColor: '#8e44ad',
+  emotionComplexColor: '#8e44ad',
   rulerActive:          false,
   rulerWindowLines:     1.5,
 };
@@ -44,7 +44,7 @@ function syncUI() {
   document.getElementById('toggle-bold').checked      = settings.boldBeginning;
   document.getElementById('toggle-emotion').checked   = settings.emotionColor;
   document.getElementById('toggle-gradient').checked  = settings.gradientRows;
-  document.getElementById('toggle-logic').checked     = settings.logicAnimation;
+  document.getElementById('toggle-transition').checked = settings.transitionAnimation;
   document.getElementById('toggle-ruler').checked     = settings.rulerActive;
 
   document.getElementById('font-family').value        = settings.fontFamily ?? '';
@@ -61,7 +61,7 @@ function syncUI() {
   document.getElementById('bg-color').value           = settings.bgColor;
   document.getElementById('emotion-positive-color').value = settings.emotionPositiveColor;
   document.getElementById('emotion-negative-color').value = settings.emotionNegativeColor;
-  document.getElementById('emotion-surprise-color').value = settings.emotionSurpriseColor;
+  document.getElementById('emotion-complex-color').value = settings.emotionComplexColor;
   document.getElementById('ruler-size-slider').value  = settings.rulerWindowLines;
   document.getElementById('ruler-size-value').textContent = settings.rulerWindowLines.toFixed(1) + ' lines';
 
@@ -104,14 +104,14 @@ function init() {
       document.getElementById('toggle-bold').checked    = false;
       document.getElementById('toggle-emotion').checked = false;
       document.getElementById('toggle-gradient').checked = false;
-      document.getElementById('toggle-logic').checked   = false;
+      document.getElementById('toggle-transition').checked = false;
       document.getElementById('toggle-ruler').checked   = false;
       document.getElementById('emotion-colors').classList.remove('active');
       document.getElementById('ruler-size-control').classList.remove('active');
       broadcast({
         readingAidsEnabled: false,
         boldBeginning: false, emotionColor: false,
-        gradientRows: false,  logicAnimation: false, rulerActive: false,
+        gradientRows: false,  transitionAnimation: false, rulerActive: false,
       });
     } else {
       broadcast({ readingAidsEnabled: true });
@@ -142,9 +142,9 @@ function init() {
     broadcast({ gradientRows: e.target.checked });
   });
 
-  document.getElementById('toggle-logic').addEventListener('change', e => {
+  document.getElementById('toggle-transition').addEventListener('change', e => {
     enableReadingAidIfNeeded(e.target.checked);
-    broadcast({ logicAnimation: e.target.checked });
+    broadcast({ transitionAnimation: e.target.checked });
   });
 
   document.getElementById('toggle-ruler').addEventListener('change', e => {
@@ -252,8 +252,8 @@ function init() {
   document.getElementById('emotion-negative-color').addEventListener('input', e => {
     broadcast({ emotionNegativeColor: e.target.value });
   });
-  document.getElementById('emotion-surprise-color').addEventListener('input', e => {
-    broadcast({ emotionSurpriseColor: e.target.value });
+  document.getElementById('emotion-complex-color').addEventListener('input', e => {
+    broadcast({ emotionComplexColor: e.target.value });
   });
 }
 
