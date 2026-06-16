@@ -526,7 +526,10 @@
         if (settings.fontColor)     para.style.color         = settings.fontColor;
       }
 
-      if (settings.readingAidsEnabled) {
+      const needsSentenceWrap = settings.boldBeginning || settings.emotionColor ||
+                                settings.gradientRows  || settings.transitionAnimation ||
+                                settings.sentenceLabels;
+      if (settings.readingAidsEnabled && needsSentenceWrap) {
         if (!originalHTML.has(para)) originalHTML.set(para, para.innerHTML);
         para.innerHTML = buildParagraphHTML(para.innerText);
       }
