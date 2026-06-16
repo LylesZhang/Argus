@@ -1,0 +1,12 @@
+{
+  "name": "argus-extension",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild content/index.js --bundle --outfile=content/bundle.js --platform=browser",
+    "watch": "esbuild content/index.js --bundle --outfile=content/bundle.js --platform=browser --watch"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}
