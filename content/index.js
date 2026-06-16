@@ -163,6 +163,7 @@
   let emotionAIRequested  = false;
   let aiEmotionHighlights = []; // AI emotion results, persisted across render() calls
   let articleHighlights   = []; // merged highlights used by renderSentence
+  let topicFocusKeywords  = null; // non-null while a topic focus is active
 
   // ── Content area detection ─────────────────────────────────────────────
   // Only includes platforms with verified stable selectors (non-hashed class names).
@@ -274,6 +275,16 @@
     }
     if (pos < s.length) result += bionic(s.slice(pos));
     return result;
+  }
+
+  // Returns true if the element contains non-text nodes that innerText can't capture,
+  // meaning it's unsafe to replace innerHTML with buildParagraphHTML output.
+  function hasEmbeddedContent(el) {
+    if (el.querySelector('img, svg, picture, video, audio, canvas, iframe, input, button, select')) return true;
+    for (const child of el.querySelectorAll('i, span, a, em')) {
+      if (!child.textContent.trim()) return true;
+    }
+    return false;
   }
 
   // Turns a paragraph's plain text into annotated HTML.
@@ -528,8 +539,8 @@
 
       const needsSentenceWrap = settings.boldBeginning || settings.emotionColor ||
                                 settings.gradientRows  || settings.transitionAnimation ||
-                                settings.sentenceLabels;
-      if (settings.readingAidsEnabled && needsSentenceWrap) {
+                                settings.sentenceLabels || topicFocusKeywords !== null;
+      if (settings.readingAidsEnabled && needsSentenceWrap && !hasEmbeddedContent(para)) {
         if (!originalHTML.has(para)) originalHTML.set(para, para.innerHTML);
         para.innerHTML = buildParagraphHTML(para.innerText);
       }
@@ -582,8 +593,11 @@
       if (needsLabelsAI)  requestSentenceLabels();
     }
 
-    if (settings.typographyEnabled || settings.readingAidsEnabled) {
+    if (settings.typographyEnabled || settings.readingAidsEnabled || topicFocusKeywords) {
       applyTransformations();
+    }
+    if (topicFocusKeywords) {
+      applyFocusMask(topicFocusKeywords);
     }
   }
 
@@ -607,11 +621,14 @@
     }
 
     if (msg.type === 'FOCUS_APPLY' && msg.keywords?.length) {
-      applyFocusMask(msg.keywords);
+      topicFocusKeywords = msg.keywords;
+      render();
     }
 
     if (msg.type === 'FOCUS_CLEAR') {
+      topicFocusKeywords = null;
       clearFocusMask();
+      render();
     }
 
     if (msg.type === 'LABEL_RESULT') {

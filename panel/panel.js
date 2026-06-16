@@ -53,13 +53,13 @@ function syncUI() {
 
   document.getElementById('font-family').value        = settings.fontFamily ?? '';
   document.getElementById('font-size-slider').value   = settings.fontSize ?? 18;
-  document.getElementById('font-size-value').textContent = (settings.fontSize ?? 18) + 'px';
+  document.getElementById('font-size-value').textContent = settings.fontSize ?? 18;
   document.getElementById('line-height-slider').value = settings.lineHeight ?? 1.8;
   document.getElementById('line-height-value').textContent = (settings.lineHeight ?? 1.8).toFixed(1);
   document.getElementById('word-spacing-slider').value   = settings.wordSpacing;
-  document.getElementById('word-spacing-value').textContent = settings.wordSpacing.toFixed(2) + 'em';
+  document.getElementById('word-spacing-value').textContent = settings.wordSpacing.toFixed(1);
   document.getElementById('letter-spacing-slider').value = settings.letterSpacing;
-  document.getElementById('letter-spacing-value').textContent = settings.letterSpacing.toFixed(2) + 'em';
+  document.getElementById('letter-spacing-value').textContent = settings.letterSpacing.toFixed(2);
 
   document.getElementById('font-color').value         = settings.fontColor;
   document.getElementById('bg-color').value           = settings.bgColor;
@@ -90,13 +90,13 @@ function init() {
     if (!enabled) {
       document.getElementById('font-family').value                  = '';
       document.getElementById('font-size-slider').value             = 18;
-      document.getElementById('font-size-value').textContent        = '18px';
+      document.getElementById('font-size-value').textContent        = '18';
       document.getElementById('line-height-slider').value           = 1.8;
       document.getElementById('line-height-value').textContent      = '1.8';
       document.getElementById('word-spacing-slider').value          = 0;
-      document.getElementById('word-spacing-value').textContent     = '0.00em';
+      document.getElementById('word-spacing-value').textContent     = '0.0';
       document.getElementById('letter-spacing-slider').value        = 0;
-      document.getElementById('letter-spacing-value').textContent   = '0.00em';
+      document.getElementById('letter-spacing-value').textContent   = '0.00';
       document.getElementById('font-color').value                   = '#2c2c2c';
       document.getElementById('bg-color').value                     = '#ffffff';
       broadcast({
@@ -113,11 +113,12 @@ function init() {
   document.getElementById('toggle-reading-aids').addEventListener('change', e => {
     const enabled = e.target.checked;
     if (!enabled) {
-      document.getElementById('toggle-bold').checked    = false;
-      document.getElementById('toggle-emotion').checked = false;
-      document.getElementById('toggle-gradient').checked = false;
+      document.getElementById('toggle-bold').checked       = false;
+      document.getElementById('toggle-emotion').checked    = false;
+      document.getElementById('toggle-gradient').checked   = false;
       document.getElementById('toggle-transition').checked = false;
-      document.getElementById('toggle-ruler').checked   = false;
+      document.getElementById('toggle-labels').checked     = false;
+      document.getElementById('toggle-ruler').checked      = false;
       document.getElementById('emotion-colors').classList.remove('active');
       document.getElementById('ruler-size-control').classList.remove('active');
       broadcast({
@@ -197,7 +198,7 @@ function init() {
     enableTypographyIfNeeded();
     const v = settings.fontSize - 1;
     document.getElementById('font-size-slider').value = v;
-    document.getElementById('font-size-value').textContent = v + 'px';
+    document.getElementById('font-size-value').textContent = v;
     broadcast({ fontSize: v });
   });
   document.getElementById('font-size-inc').addEventListener('click', () => {
@@ -205,13 +206,13 @@ function init() {
     enableTypographyIfNeeded();
     const v = settings.fontSize + 1;
     document.getElementById('font-size-slider').value = v;
-    document.getElementById('font-size-value').textContent = v + 'px';
+    document.getElementById('font-size-value').textContent = v;
     broadcast({ fontSize: v });
   });
   document.getElementById('font-size-slider').addEventListener('input', e => {
     enableTypographyIfNeeded();
     const v = parseInt(e.target.value);
-    document.getElementById('font-size-value').textContent = v + 'px';
+    document.getElementById('font-size-value').textContent = v;
     broadcast({ fontSize: v });
   });
 
@@ -239,19 +240,51 @@ function init() {
     broadcast({ lineHeight: v });
   });
 
-  // Word spacing
+  // Word spacing — stepper + slider
+  document.getElementById('word-spacing-dec').addEventListener('click', () => {
+    if (settings.wordSpacing <= 0) return;
+    enableTypographyIfNeeded();
+    const v = Math.max(0, Math.round((settings.wordSpacing - 0.05) * 100) / 100);
+    document.getElementById('word-spacing-slider').value = v;
+    document.getElementById('word-spacing-value').textContent = v.toFixed(1);
+    broadcast({ wordSpacing: v });
+  });
+  document.getElementById('word-spacing-inc').addEventListener('click', () => {
+    if (settings.wordSpacing >= 0.5) return;
+    enableTypographyIfNeeded();
+    const v = Math.min(0.5, Math.round((settings.wordSpacing + 0.05) * 100) / 100);
+    document.getElementById('word-spacing-slider').value = v;
+    document.getElementById('word-spacing-value').textContent = v.toFixed(1);
+    broadcast({ wordSpacing: v });
+  });
   document.getElementById('word-spacing-slider').addEventListener('input', e => {
     enableTypographyIfNeeded();
     const v = parseFloat(e.target.value);
-    document.getElementById('word-spacing-value').textContent = v.toFixed(2) + 'em';
+    document.getElementById('word-spacing-value').textContent = v.toFixed(1);
     broadcast({ wordSpacing: v });
   });
 
-  // Letter spacing
+  // Letter spacing — stepper + slider
+  document.getElementById('letter-spacing-dec').addEventListener('click', () => {
+    if (settings.letterSpacing <= 0) return;
+    enableTypographyIfNeeded();
+    const v = Math.max(0, Math.round((settings.letterSpacing - 0.01) * 1000) / 1000);
+    document.getElementById('letter-spacing-slider').value = v;
+    document.getElementById('letter-spacing-value').textContent = v.toFixed(2);
+    broadcast({ letterSpacing: v });
+  });
+  document.getElementById('letter-spacing-inc').addEventListener('click', () => {
+    if (settings.letterSpacing >= 0.1) return;
+    enableTypographyIfNeeded();
+    const v = Math.min(0.1, Math.round((settings.letterSpacing + 0.01) * 1000) / 1000);
+    document.getElementById('letter-spacing-slider').value = v;
+    document.getElementById('letter-spacing-value').textContent = v.toFixed(2);
+    broadcast({ letterSpacing: v });
+  });
   document.getElementById('letter-spacing-slider').addEventListener('input', e => {
     enableTypographyIfNeeded();
     const v = parseFloat(e.target.value);
-    document.getElementById('letter-spacing-value').textContent = v.toFixed(2) + 'em';
+    document.getElementById('letter-spacing-value').textContent = v.toFixed(2);
     broadcast({ letterSpacing: v });
   });
 
