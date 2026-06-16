@@ -240,3 +240,69 @@ body {
 .ruler-size.active { opacity: 1; pointer-events: auto; }
 
 .sub-label { font-size: 12px; color: #666; }
+
+/* ── AI / Local mode pill ────────────────────────────────────────────── */
+
+.mode-pill {
+  margin-left: auto;
+  display: flex;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.mode-btn {
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #999;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mode-btn:hover:not(.active) { background: #f0f0f0; }
+.mode-btn.active { background: #007aff; color: #fff; }
+
+/* ── Topic Focus area ────────────────────────────────────────────────── */
+
+.topic-focus-area {
+  padding: 6px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.topic-focus-area input {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  color: #333;
+}
+
+.topic-focus-area input:focus { border-color: #007aff; }
+
+.topic-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.topic-buttons button {
+  flex: 1;
+  padding: 6px 0;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid #ddd;
+  background: #f7f7f7;
+  color: #333;
+}
+
+#topic-apply { background: #007aff; color: #fff; border-color: #007aff; }
+#topic-apply:hover { background: #0066d6; }
+#topic-clear:hover { background: #e8e8e8; }

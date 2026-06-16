@@ -38,13 +38,44 @@ async function analyzeText(text, url) {
 chrome.runtime.onMessage.addListener((msg, sender) => {
   // Messages from content scripts (sender.tab exists)
   if (sender.tab) {
-    if (msg.type === 'ANALYZE_REQUEST') {
+    if (msg.type === 'EMOTION_REQUEST') {
       analyzeText(msg.text, msg.url).then(result => {
         if (result) {
-          chrome.tabs.sendMessage(sender.tab.id, { type: 'ANALYSIS_RESULT', ...result });
+          chrome.tabs.sendMessage(sender.tab.id, { type: 'EMOTION_RESULT', ...result });
         }
       });
     }
+
+    if (msg.type === 'LABEL_REQUEST') {
+      fetch('http://localhost:3000/api/label', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sentences: msg.sentences }),
+      })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+        .then(result => {
+          if (result?.labels) {
+            chrome.tabs.sendMessage(sender.tab.id, { type: 'LABEL_RESULT', labels: result.labels });
+          }
+        });
+    }
+
+    if (msg.type === 'FOCUS_ANALYZE') {
+      fetch('http://localhost:3000/api/focus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: msg.text, topic: msg.topic }),
+      })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+        .then(result => {
+          if (result?.relevant) {
+            chrome.tabs.sendMessage(sender.tab.id, { type: 'FOCUS_RESULT', relevant: result.relevant });
+          }
+        });
+    }
+
     return;
   }
 
@@ -56,9 +87,10 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     });
   };
 
-  if (msg.type === 'SETTINGS_CHANGED') forwardToActiveTab();
-  if (msg.type === 'FOCUS_APPLY')      forwardToActiveTab();
-  if (msg.type === 'FOCUS_CLEAR')      forwardToActiveTab();
+  if (msg.type === 'SETTINGS_CHANGED')  forwardToActiveTab();
+  if (msg.type === 'FOCUS_APPLY')       forwardToActiveTab();
+  if (msg.type === 'FOCUS_CLEAR')       forwardToActiveTab();
+  if (msg.type === 'FOCUS_AI_REQUEST')  forwardToActiveTab();
 });
 
 // ── Side Panel opener ──────────────────────────────────────────────────

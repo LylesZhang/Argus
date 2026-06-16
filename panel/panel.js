@@ -6,12 +6,16 @@
 // ── Default settings (must match DEFAULT_SETTINGS in content/index.js) ─
 
 const DEFAULT_SETTINGS = {
-  typographyEnabled:    false,
-  readingAidsEnabled:   false,
-  boldBeginning:        false,
-  emotionColor:         false,
-  gradientRows:         false,
-  transitionAnimation:  false,
+  typographyEnabled:     false,
+  readingAidsEnabled:    false,
+  boldBeginning:         false,
+  emotionColor:          false,
+  emotionMode:           'local',
+  gradientRows:          false,
+  transitionAnimation:   false,
+  sentenceLabels:        false,
+  sentenceLabelsMode:    'local',
+  topicFocusMode:        'local',
   fontSize:             18,
   lineHeight:           1.8,
   fontFamily:           '',
@@ -67,6 +71,14 @@ function syncUI() {
 
   document.getElementById('emotion-colors').classList.toggle('active', settings.emotionColor);
   document.getElementById('ruler-size-control').classList.toggle('active', settings.rulerActive);
+  document.getElementById('toggle-labels').checked = settings.sentenceLabels;
+
+  // Sync mode pills to stored settings
+  [['emotion', settings.emotionMode], ['sentenceLabels', settings.sentenceLabelsMode]].forEach(([feature, mode]) => {
+    document.querySelectorAll(`[data-feature="${feature}"]`).forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === mode);
+    });
+  });
 }
 
 // ── Wire up all controls ───────────────────────────────────────────────
@@ -111,7 +123,8 @@ function init() {
       broadcast({
         readingAidsEnabled: false,
         boldBeginning: false, emotionColor: false,
-        gradientRows: false,  transitionAnimation: false, rulerActive: false,
+        gradientRows: false,  transitionAnimation: false,
+        sentenceLabels: false, rulerActive: false,
       });
     } else {
       broadcast({ readingAidsEnabled: true });
@@ -145,6 +158,11 @@ function init() {
   document.getElementById('toggle-transition').addEventListener('change', e => {
     enableReadingAidIfNeeded(e.target.checked);
     broadcast({ transitionAnimation: e.target.checked });
+  });
+
+  document.getElementById('toggle-labels').addEventListener('change', e => {
+    enableReadingAidIfNeeded(e.target.checked);
+    broadcast({ sentenceLabels: e.target.checked });
   });
 
   document.getElementById('toggle-ruler').addEventListener('change', e => {
@@ -254,6 +272,35 @@ function init() {
   });
   document.getElementById('emotion-complex-color').addEventListener('input', e => {
     broadcast({ emotionComplexColor: e.target.value });
+  });
+
+  // Mode pills (AI / Local) for emotion and sentenceLabels
+  document.querySelectorAll('.mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const feature = btn.dataset.feature;  // 'emotion' | 'sentenceLabels'
+      const mode    = btn.dataset.mode;     // 'ai' | 'local'
+      const modeKey = feature + 'Mode';    // 'emotionMode' | 'sentenceLabelsMode'
+      btn.closest('.mode-pill').querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      broadcast({ [modeKey]: mode });
+    });
+  });
+
+  // Topic Focus
+  document.getElementById('topic-apply').addEventListener('click', () => {
+    const raw = document.getElementById('topic-input').value.trim();
+    if (!raw) return;
+    if (settings.topicFocusMode === 'ai') {
+      chrome.runtime.sendMessage({ type: 'FOCUS_AI_REQUEST', topic: raw });
+    } else {
+      const keywords = raw.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      chrome.runtime.sendMessage({ type: 'FOCUS_APPLY', keywords });
+    }
+  });
+
+  document.getElementById('topic-clear').addEventListener('click', () => {
+    document.getElementById('topic-input').value = '';
+    chrome.runtime.sendMessage({ type: 'FOCUS_CLEAR' });
   });
 }
 

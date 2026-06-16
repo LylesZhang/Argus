@@ -217,50 +217,234 @@
 
 ## 三、数据流设计
 
+### 3.0 通用渲染流程（所有功能共用）
+
 ```
-用户打开网页
+页面加载 / 用户改动设置
+    │
+    ├─ 页面加载 ──► chrome.storage.sync.get('draSettings') ──► settings 合并默认值
+    │
+    └─ 改动设置 ──► Panel broadcast() ──► SETTINGS_CHANGED ──► Background 转发 ──► Content Script
     │
     ▼
-[Content Script 激活]
-    │ 提取正文文本 (readability-style DOM parse)
-    ▼
-[Background Service Worker]
-    │ 查询 IndexedDB 缓存 (by URL hash + text hash)
-    │
-    ├─── 缓存命中 ──────────────────────────────────┐
-    │                                               │
-    │ 缓存未命中                                    │
-    ▼                                               │
-[POST /api/analyze]                                 │
-    │ 发送: { text, userProfile, contentType }      │
-    ▼                                               │
-[Node.js API Server]                                │
-    │ 构建 Claude Prompt                            │
-    ▼                                               │
-[Claude API]                                        │
-    │ 返回语义标注 JSON:                            │
-    │   - emotionWords: {word → positive/negative}  │
-    │   - sentenceTags: {sentenceId → type}         │
-    │   - difficultWords: {word → definition}       │
-    │   - homophones: [word, ...]                   │
-    │   - contentType: "academic"                   │
-    │   - suggestedFeatures: ["bionic", "syllable"] │
-    ▼                                               │
-[写入 IndexedDB 缓存] ──────────────────────────────┘
+render()
+    ├─ removeTransformations()          // 清除上一次渲染，还原原始 innerHTML
+    ├─ 生成 articleHighlights[]         // 按各功能开关决定（见下各节）
+    ├─ 生成 sentenceLabels[]            // 按各功能开关决定（见下各节）
+    ├─ 触发 AI 请求（如需要）
+    └─ applyTransformations()
+           └─ buildParagraphHTML()
+                  ├─ renderSentence(s) ──► 用 articleHighlights 在句子中定位词/短语，加 <span>
+                  └─ badge(s)          ──► 用 sentenceLabels 前缀匹配，注入角标 <span>
+```
+
+---
+
+### 3.1 Transition Words（纯本地）
+
+```
+settings.transitionAnimation = true
     │
     ▼
-[Content Script 接收标注数据]
-    │ 与用户当前偏好合并
-    ▼
-[DOM 变换层]
-    │ - 注入 CSS 变量
-    │ - 逐词/逐句包裹 <span> 标签
-    │ - 绑定 tooltip / TTS 事件
-    ▼
-[增强后的阅读视图]
+render()
+    └─ generateTransitionHighlights()
+           扫描 TRANSITION_WORDS 词表（~60 词/短语）
+           用正则 (?<![a-zA-Z-]){word}(?![a-zA-Z-]) 检测出现
+           返回 [{ word, category: 'transition' }]
+    └─ articleHighlights = [...emotionHL, ...transitionHL]
+    └─ renderSentence()
+           命中 transition 类 → <span class="dra-transition-word">${word}</span>
+           CSS: font-weight:700, color:#2471a3, border-bottom
+```
+
+---
+
+### 3.2 Emotion Words — Local 模式
+
+```
+settings.emotionColor = true && settings.emotionMode = 'local'
     │
     ▼
-[用户交互] ──► [实时偏好调整] ──► [Chrome Storage Sync]
+render()
+    └─ generateEmotionHighlights()
+           扫描 EMOTION_POSITIVE / EMOTION_NEGATIVE / EMOTION_COMPLEX 三个词表
+           按正则检测出现，返回 [{ word, category: 'emotion-*' }]
+    └─ articleHighlights = [...emotionHL, ...transitionHL]
+    └─ renderSentence()
+           命中 emotion-* 类 → <span class="dra-emotion-{positive|negative|complex}">
+           颜色来自 CSS 变量 --dra-positive / --dra-negative / --dra-complex
+           （由用户在 Panel 颜色选择器中设定）
+```
+
+---
+
+### 3.3 Emotion Words — AI 模式
+
+```
+settings.emotionColor = true && settings.emotionMode = 'ai'
+    │
+    ▼
+render()
+    └─ emotionHL = aiEmotionHighlights（初始为 []）
+    └─ requestEmotionAnalysis()          // emotionAIRequested 标志防重复
+           └─ Content Script 发 EMOTION_REQUEST { url, text }
+                  │
+                  ▼
+           Background SW
+                  ├─ 命中内存缓存（URL key，TTL 30min）──► 直接返回 EMOTION_RESULT
+                  └─ 未命中 ──► POST /api/analyze { text }
+                                     │
+                                     ▼
+                               Node.js Server
+                                     └─ 文章分块（每 8 段），Promise.all 并行调 Gemini
+                                     └─ Prompt：判断文章类型 → 动态 budget → 标注 emotion 词
+                                     └─ 返回 { highlights: [{word, context, category}] }
+                                     │
+                                     ▼
+                               Background SW
+                                     └─ 写入内存缓存
+                                     └─ 发 EMOTION_RESULT { highlights } → Content Script
+    │
+    ▼
+Content Script 收到 EMOTION_RESULT
+    └─ aiEmotionHighlights = highlights（过滤掉 transition 类）
+    └─ render()
+           └─ emotionHL = aiEmotionHighlights  // 这次 render 使用 AI 结果
+           └─ 同 Local 模式渲染
+```
+
+---
+
+### 3.4 Sentence Labels — Local 模式
+
+```
+settings.sentenceLabels = true && settings.sentenceLabelsMode = 'local'
+    │
+    ▼
+render()
+    └─ allSentences = extractAllSentences()
+           换行符拆段落（>20字符），再用 /(?<=[.!?])\s+(?=[A-Z"'\[])/ 拆句子
+    └─ sentenceLabels = generateSentenceLabels()
+           对每句按 LABEL_RULES 优先级匹配（evidence > argument > explanation）
+           第一个命中的类别即为该句标签，未命中则跳过
+           返回 [{ index, type }]
+    └─ buildParagraphHTML()
+           badge(s)：用 s.trim().slice(0,25) 前缀匹配 allSentences
+                     找到对应 index → 在 sentenceLabels 里查 type
+                     注入 <span class="dra-label dra-label-{type}">{TYPE}</span>
+```
+
+---
+
+### 3.5 Sentence Labels — AI 模式
+
+```
+settings.sentenceLabels = true && settings.sentenceLabelsMode = 'ai'
+    │
+    ▼
+render()
+    └─ allSentences = extractAllSentences()      // 每次 render 都更新
+    └─ requestSentenceLabels()                   // sentenceLabelsRequested 防重复
+           └─ 发 LABEL_REQUEST { sentences: allSentences } → Background
+                  │
+                  ▼
+           Background SW
+                  └─ POST /api/label { sentences }
+                               │
+                               ▼
+                         Node.js Server
+                               └─ 单次调 Gemini（不分块）
+                               └─ Prompt：给每句子编号，返回有把握的句子标签
+                               └─ 返回 { labels: [{ index, type }] }
+                               │
+                               ▼
+                         Background SW
+                               └─ 发 LABEL_RESULT { labels } → Content Script
+    │
+    ▼
+Content Script 收到 LABEL_RESULT
+    └─ sentenceLabels = labels
+    └─ render()
+           └─ allSentences 已在第一次 render 时设好，requestSentenceLabels() 变 no-op
+           └─ badge() 用 index 匹配 allSentences 前缀 → 注入角标
+```
+
+---
+
+### 3.6 Topic Focus — Local 模式
+
+```
+用户在 Panel 输入话题 → 点 Apply，topicFocusMode = 'local'
+    │
+    ▼
+Panel
+    └─ 关键词提取：raw.toLowerCase().split(/\s+/).filter(w => w.length > 2)
+    └─ 发 FOCUS_APPLY { keywords } → Background forwardToActiveTab()
+    │
+    ▼
+Content Script 收到 FOCUS_APPLY
+    └─ applyFocusMask(keywords)
+           对每个 .dra-sentence：scoreSentence() 打分
+               精确匹配 +3，词干匹配 +1（词长≥5时）
+           有分 → fontWeight:'700'，color:''（正常）
+           无分 → fontWeight:''，color:'#aaa'（变灰）
+
+用户点 Clear → FOCUS_CLEAR → clearFocusMask()（清除所有 inline style）
+```
+
+---
+
+### 3.7 Topic Focus — AI 模式
+
+```
+用户在 Panel 输入话题 → 点 Apply，topicFocusMode = 'ai'
+    │
+    ▼
+Panel
+    └─ 发 FOCUS_AI_REQUEST { topic } → Background forwardToActiveTab()
+    │
+    ▼
+Content Script 收到 FOCUS_AI_REQUEST
+    └─ 读取 findContentArea().innerText
+    └─ 发 FOCUS_ANALYZE { topic, text } → Background
+           （两跳原因：Panel 不知道文章内容，必须由 content script 提供）
+    │
+    ▼
+Background SW 收到 FOCUS_ANALYZE
+    └─ POST /api/focus { text, topic }
+               │
+               ▼
+         Node.js Server
+               └─ 单次调 Gemini（文章截断至 60,000 字符）
+               └─ Prompt：找出与 topic 语义相关的句子（不限字面匹配）
+               └─ 返回 { relevant: ["句子前30字符", ...] }
+               │
+               ▼
+         Background SW
+               └─ 发 FOCUS_RESULT { relevant } → Content Script
+    │
+    ▼
+Content Script 收到 FOCUS_RESULT
+    └─ applyFocusMaskByPrefixes(relevant)
+           对每个 .dra-sentence：textContent.trim().slice(0,30)
+           与 relevant 列表中的前缀（slice 0-25）比对
+           命中 → 加粗，未命中 → 变灰
+```
+
+---
+
+### 3.8 OpenDyslexic 字体
+
+```
+settings.typographyEnabled = true && settings.fontFamily = 'OpenDyslexic, sans-serif'
+    │
+    ▼
+applyTransformations()
+    └─ injectOpenDyslexicFont()（幂等，检查 #dra-od-font 是否已存在）
+           在 <head> 插入 <style> 注册三个 @font-face
+           字体文件路径：chrome.runtime.getURL('fonts/OpenDyslexic-*.otf')
+           （manifest.json web_accessible_resources 开放 fonts/*.otf 访问权限）
+    └─ 对每个 <p> 设置 fontFamily = 'OpenDyslexic, sans-serif'
 ```
 
 ---
@@ -320,22 +504,44 @@
 
 ### 4.3 消息通信协议
 
-Content Script ↔ Background Service Worker 通过 `chrome.runtime.sendMessage`：
+所有消息均通过 `chrome.runtime.sendMessage` 传递。Background 根据 `sender.tab` 是否存在区分来源（content script vs panel）。
 
-```typescript
-// Content Script → Background：请求 AI 分析
-{ type: 'ANALYZE_REQUEST', url: string, text: string }
+```
+// ── Content Script → Background ──────────────────────────────────────
 
-// Background → Content Script：AI 分析结果（仅 emotion）
-{ type: 'ANALYSIS_RESULT', highlights: [{ word, context, category }] }
-// Content Script 收到后合并客户端 generateTransitionHighlights() → articleHighlights
+// Emotion 词 AI 分析请求
+{ type: 'EMOTION_REQUEST', url: string, text: string }
 
-// Side Panel → Background → Content Script：设置变更
+// Sentence Labels AI 分析请求
+{ type: 'LABEL_REQUEST', sentences: string[] }
+
+// Topic Focus AI 分析请求（content script 提供文章文本）
+{ type: 'FOCUS_ANALYZE', topic: string, text: string }
+
+// ── Background → Content Script ──────────────────────────────────────
+
+// Emotion 词 AI 分析结果
+{ type: 'EMOTION_RESULT', highlights: [{ word, context, category }] }
+
+// Sentence Labels AI 分析结果
+{ type: 'LABEL_RESULT', labels: [{ index: number, type: 'argument'|'evidence'|'explanation' }] }
+
+// Topic Focus AI 分析结果
+{ type: 'FOCUS_RESULT', relevant: string[] }   // 相关句子的前 30 字符
+
+// ── Panel → Background → Content Script（Background 直接转发）────────
+
+// 设置变更
 { type: 'SETTINGS_CHANGED', payload: Partial<UserSettings> }
 
-// Content Script → Side Panel：Focus 关键词
+// Topic Focus 本地模式应用
 { type: 'FOCUS_APPLY', keywords: string[] }
+
+// Topic Focus 清除
 { type: 'FOCUS_CLEAR' }
+
+// Topic Focus AI 模式触发（Background 转发给 content script，由 content script 回发 FOCUS_ANALYZE）
+{ type: 'FOCUS_AI_REQUEST', topic: string }
 ```
 
 ---

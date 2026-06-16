@@ -99,6 +99,10 @@
         <span class="track"></span>
       </label>
       <span class="toggle-label">Emotion Colors</span>
+      <div class="mode-pill" id="emotion-mode-pill">
+        <button class="mode-btn active" data-feature="emotion" data-mode="local">Local</button>
+        <button class="mode-btn" data-feature="emotion" data-mode="ai">AI</button>
+      </div>
     </div>
 
     <div class="emotion-colors" id="emotion-colors">
@@ -134,6 +138,18 @@
 
     <div class="toggle-row">
       <label class="toggle-switch">
+        <input type="checkbox" id="toggle-labels">
+        <span class="track"></span>
+      </label>
+      <span class="toggle-label">Sentence Labels</span>
+      <div class="mode-pill" id="labels-mode-pill">
+        <button class="mode-btn active" data-feature="sentenceLabels" data-mode="local">Local</button>
+        <button class="mode-btn" data-feature="sentenceLabels" data-mode="ai">AI</button>
+      </div>
+    </div>
+
+    <div class="toggle-row">
+      <label class="toggle-switch">
         <input type="checkbox" id="toggle-ruler">
         <span class="track"></span>
       </label>
@@ -144,6 +160,15 @@
       <span class="sub-label">Window size</span>
       <input type="range" id="ruler-size-slider" min="1" max="10" step="0.5" value="1.5" class="slider">
       <span id="ruler-size-value" class="slider-value">1.5 lines</span>
+    </div>
+
+    <!-- Topic Focus -->
+    <div class="topic-focus-area">
+      <input type="text" id="topic-input" placeholder="Type a topic to focus on…">
+      <div class="topic-buttons">
+        <button id="topic-apply">Apply</button>
+        <button id="topic-clear">Clear</button>
+      </div>
     </div>
 
   </div>

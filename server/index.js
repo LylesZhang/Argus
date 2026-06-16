@@ -54,12 +54,12 @@ function chunkByParagraphs(text, parasPerChunk = 8) {
   return chunks;
 }
 
-async function callGemini(apiKey, text, budget) {
+async function callGemini(apiKey, prompt) {
   const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: PROMPT(text, budget) }] }],
+      contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         responseMimeType: 'application/json',
         maxOutputTokens: 4096,
@@ -101,7 +101,7 @@ app.post('/api/analyze', async (req, res) => {
 
     console.log(`[analyze] wordCount=${wordCount} totalBudget=${totalBudget} chunks=${chunks.length} chunkBudget=${chunkBudget}`);
 
-    const results    = await Promise.all(chunks.map(c => callGemini(apiKey, c, chunkBudget)));
+    const results    = await Promise.all(chunks.map(c => callGemini(apiKey, PROMPT(c, chunkBudget))));
 
     results.forEach((r, i) =>
       console.log(`[chunk ${i}] highlights=${r.highlights?.length ?? 'ERROR'}`)
@@ -112,6 +112,78 @@ app.post('/api/analyze', async (req, res) => {
     res.json({ highlights });
   } catch (err) {
     console.error('Server error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+const FOCUS_PROMPT = (text, topic) => `
+Article:
+<article>
+${text}
+</article>
+
+Topic: "${topic}"
+
+Return ONLY this JSON:
+{ "relevant": ["<first 30 chars of sentence>", ...] }
+
+List the first 30 characters of each sentence in the article that is
+semantically relevant to the topic "${topic}", even if it does not use the
+exact words. Include sentences that discuss related concepts, implications,
+or consequences of the topic.
+`.trim();
+
+app.post('/api/focus', async (req, res) => {
+  const { text, topic } = req.body;
+  if (!text || !topic) {
+    return res.status(400).json({ error: 'text and topic are required' });
+  }
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
+
+  try {
+    const clipped = text.slice(0, 60000);
+    const result  = await callGemini(apiKey, FOCUS_PROMPT(clipped, topic));
+    res.json(result);
+  } catch (err) {
+    console.error('Focus error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+const LABEL_PROMPT = (sentences) => `
+Classify each sentence by its rhetorical role. Only include sentences you are
+confident about — omit neutral or transitional ones.
+
+Sentences:
+${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
+
+Return ONLY this JSON:
+{
+  "labels": [
+    { "index": <number>, "type": "argument" | "evidence" | "explanation" }
+  ]
+}
+
+Definitions:
+- "argument"    — a claim, thesis, or opinion the author asserts
+- "evidence"    — specific facts, statistics, data, citations, or examples
+- "explanation" — explains a cause, mechanism, or meaning (why/how something works)
+`.trim();
+
+app.post('/api/label', async (req, res) => {
+  const { sentences } = req.body;
+  if (!Array.isArray(sentences) || sentences.length === 0) {
+    return res.status(400).json({ error: 'sentences array required' });
+  }
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
+
+  try {
+    const result = await callGemini(apiKey, LABEL_PROMPT(sentences));
+    res.json(result);
+  } catch (err) {
+    console.error('Label error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

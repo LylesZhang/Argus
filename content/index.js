@@ -40,6 +40,53 @@
     'on the condition that',
   ]);
 
+  const EMOTION_POSITIVE = new Set([
+    // Joy / Happiness
+    'joy','delight','elation','bliss','euphoria','jubilation','glee','cheerful','merry','ecstatic',
+    // Love / Connection
+    'love','adore','cherish','embrace','compassion','empathy','kindness','warmth','tender','affection',
+    // Hope / Optimism
+    'hope','optimism','inspiration','aspire','dream','vision','faith','belief','confidence','promise',
+    // Admiration / Pride
+    'proud','admire','celebrate','triumph','honor','remarkable','extraordinary','magnificent','outstanding','brilliant',
+    // Growth / Success
+    'thrive','flourish','breakthrough','achieve','progress','succeed','innovate','discover','heal','unite',
+    // General positive
+    'wonderful','amazing','incredible','fantastic','excellent','beautiful','glorious','grateful','courage','strength',
+  ]);
+
+  const EMOTION_NEGATIVE = new Set([
+    // Fear / Dread
+    'fear','dread','terror','horror','panic','fright','anxiety','nightmare','terrifying','horrific',
+    // Grief / Loss
+    'grief','sorrow','mourning','heartbreak','anguish','despair','desolate','tragic','tragedy','devastate',
+    // Anger / Hatred
+    'anger','rage','fury','hatred','hate','wrath','outrage','indignation','resentment','hostility',
+    // Pain / Suffering
+    'suffer','agony','torment','misery','pain','trauma','brutal','cruel','ruthless','savage',
+    // Violence / Destruction
+    'violence','destroy','collapse','ruin','catastrophe','disaster','crisis','devastation','atrocity','massacre',
+    // Injustice / Oppression
+    'abuse','betray','corrupt','injustice','oppression','discrimination','poverty','inequality','exploitation','shame',
+    // Loss / Failure
+    'loss','failure','defeat','hopeless','helpless','powerless','victim','casualty','threat','danger',
+  ]);
+
+  const EMOTION_COMPLEX = new Set([
+    // Ambivalence
+    'bittersweet','ambivalent','conflicted','mixed','paradox','ironic','contradictory','ambiguous',
+    // Uncertainty / Anxiety
+    'uncertain','uneasy','anxious','apprehensive','troubled','unsettled','precarious','fragile','vulnerable',
+    // Nostalgia / Longing
+    'nostalgia','wistful','longing','melancholy','wistfulness','yearning','reminisce','haunted',
+    // Complexity
+    'nuanced','complicated','dilemma','tension','controversial','fraught','delicate','sensitive','paradoxical',
+    // Resignation / Cynicism
+    'resigned','cynical','skeptical','disillusioned','weary','exhausted','sacrifice','compromise',
+    // Disturbing / Unsettling
+    'disturbing','troubling','perplexing','unsettling','disconcerting','harrowing','sobering','chilling',
+  ]);
+
   const STOP_WORDS = new Set([
     'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
     'from','up','about','into','is','are','was','were','be','been','being','have',
@@ -52,17 +99,48 @@
   ]);
 
 
+  // ── Font injection ─────────────────────────────────────────────────────
+
+  function injectOpenDyslexicFont() {
+    if (document.getElementById('dra-od-font')) return;
+    const style = document.createElement('style');
+    style.id = 'dra-od-font';
+    const base = chrome.runtime.getURL('fonts/');
+    style.textContent = `
+      @font-face {
+        font-family: 'OpenDyslexic';
+        src: url('${base}OpenDyslexic-Regular.otf') format('opentype');
+        font-weight: normal; font-style: normal;
+      }
+      @font-face {
+        font-family: 'OpenDyslexic';
+        src: url('${base}OpenDyslexic-Bold.otf') format('opentype');
+        font-weight: bold; font-style: normal;
+      }
+      @font-face {
+        font-family: 'OpenDyslexic';
+        src: url('${base}OpenDyslexic-Italic.otf') format('opentype');
+        font-weight: normal; font-style: italic;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   // ── Default settings & runtime state ──────────────────────────────────
   // These match the keys saved by the Side Panel (panel/panel.js).
   // chrome.storage.sync overwrites these on load.
 
   const DEFAULT_SETTINGS = {
-    typographyEnabled:    false,
-    readingAidsEnabled:   false,
-    boldBeginning:        false,
-    emotionColor:         false,
-    gradientRows:         false,
-    transitionAnimation:  false,
+    typographyEnabled:     false,
+    readingAidsEnabled:    false,
+    boldBeginning:         false,
+    emotionColor:          false,
+    emotionMode:           'local', // 'ai' | 'local'
+    gradientRows:          false,
+    transitionAnimation:   false,
+    sentenceLabels:        false,
+    sentenceLabelsMode:    'local', // 'ai' | 'local'
+    topicFocusMode:        'local', // 'ai' | 'local'
     fontSize:             null,   // null = don't override the page's font size
     lineHeight:           null,
     fontFamily:           null,
@@ -82,8 +160,9 @@
 
   let contentArea         = null;
   let lastRulerY          = null;
-  let aiAnalysisRequested = false;
-  let articleHighlights   = []; // per-occurrence annotations from AI
+  let emotionAIRequested  = false;
+  let aiEmotionHighlights = []; // AI emotion results, persisted across render() calls
+  let articleHighlights   = []; // merged highlights used by renderSentence
 
   // ── Content area detection ─────────────────────────────────────────────
   // Only includes platforms with verified stable selectors (non-hashed class names).
@@ -201,15 +280,25 @@
   function buildParagraphHTML(plainText) {
     const sentences = plainText.trim().split(/(?<=[.!?])\s+(?=[A-Z"'\[])/);
 
+    const badge = (s) => {
+      if (!settings.sentenceLabels) return '';
+      const trimmed = s.trim();
+      const idx   = allSentences.findIndex(as => as.slice(0, 25) === trimmed.slice(0, 25));
+      const label = sentenceLabels.find(l => l.index === idx);
+      return label
+        ? `<span class="dra-label dra-label-${label.type}">${label.type.toUpperCase()}</span>`
+        : '';
+    };
+
     if (settings.gradientRows) {
       return sentences.map((s, i) => {
         const cls = i % 2 === 0 ? 'dra-row-even' : 'dra-row-odd';
-        return `<div class="dra-sentence ${cls}">${renderSentence(s)}</div>`;
+        return `<div class="dra-sentence ${cls}">${renderSentence(s)}${badge(s)}</div>`;
       }).join('');
     }
 
     return sentences.map(s =>
-      `<span class="dra-sentence">${renderSentence(s)}</span>`
+      `<span class="dra-sentence">${renderSentence(s)}${badge(s)}</span>`
     ).join(' ');
   }
 
@@ -273,13 +362,28 @@
 
   function applyFocusMask(keywords) {
     document.querySelectorAll('.dra-sentence').forEach(el => {
-      el.style.opacity = scoreSentence(el.textContent, keywords) > 0 ? '1' : '0.2';
+      const focused = scoreSentence(el.textContent, keywords) > 0;
+      el.style.fontWeight = focused ? '700' : '';
+      el.style.color      = focused ? '' : '#aaa';
+      el.style.opacity    = '';
+    });
+  }
+
+  function applyFocusMaskByPrefixes(prefixes) {
+    document.querySelectorAll('.dra-sentence').forEach(el => {
+      const text    = el.textContent.trim().slice(0, 30);
+      const focused = prefixes.some(p => text.startsWith(p.slice(0, 25)));
+      el.style.fontWeight = focused ? '700' : '';
+      el.style.color      = focused ? '' : '#aaa';
+      el.style.opacity    = '';
     });
   }
 
   function clearFocusMask() {
     document.querySelectorAll('.dra-sentence').forEach(el => {
-      el.style.opacity = '';
+      el.style.fontWeight = '';
+      el.style.color      = '';
+      el.style.opacity    = '';
     });
   }
 
@@ -299,14 +403,100 @@
     return highlights;
   }
 
-  // ── AI analysis ───────────────────────────────────────────────────────
+  const LABEL_RULES = {
+    evidence: [
+      /for (example|instance)/i,
+      /according to/i,
+      /research (shows|suggests|finds|indicates)/i,
+      /studies (show|suggest|indicate|found)/i,
+      /data (shows|reveals|indicates|suggests)/i,
+      /\d+(\.\d+)?(\s?%| million| billion| thousand)/,
+      /evidence (shows|suggests|indicates)/i,
+      /survey(s)? (show|found|reveal)/i,
+      /report(s)? (show|found|reveal|indicate)/i,
+      /statistics (show|reveal)/i,
+    ],
+    argument: [
+      /\b(should|must|ought to|need to|have to)\b/i,
+      /it is (clear|evident|obvious|crucial|essential|imperative) that/i,
+      /\b(argue|contend|assert|claim|maintain|insist)\b/i,
+      /we (must|need|should|cannot|can no longer)/i,
+      /it is time to/i,
+      /the (solution|answer|key) (is|lies)/i,
+    ],
+    explanation: [
+      /\bbecause\b/i,
+      /this (means|causes|results in|leads to|explains)/i,
+      /as a result/i,
+      /due to (the|this|a)/i,
+      /explains (why|how)/i,
+      /the reason (is|why|for)/i,
+      /in other words/i,
+      /that is (to say)?/i,
+      /this (is because|occurs because|happens because)/i,
+    ],
+  };
 
-  function requestAIAnalysis() {
-    if (aiAnalysisRequested) return;
-    aiAnalysisRequested = true;
+  function generateEmotionHighlights() {
+    const area = findContentArea();
+    const text = area.innerText.toLowerCase();
+    const highlights = [];
+    for (const [words, category] of [
+      [EMOTION_POSITIVE, 'emotion-positive'],
+      [EMOTION_NEGATIVE, 'emotion-negative'],
+      [EMOTION_COMPLEX,  'emotion-complex'],
+    ]) {
+      for (const word of words) {
+        const esc = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const rx  = new RegExp(`(?<![a-zA-Z-])${esc}(?![a-zA-Z-])`);
+        if (rx.test(text)) highlights.push({ word, category });
+      }
+    }
+    return highlights;
+  }
+
+  // ── Sentence Labels ───────────────────────────────────────────────────
+
+  let sentenceLabels          = [];
+  let allSentences            = [];
+  let sentenceLabelsRequested = false;
+
+  function extractAllSentences() {
+    const area = findContentArea();
+    return area.innerText
+      .split(/\n+/).filter(p => p.trim().length > 20)
+      .flatMap(p => p.trim().split(/(?<=[.!?])\s+(?=[A-Z"'\[])/).filter(s => s.trim()));
+  }
+
+  function generateSentenceLabels() {
+    const sentences = extractAllSentences();
+    const labels = [];
+    sentences.forEach((s, i) => {
+      for (const [type, patterns] of Object.entries(LABEL_RULES)) {
+        if (patterns.some(rx => rx.test(s))) {
+          labels.push({ index: i, type });
+          break;
+        }
+      }
+    });
+    return labels;
+  }
+
+  // ── AI requests ───────────────────────────────────────────────────────
+
+  function requestEmotionAnalysis() {
+    if (emotionAIRequested) return;
+    emotionAIRequested = true;
     const area = findContentArea();
     const text = area.innerText.trim();
-    chrome.runtime.sendMessage({ type: 'ANALYZE_REQUEST', url: window.location.href, text });
+    chrome.runtime.sendMessage({ type: 'EMOTION_REQUEST', url: window.location.href, text });
+  }
+
+  function requestSentenceLabels() {
+    if (sentenceLabelsRequested) return;
+    sentenceLabelsRequested = true;
+    allSentences = extractAllSentences();
+    chrome.runtime.sendMessage({ type: 'LABEL_REQUEST', sentences: allSentences });
   }
 
 
@@ -327,6 +517,7 @@
       if (para.innerText.trim().length < 20) return;
 
       if (settings.typographyEnabled) {
+        injectOpenDyslexicFont();
         if (settings.fontSize)      para.style.fontSize     = settings.fontSize + 'px';
         if (settings.lineHeight)    para.style.lineHeight   = String(settings.lineHeight);
         if (settings.fontFamily)    para.style.fontFamily   = settings.fontFamily;
@@ -368,11 +559,29 @@
   function render() {
     removeTransformations();
 
+    if (settings.readingAidsEnabled) {
+      // Build highlights before applyTransformations so renderSentence has data
+      const transitionHL = settings.transitionAnimation ? generateTransitionHighlights() : [];
+      const emotionHL    = !settings.emotionColor ? [] :
+        settings.emotionMode === 'local' ? generateEmotionHighlights() : aiEmotionHighlights;
+      articleHighlights = [...emotionHL, ...transitionHL];
+
+      if (settings.sentenceLabels) {
+        allSentences = extractAllSentences();
+        if (settings.sentenceLabelsMode === 'local') {
+          sentenceLabels = generateSentenceLabels();
+        }
+      }
+
+      const needsEmotionAI = settings.emotionColor   && settings.emotionMode        === 'ai';
+      const needsLabelsAI  = settings.sentenceLabels  && settings.sentenceLabelsMode  === 'ai';
+      if (needsEmotionAI) requestEmotionAnalysis();
+      if (needsLabelsAI)  requestSentenceLabels();
+    }
+
     if (settings.typographyEnabled || settings.readingAidsEnabled) {
       applyTransformations();
     }
-
-    if (settings.readingAidsEnabled) requestAIAnalysis();
   }
 
   // ── Bootstrap ─────────────────────────────────────────────────────────
@@ -402,11 +611,31 @@
       clearFocusMask();
     }
 
-    if (msg.type === 'ANALYSIS_RESULT') {
-      const emotionHighlights    = (msg.highlights || []).filter(h => h.category !== 'transition');
-      const transitionHighlights = generateTransitionHighlights();
-      articleHighlights = [...emotionHighlights, ...transitionHighlights];
+    if (msg.type === 'LABEL_RESULT') {
+      sentenceLabels = msg.labels || [];
       render();
+    }
+
+    if (msg.type === 'FOCUS_AI_REQUEST') {
+      // Provide article text to background so it can call /api/focus
+      const area = findContentArea();
+      chrome.runtime.sendMessage({
+        type:  'FOCUS_ANALYZE',
+        topic: msg.topic,
+        text:  area.innerText.trim(),
+      });
+    }
+
+    if (msg.type === 'FOCUS_RESULT') {
+      applyFocusMaskByPrefixes(msg.relevant || []);
+    }
+
+    if (msg.type === 'EMOTION_RESULT') {
+      if (settings.emotionMode === 'ai') {
+        aiEmotionHighlights = (msg.highlights || []).filter(h => h.category !== 'transition');
+        render();
+      }
+      // Local mode: ignore AI result, render() already ran with local word lists
     }
   });
 
