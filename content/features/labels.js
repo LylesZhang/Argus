@@ -57,8 +57,9 @@ export function generateSentenceLabels() {
 }
 
 export function requestSentenceLabels() {
-  if (state.sentenceLabelsRequested) return;
-  state.sentenceLabelsRequested = true;
+  if (state.sentenceLabelsInProgress)      return;
+  if (state.aiSentenceLabels.length > 0)   return;
+  state.sentenceLabelsInProgress = true;
   state.allSentences = extractAllSentences();
   chrome.runtime.sendMessage({ type: 'LABEL_REQUEST', sentences: state.allSentences });
 }

@@ -67,8 +67,9 @@ export function generateEmotionHighlights() {
 }
 
 export function requestEmotionAnalysis() {
-  if (state.emotionAIRequested) return;
-  state.emotionAIRequested = true;
+  if (state.emotionAIInProgress)            return;
+  if (state.aiEmotionHighlights.length > 0) return;
+  state.emotionAIInProgress = true;
   const area = findContentArea();
   chrome.runtime.sendMessage({ type: 'EMOTION_REQUEST', url: window.location.href, text: area.innerText.trim() });
 }

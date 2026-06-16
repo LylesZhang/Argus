@@ -41,8 +41,14 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'LABEL_RESULT') {
-    state.sentenceLabels = msg.labels || [];
+    state.sentenceLabelsInProgress = false;
+    state.aiSentenceLabels         = msg.labels || [];
+    state.sentenceLabels           = state.aiSentenceLabels;
     render();
+  }
+
+  if (msg.type === 'LABEL_ERROR') {
+    state.sentenceLabelsInProgress = false;
   }
 
   if (msg.type === 'FOCUS_AI_REQUEST') {
@@ -59,9 +65,12 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'EMOTION_RESULT') {
-    if (state.settings.emotionMode === 'ai') {
-      state.aiEmotionHighlights = (msg.highlights || []).filter(h => h.category !== 'transition');
-      render();
-    }
+    state.emotionAIInProgress = false;
+    state.aiEmotionHighlights = msg.highlights || [];
+    render();
+  }
+
+  if (msg.type === 'EMOTION_ERROR') {
+    state.emotionAIInProgress = false;
   }
 });

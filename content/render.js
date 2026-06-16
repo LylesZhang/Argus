@@ -158,6 +158,8 @@ export function render() {
       state.allSentences = extractAllSentences();
       if (state.settings.sentenceLabelsMode === 'local') {
         state.sentenceLabels = generateSentenceLabels();
+      } else {
+        state.sentenceLabels = state.aiSentenceLabels;
       }
     }
 
