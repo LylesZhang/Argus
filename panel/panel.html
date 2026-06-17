@@ -119,6 +119,7 @@
           <span class="track"></span>
         </label>
         <span class="toggle-label">Row Shading</span>
+        <input type="color" id="row-shading-color" value="#64b4f0" class="row-shading-color-input">
       </div>
       <div class="toggle-row">
         <label class="toggle-switch">
@@ -129,7 +130,7 @@
       </div>
     </div>
 
-    <div class="toggle-row ruler-row">
+    <div class="toggle-row ruler-row" id="ruler-size-control">
       <label class="toggle-switch">
         <input type="checkbox" id="toggle-ruler">
         <span class="track"></span>
@@ -179,15 +180,15 @@
     </div>
 
     <!-- Topic Focus -->
-    <div class="section-label">
+    <div class="section-label topic-focus-header">
       <span>Topic Focus</span>
-    </div>
-
-    <div class="topic-focus-area">
       <div class="mode-pill" id="topic-focus-mode-pill">
         <button class="mode-btn active" data-feature="topicFocus" data-mode="local">Local</button>
         <button class="mode-btn"        data-feature="topicFocus" data-mode="ai">AI</button>
       </div>
+    </div>
+
+    <div class="topic-focus-area">
       <input type="text" id="topic-input" placeholder="Type a topic to focus on…">
       <div class="topic-buttons">
         <button id="topic-apply">Apply</button>

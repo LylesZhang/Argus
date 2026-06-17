@@ -5,6 +5,7 @@ export const DEFAULT_SETTINGS = {
   emotionColor:          false,
   emotionMode:           'local', // 'ai' | 'local'
   gradientRows:          false,
+  rowShadingColor:       '#bfb3d0',
   transitionAnimation:   false,
   sentenceLabels:        false,
   sentenceLabelsMode:    'local', // 'ai' | 'local'

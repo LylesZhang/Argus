@@ -12,6 +12,7 @@ const DEFAULT_SETTINGS = {
   emotionColor:          false,
   emotionMode:           'local',
   gradientRows:          false,
+  rowShadingColor:       '#bfb3d0',
   transitionAnimation:   false,
   sentenceLabels:        false,
   sentenceLabelsMode:    'local',
@@ -63,6 +64,8 @@ function syncUI() {
 
   document.getElementById('font-color').value         = settings.fontColor;
   document.getElementById('bg-color').value           = settings.bgColor;
+  document.getElementById('row-shading-color').value  = settings.rowShadingColor;
+  document.getElementById('row-shading-color').classList.toggle('is-inactive', !settings.gradientRows);
   document.getElementById('emotion-positive-color').value = settings.emotionPositiveColor;
   document.getElementById('emotion-negative-color').value = settings.emotionNegativeColor;
   document.getElementById('emotion-complex-color').value = settings.emotionComplexColor;
@@ -152,6 +155,7 @@ function init() {
 
   document.getElementById('toggle-gradient').addEventListener('change', e => {
     enableReadingAidIfNeeded(e.target.checked);
+    document.getElementById('row-shading-color').classList.toggle('is-inactive', !e.target.checked);
     broadcast({ gradientRows: e.target.checked });
   });
 
@@ -295,6 +299,12 @@ function init() {
   document.getElementById('bg-color').addEventListener('input', e => {
     enableTypographyIfNeeded();
     broadcast({ bgColor: e.target.value });
+  });
+  document.getElementById('row-shading-color').addEventListener('input', e => {
+    enableReadingAidIfNeeded(true);
+    document.getElementById('toggle-gradient').checked = true;
+    document.getElementById('row-shading-color').classList.remove('is-inactive');
+    broadcast({ gradientRows: true, rowShadingColor: e.target.value });
   });
   document.getElementById('emotion-positive-color').addEventListener('input', e => {
     broadcast({ emotionPositiveColor: e.target.value });

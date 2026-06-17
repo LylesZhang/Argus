@@ -97,6 +97,7 @@ function applyTransformations() {
   document.documentElement.style.setProperty('--dra-positive', state.settings.emotionPositiveColor);
   document.documentElement.style.setProperty('--dra-negative', state.settings.emotionNegativeColor);
   document.documentElement.style.setProperty('--dra-complex',  state.settings.emotionComplexColor);
+  document.documentElement.style.setProperty('--dra-row-shading', state.settings.rowShadingColor);
 
   // Apply per-element styles (child elements often override contentArea-level styles)
   state.contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
