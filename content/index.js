@@ -30,7 +30,8 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'FOCUS_APPLY' && msg.keywords?.length) {
-    state.topicFocusKeywords = msg.keywords;
+    state.topicFocusAIPrefixes = null;
+    state.topicFocusKeywords   = msg.keywords;
     render();
   }
 
@@ -53,6 +54,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'FOCUS_AI_REQUEST') {
+    state.topicFocusKeywords = null;
     const area = findContentArea();
     chrome.runtime.sendMessage({
       type:  'FOCUS_ANALYZE',
