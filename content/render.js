@@ -63,8 +63,29 @@ function renderSentence(s) {
   return result;
 }
 
+const ABBR = new Set([
+  'mr','mrs','ms','dr','prof','rev','sen','rep','gov',
+  'gen','lt','col','sgt','capt','adm',
+  'st','mt','ave','blvd','rd',
+  'jan','feb','mar','apr','jun','jul','aug','sep','oct','nov','dec',
+  'vs','etc','approx','no','vol',
+]);
+
+function splitSentences(text) {
+  const result = [];
+  let start = 0;
+  for (const m of text.matchAll(/(?<=[.!?])(\s+)(?=[A-Z"'\[])/g)) {
+    const word = text.slice(0, m.index).match(/([a-zA-Z]+)[.!?]$/)?.[1] ?? '';
+    if (/^[A-Z]$/.test(word) || ABBR.has(word.toLowerCase())) continue;
+    result.push(text.slice(start, m.index));
+    start = m.index + m[1].length;
+  }
+  result.push(text.slice(start));
+  return result;
+}
+
 function buildParagraphHTML(plainText) {
-  const sentences = plainText.trim().split(/(?<=[.!?])\s+(?=[A-Z"'\[])/) ;
+  const sentences = splitSentences(plainText.trim());
 
   const badge = (s) => {
     if (!state.settings.sentenceLabels) return '';
@@ -75,13 +96,6 @@ function buildParagraphHTML(plainText) {
       ? `<span class="dra-label dra-label-${label.type}">${label.type.toUpperCase()}</span>`
       : '';
   };
-
-  if (state.settings.gradientRows) {
-    return sentences.map((s, i) => {
-      const cls = i % 2 === 0 ? 'dra-row-even' : 'dra-row-odd';
-      return `<div class="dra-sentence ${cls}">${renderSentence(s)}${badge(s)}</div>`;
-    }).join(' ');
-  }
 
   return sentences.map(s =>
     `<span class="dra-sentence">${renderSentence(s)}${badge(s)}</span>`
@@ -184,7 +198,7 @@ function applyTransformations() {
     }
 
     const needsSentenceWrap = state.settings.emotionColor ||
-                              state.settings.gradientRows  || state.settings.transitionAnimation ||
+                              state.settings.transitionAnimation ||
                               state.settings.sentenceLabels;
     const shouldWrap = (state.settings.readingAidsEnabled && needsSentenceWrap) ||
                        (state.settings.typographyEnabled && state.settings.boldBeginning) ||
@@ -196,6 +210,14 @@ function applyTransformations() {
       const annotations = extractInlineAnnotations(originalHTML);
       const rendered    = buildParagraphHTML(para.innerText);
       para.innerHTML    = reInjectAnnotations(rendered, annotations);
+    }
+
+    if (state.settings.readingAidsEnabled && state.settings.gradientRows) {
+      const lh = parseFloat(getComputedStyle(para).lineHeight);
+      para.style.backgroundImage = `repeating-linear-gradient(to bottom,`
+        + ` color-mix(in srgb, var(--dra-row-shading) 18%, transparent) 0px,`
+        + ` color-mix(in srgb, var(--dra-row-shading) 18%, transparent) ${lh}px,`
+        + ` transparent ${lh}px, transparent ${lh * 2}px)`;
     }
   });
 
@@ -212,7 +234,7 @@ function removeTransformations() {
 
   state.contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
     if (state.originalHTML.has(para)) para.innerHTML = state.originalHTML.get(para);
-    ['fontSize', 'lineHeight', 'fontFamily', 'wordSpacing', 'letterSpacing', 'color'].forEach(prop => {
+    ['fontSize', 'lineHeight', 'fontFamily', 'wordSpacing', 'letterSpacing', 'color', 'backgroundImage'].forEach(prop => {
       para.style[prop] = '';
     });
   });

@@ -38,21 +38,6 @@
   border-bottom: 2px solid rgba(36, 113, 163, 0.4);
 }
 
-/* ── Row Shading ─────────────────────────────────────────────────────── */
-
-.dra-row-even {
-  display: block;
-  background: color-mix(in srgb, var(--dra-row-shading, #64b4f0) 18%, transparent);
-  padding: 3px 6px;
-  border-radius: 4px;
-  margin: 1px -6px;
-}
-
-.dra-row-odd {
-  display: block;
-  padding: 3px 6px;
-  margin: 1px -6px;
-}
 
 /* ── Focus Mask ──────────────────────────────────────────────────────── */
 
