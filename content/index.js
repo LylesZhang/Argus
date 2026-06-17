@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS } from './settings.js';
 import { state } from './state.js';
 import { render } from './render.js';
 import { findContentArea } from './detect.js';
-import { applyFocusMask, applyFocusMaskByPrefixes, clearFocusMask } from './features/topicFocus.js';
+import { clearFocusMask } from './features/topicFocus.js';
 
 // ── Bootstrap ──────────────────────────────────────────────────────────
 
@@ -35,7 +35,8 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'FOCUS_CLEAR') {
-    state.topicFocusKeywords = null;
+    state.topicFocusKeywords  = null;
+    state.topicFocusAIPrefixes = null;
     clearFocusMask();
     render();
   }
@@ -61,7 +62,13 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'FOCUS_RESULT') {
-    applyFocusMaskByPrefixes(msg.relevant || []);
+    state.topicFocusAIPrefixes = msg.relevant || [];
+    render();
+  }
+
+  if (msg.type === 'FOCUS_ERROR') {
+    state.topicFocusAIPrefixes = null;
+    clearFocusMask();
   }
 
   if (msg.type === 'EMOTION_RESULT') {

@@ -84,17 +84,18 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     }
 
     if (msg.type === 'FOCUS_ANALYZE') {
-      fetch('http://localhost:3000/api/focus', {
+      withTimeout(fetch('http://localhost:3000/api/focus', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: msg.text, topic: msg.topic }),
-      })
+      }))
         .then(r => r.ok ? r.json() : null)
         .catch(() => null)
         .then(result => {
-          if (result?.relevant) {
-            chrome.tabs.sendMessage(sender.tab.id, { type: 'FOCUS_RESULT', relevant: result.relevant });
-          }
+          const type = result?.relevant ? 'FOCUS_RESULT' : 'FOCUS_ERROR';
+          chrome.tabs.sendMessage(sender.tab.id,
+            result?.relevant ? { type, relevant: result.relevant } : { type }
+          );
         });
     }
 

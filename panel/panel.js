@@ -74,7 +74,7 @@ function syncUI() {
   document.getElementById('toggle-labels').checked = settings.sentenceLabels;
 
   // Sync mode pills to stored settings
-  [['emotion', settings.emotionMode], ['sentenceLabels', settings.sentenceLabelsMode]].forEach(([feature, mode]) => {
+  [['emotion', settings.emotionMode], ['sentenceLabels', settings.sentenceLabelsMode], ['topicFocus', settings.topicFocusMode]].forEach(([feature, mode]) => {
     document.querySelectorAll(`[data-feature="${feature}"]`).forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });

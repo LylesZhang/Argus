@@ -6,7 +6,7 @@ import { generateEmotionHighlights, requestEmotionAnalysis } from './features/em
 import { generateTransitionHighlights } from './features/transitions.js';
 import { extractAllSentences, generateSentenceLabels, requestSentenceLabels } from './features/labels.js';
 import { setupRuler, teardownRuler } from './features/ruler.js';
-import { applyFocusMask } from './features/topicFocus.js';
+import { applyFocusMask, applyFocusMaskByPrefixes } from './features/topicFocus.js';
 
 // ── Sentence rendering ─────────────────────────────────────────────────
 
@@ -114,8 +114,11 @@ function applyTransformations() {
 
     const needsSentenceWrap = state.settings.boldBeginning || state.settings.emotionColor ||
                               state.settings.gradientRows  || state.settings.transitionAnimation ||
-                              state.settings.sentenceLabels || state.topicFocusKeywords !== null;
-    if (state.settings.readingAidsEnabled && needsSentenceWrap && !hasEmbeddedContent(para)) {
+                              state.settings.sentenceLabels;
+    const shouldWrap = (state.settings.readingAidsEnabled && needsSentenceWrap) ||
+                       state.topicFocusKeywords !== null ||
+                       state.topicFocusAIPrefixes !== null;
+    if (shouldWrap && !hasEmbeddedContent(para)) {
       if (!state.originalHTML.has(para)) state.originalHTML.set(para, para.innerHTML);
       para.innerHTML = buildParagraphHTML(para.innerText);
     }
@@ -169,10 +172,13 @@ export function render() {
     if (needsLabelsAI)  requestSentenceLabels();
   }
 
-  if (state.settings.typographyEnabled || state.settings.readingAidsEnabled || state.topicFocusKeywords) {
+  if (state.settings.typographyEnabled || state.settings.readingAidsEnabled ||
+      state.topicFocusKeywords || state.topicFocusAIPrefixes) {
     applyTransformations();
   }
   if (state.topicFocusKeywords) {
     applyFocusMask(state.topicFocusKeywords);
+  } else if (state.topicFocusAIPrefixes) {
+    applyFocusMaskByPrefixes(state.topicFocusAIPrefixes);
   }
 }

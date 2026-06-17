@@ -11,6 +11,7 @@ export const state = {
   aiSentenceLabels:         [],
   articleHighlights:        [],
   topicFocusKeywords:       null,
+  topicFocusAIPrefixes:     null,
   sentenceLabels:           [],
   allSentences:             [],
 };
