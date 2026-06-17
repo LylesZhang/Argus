@@ -80,12 +80,82 @@ function buildParagraphHTML(plainText) {
     return sentences.map((s, i) => {
       const cls = i % 2 === 0 ? 'dra-row-even' : 'dra-row-odd';
       return `<div class="dra-sentence ${cls}">${renderSentence(s)}${badge(s)}</div>`;
-    }).join('');
+    }).join(' ');
   }
 
   return sentences.map(s =>
     `<span class="dra-sentence">${renderSentence(s)}${badge(s)}</span>`
   ).join(' ');
+}
+
+// ── Inline HTML preservation ───────────────────────────────────────────
+
+const INLINE_TAGS = new Set([
+  'a', 'abbr', 'b', 'bdi', 'cite', 'code', 'data', 'del', 'dfn', 'em',
+  'i', 'ins', 'kbd', 'mark', 'q', 's', 'samp', 'small', 'span', 'strong',
+  'sub', 'sup', 'time', 'u', 'var',
+]);
+
+// Scan original innerHTML and record each inline tag's position in plain text.
+// Uses DOM tree traversal so <br> and whitespace normalization match innerText.
+function extractInlineAnnotations(innerHTML) {
+  const container = document.createElement('div');
+  container.innerHTML = innerHTML;
+
+  const annotations = [];
+  let textPos = 0;
+
+  function walk(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      textPos += node.textContent.replace(/[ \t\r\n]+/g, ' ').length;
+      return;
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return;
+    const name = node.tagName.toLowerCase();
+    if (name === 'br') { textPos++; return; }
+    if (INLINE_TAGS.has(name)) {
+      const openTag = node.outerHTML.match(/^<[^>]+>/)?.[0] ?? `<${name}>`;
+      annotations.push({ textPos, tag: openTag });
+      for (const child of node.childNodes) walk(child);
+      annotations.push({ textPos, tag: `</${name}>` });
+    } else {
+      for (const child of node.childNodes) walk(child);
+    }
+  }
+
+  for (const child of container.childNodes) walk(child);
+  return annotations;
+}
+
+// Re-inject extracted inline tags into the rendered HTML at the matching
+// plain-text positions. Processes tags from end to start so earlier positions
+// stay valid after each insertion.
+function reInjectAnnotations(renderedHTML, annotations) {
+  if (!annotations.length) return renderedHTML;
+
+  // Map plain-text char index → byte offset in renderedHTML (skips tag markup).
+  const textToHtmlPos = [];
+  let inTag = false;
+  for (let i = 0; i < renderedHTML.length; i++) {
+    const c = renderedHTML[i];
+    if (c === '<') { inTag = true; continue; }
+    if (c === '>') { inTag = false; continue; }
+    if (!inTag) textToHtmlPos.push(i);
+  }
+
+  // Sort: higher textPos first; ties broken by higher original index first
+  // so that after back-to-front insertion the original left-to-right order
+  // is restored (later-inserted tag ends up earlier in the string).
+  const sorted = annotations
+    .map((a, idx) => ({ ...a, idx }))
+    .sort((a, b) => b.textPos - a.textPos || b.idx - a.idx);
+
+  let result = renderedHTML;
+  for (const { textPos, tag } of sorted) {
+    const htmlPos = textPos < textToHtmlPos.length ? textToHtmlPos[textPos] : result.length;
+    result = result.slice(0, htmlPos) + tag + result.slice(htmlPos);
+  }
+  return result;
 }
 
 // ── DOM transformations ────────────────────────────────────────────────
@@ -121,8 +191,11 @@ function applyTransformations() {
                        state.topicFocusKeywords !== null ||
                        state.topicFocusAIPrefixes !== null;
     if (shouldWrap && !hasEmbeddedContent(para)) {
-      if (!state.originalHTML.has(para)) state.originalHTML.set(para, para.innerHTML);
-      para.innerHTML = buildParagraphHTML(para.innerText);
+      const originalHTML = para.innerHTML;
+      if (!state.originalHTML.has(para)) state.originalHTML.set(para, originalHTML);
+      const annotations = extractInlineAnnotations(originalHTML);
+      const rendered    = buildParagraphHTML(para.innerText);
+      para.innerHTML    = reInjectAnnotations(rendered, annotations);
     }
   });
 
