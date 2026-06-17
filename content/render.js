@@ -112,10 +112,11 @@ function applyTransformations() {
       if (state.settings.fontColor)     para.style.color         = state.settings.fontColor;
     }
 
-    const needsSentenceWrap = state.settings.boldBeginning || state.settings.emotionColor ||
+    const needsSentenceWrap = state.settings.emotionColor ||
                               state.settings.gradientRows  || state.settings.transitionAnimation ||
                               state.settings.sentenceLabels;
     const shouldWrap = (state.settings.readingAidsEnabled && needsSentenceWrap) ||
+                       (state.settings.typographyEnabled && state.settings.boldBeginning) ||
                        state.topicFocusKeywords !== null ||
                        state.topicFocusAIPrefixes !== null;
     if (shouldWrap && !hasEmbeddedContent(para)) {

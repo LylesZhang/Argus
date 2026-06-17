@@ -70,7 +70,6 @@ function syncUI() {
   document.getElementById('ruler-size-value').textContent = settings.rulerWindowLines.toFixed(1) + ' lines';
 
   document.getElementById('emotion-colors').classList.toggle('active', settings.emotionColor);
-  document.getElementById('ruler-size-control').classList.toggle('active', settings.rulerActive);
   document.getElementById('toggle-labels').checked = settings.sentenceLabels;
 
   // Sync mode pills to stored settings
@@ -99,8 +98,10 @@ function init() {
       document.getElementById('letter-spacing-value').textContent   = '0.00';
       document.getElementById('font-color').value                   = '#2c2c2c';
       document.getElementById('bg-color').value                     = '#ffffff';
+      document.getElementById('toggle-bold').checked                = false;
       broadcast({
         typographyEnabled: false,
+        boldBeginning: false,
         fontSize: null, lineHeight: null, fontFamily: null,
         wordSpacing: 0, letterSpacing: 0,
         fontColor: '#2c2c2c', bgColor: '#ffffff',
@@ -113,17 +114,15 @@ function init() {
   document.getElementById('toggle-reading-aids').addEventListener('change', e => {
     const enabled = e.target.checked;
     if (!enabled) {
-      document.getElementById('toggle-bold').checked       = false;
       document.getElementById('toggle-emotion').checked    = false;
       document.getElementById('toggle-gradient').checked   = false;
       document.getElementById('toggle-transition').checked = false;
       document.getElementById('toggle-labels').checked     = false;
       document.getElementById('toggle-ruler').checked      = false;
       document.getElementById('emotion-colors').classList.remove('active');
-      document.getElementById('ruler-size-control').classList.remove('active');
       broadcast({
         readingAidsEnabled: false,
-        boldBeginning: false, emotionColor: false,
+        emotionColor: false,
         gradientRows: false,  transitionAnimation: false,
         sentenceLabels: false, rulerActive: false,
       });
@@ -141,7 +140,7 @@ function init() {
   }
 
   document.getElementById('toggle-bold').addEventListener('change', e => {
-    enableReadingAidIfNeeded(e.target.checked);
+    enableTypographyIfNeeded();
     broadcast({ boldBeginning: e.target.checked });
   });
 

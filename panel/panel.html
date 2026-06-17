@@ -21,13 +21,22 @@
 
     <div class="control-block">
       <label class="control-label">Font</label>
-      <select id="font-family" class="font-select">
-        <option value="">System Default</option>
-        <option value="Georgia">Georgia</option>
-        <option value="Arial">Arial</option>
-        <option value="Verdana">Verdana</option>
-        <option value="OpenDyslexic, sans-serif">OpenDyslexic</option>
-      </select>
+      <div class="font-row">
+        <select id="font-family" class="font-select">
+          <option value="">System Default</option>
+          <option value="Georgia">Georgia</option>
+          <option value="Arial">Arial</option>
+          <option value="Verdana">Verdana</option>
+          <option value="OpenDyslexic, sans-serif">OpenDyslexic</option>
+        </select>
+        <div class="bionic-toggle">
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-bold">
+            <span class="track"></span>
+          </label>
+          <span class="bionic-label">Bionic Effect</span>
+        </div>
+      </div>
     </div>
 
     <div class="control-row">
@@ -106,13 +115,6 @@
     <div class="toggle-grid">
       <div class="toggle-row">
         <label class="toggle-switch">
-          <input type="checkbox" id="toggle-bold">
-          <span class="track"></span>
-        </label>
-        <span class="toggle-label">Bold Beginnings</span>
-      </div>
-      <div class="toggle-row">
-        <label class="toggle-switch">
           <input type="checkbox" id="toggle-gradient">
           <span class="track"></span>
         </label>
@@ -125,18 +127,15 @@
         </label>
         <span class="toggle-label">Transition Words</span>
       </div>
-      <div class="toggle-row">
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-ruler">
-          <span class="track"></span>
-        </label>
-        <span class="toggle-label">Reading Ruler</span>
-      </div>
     </div>
 
-    <div class="ruler-size" id="ruler-size-control">
-      <span class="sub-label">Window size</span>
-      <input type="range" id="ruler-size-slider" min="1" max="10" step="0.5" value="1.5" class="slider">
+    <div class="toggle-row ruler-row">
+      <label class="toggle-switch">
+        <input type="checkbox" id="toggle-ruler">
+        <span class="track"></span>
+      </label>
+      <span class="toggle-label">Reading Ruler</span>
+      <input type="range" id="ruler-size-slider" min="1" max="10" step="0.5" value="1.5" class="slider ruler-slider">
       <span id="ruler-size-value" class="slider-value">1.5 lines</span>
     </div>
 

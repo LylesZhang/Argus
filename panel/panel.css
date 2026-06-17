@@ -71,6 +71,31 @@ body {
   color: var(--muted);
 }
 
+/* Font row: select + bionic toggle side by side */
+.font-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.font-row .font-select { flex: 1; }
+
+.bionic-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.bionic-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 /* Font select */
 .font-select {
   width: 100%;
@@ -254,20 +279,12 @@ body {
   background: #fff;
 }
 
-/* ── Ruler size sub-panel ────────────────────────────────────────────── */
+/* ── Ruler inline row ────────────────────────────────────────────────── */
 
-.ruler-size {
-  padding: 4px 16px 8px 70px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  opacity: 0.3;
-  pointer-events: none;
-  transition: opacity 0.2s;
-}
-.ruler-size.active { opacity: 1; pointer-events: auto; }
-
-.sub-label { font-size: 12px; color: #666; }
+.ruler-row { border-top: 1px solid var(--border); }
+.ruler-row .toggle-label { flex: 1; }
+.ruler-slider { width: 75px; flex-shrink: 0; }
+.ruler-row .slider-value { white-space: nowrap; flex-shrink: 0; }
 
 /* ── AI / Local mode pill ────────────────────────────────────────────── */
 
