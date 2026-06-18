@@ -1,7 +1,7 @@
 import { findContentArea } from '../detect.js';
 import { state } from '../state.js';
 
-const EMOTION_POSITIVE = new Set([
+export const DEFAULT_EMOTION_POSITIVE = [
   // Joy / Happiness
   'joy','delight','elation','bliss','euphoria','jubilation','glee','cheerful','merry','ecstatic',
   // Love / Connection
@@ -14,9 +14,9 @@ const EMOTION_POSITIVE = new Set([
   'thrive','flourish','breakthrough','achieve','progress','succeed','innovate','discover','heal','unite',
   // General positive
   'wonderful','amazing','incredible','fantastic','excellent','beautiful','glorious','grateful','courage','strength',
-]);
+];
 
-const EMOTION_NEGATIVE = new Set([
+export const DEFAULT_EMOTION_NEGATIVE = [
   // Fear / Dread
   'fear','dread','terror','horror','panic','fright','anxiety','nightmare','terrifying','horrific',
   // Grief / Loss
@@ -31,9 +31,9 @@ const EMOTION_NEGATIVE = new Set([
   'abuse','betray','corrupt','injustice','oppression','discrimination','poverty','inequality','exploitation','shame',
   // Loss / Failure
   'loss','failure','defeat','hopeless','helpless','powerless','victim','casualty','threat','danger',
-]);
+];
 
-const EMOTION_COMPLEX = new Set([
+export const DEFAULT_EMOTION_COMPLEX = [
   // Ambivalence
   'bittersweet','ambivalent','conflicted','mixed','paradox','ironic','contradictory','ambiguous',
   // Uncertainty / Anxiety
@@ -46,16 +46,21 @@ const EMOTION_COMPLEX = new Set([
   'resigned','cynical','skeptical','disillusioned','weary','exhausted','sacrifice','compromise',
   // Disturbing / Unsettling
   'disturbing','troubling','perplexing','unsettling','disconcerting','harrowing','sobering','chilling',
-]);
+];
 
 export function generateEmotionHighlights() {
+  const pos = state.wordLists.emotionPositive ?? DEFAULT_EMOTION_POSITIVE;
+  const neg = state.wordLists.emotionNegative ?? DEFAULT_EMOTION_NEGATIVE;
+  const cmp = state.wordLists.emotionComplex  ?? DEFAULT_EMOTION_COMPLEX;
+
   const area = findContentArea();
   const text = area.innerText.toLowerCase();
   const highlights = [];
+
   for (const [words, category] of [
-    [EMOTION_POSITIVE, 'emotion-positive'],
-    [EMOTION_NEGATIVE, 'emotion-negative'],
-    [EMOTION_COMPLEX,  'emotion-complex'],
+    [pos, 'emotion-positive'],
+    [neg, 'emotion-negative'],
+    [cmp, 'emotion-complex'],
   ]) {
     for (const word of words) {
       const esc = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

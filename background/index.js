@@ -110,10 +110,11 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     });
   };
 
-  if (msg.type === 'SETTINGS_CHANGED')  forwardToActiveTab();
-  if (msg.type === 'FOCUS_APPLY')       forwardToActiveTab();
-  if (msg.type === 'FOCUS_CLEAR')       forwardToActiveTab();
-  if (msg.type === 'FOCUS_AI_REQUEST')  forwardToActiveTab();
+  if (msg.type === 'SETTINGS_CHANGED')   forwardToActiveTab();
+  if (msg.type === 'FOCUS_APPLY')        forwardToActiveTab();
+  if (msg.type === 'FOCUS_CLEAR')        forwardToActiveTab();
+  if (msg.type === 'FOCUS_AI_REQUEST')   forwardToActiveTab();
+  if (msg.type === 'WORDLISTS_CHANGED')  forwardToActiveTab();
 });
 
 // ── Side Panel opener ──────────────────────────────────────────────────

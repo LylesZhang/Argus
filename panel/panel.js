@@ -377,12 +377,100 @@ function init() {
   });
 }
 
+// ── Word list editor ───────────────────────────────────────────────────
+
+const DEFAULT_WORD_LISTS = {
+  emotionPositive: null,
+  emotionNegative: null,
+  emotionComplex:  null,
+  transition:      null,
+};
+
+let wordLists = { ...DEFAULT_WORD_LISTS };
+
+const WL_CONFIG = [
+  { key: 'emotionPositive', chipsId: 'wl-emotion-positive', inputId: 'wl-add-positive', btnId: 'wl-add-positive-btn' },
+  { key: 'emotionNegative', chipsId: 'wl-emotion-negative', inputId: 'wl-add-negative', btnId: 'wl-add-negative-btn' },
+  { key: 'emotionComplex',  chipsId: 'wl-emotion-complex',  inputId: 'wl-add-complex',  btnId: 'wl-add-complex-btn'  },
+  { key: 'transition',      chipsId: 'wl-transition',       inputId: 'wl-add-transition',btnId: 'wl-add-transition-btn' },
+];
+
+function renderChips(key, chipsId) {
+  const container = document.getElementById(chipsId);
+  if (!container) return;
+  container.innerHTML = '';
+  const words = wordLists[key] ?? [];
+  words.forEach(word => {
+    const chip = document.createElement('span');
+    chip.className = 'wl-chip';
+    chip.textContent = word;
+    const btn = document.createElement('button');
+    btn.className = 'wl-remove';
+    btn.textContent = '✕';
+    btn.title = 'Remove';
+    btn.addEventListener('click', () => removeWord(key, word));
+    chip.appendChild(btn);
+    container.appendChild(chip);
+  });
+}
+
+function saveAndBroadcast() {
+  chrome.storage.sync.set({ draWordLists: wordLists });
+  chrome.runtime.sendMessage({ type: 'WORDLISTS_CHANGED', wordLists });
+}
+
+function removeWord(key, word) {
+  wordLists = { ...wordLists, [key]: (wordLists[key] ?? []).filter(w => w !== word) };
+  renderChips(key, WL_CONFIG.find(c => c.key === key).chipsId);
+  saveAndBroadcast();
+}
+
+function addWord(key, word, chipsId) {
+  const trimmed = word.trim().toLowerCase();
+  if (!trimmed) return;
+  const current = wordLists[key] ?? [];
+  if (current.includes(trimmed)) return;
+  wordLists = { ...wordLists, [key]: [...current, trimmed] };
+  renderChips(key, chipsId);
+  saveAndBroadcast();
+}
+
+function initWordListEditor() {
+  chrome.storage.sync.get('draWordLists', (data) => {
+    if (data.draWordLists) wordLists = { ...wordLists, ...data.draWordLists };
+
+    WL_CONFIG.forEach(({ key, chipsId, inputId, btnId }) => {
+      renderChips(key, chipsId);
+
+      const input = document.getElementById(inputId);
+      const btn   = document.getElementById(btnId);
+      if (!input || !btn) return;
+
+      btn.addEventListener('click', () => {
+        addWord(key, input.value, chipsId);
+        input.value = '';
+      });
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { addWord(key, input.value, chipsId); input.value = ''; }
+      });
+    });
+
+    document.getElementById('wl-reset-all')?.addEventListener('click', () => {
+      wordLists = { emotionPositive: null, emotionNegative: null, emotionComplex: null, transition: null };
+      chrome.storage.sync.remove('draWordLists');
+      chrome.runtime.sendMessage({ type: 'WORDLISTS_CHANGED', wordLists });
+      WL_CONFIG.forEach(({ key, chipsId }) => renderChips(key, chipsId));
+    });
+  });
+}
+
 // ── Boot ───────────────────────────────────────────────────────────────
 
 chrome.storage.sync.get('draSettings', (data) => {
   if (data.draSettings) settings = { ...DEFAULT_SETTINGS, ...data.draSettings };
   syncUI();
   init();
+  initWordListEditor();
 });
 
 chrome.storage.local.get('activeTab', (data) => {

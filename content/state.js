@@ -12,6 +12,12 @@ export const state = {
   articleHighlights:        [],
   topicFocusKeywords:       null,
   topicFocusAIPrefixes:     null,
+  wordLists: {
+    emotionPositive: null,
+    emotionNegative: null,
+    emotionComplex:  null,
+    transition:      null,
+  },
   sentenceLabels:           [],
   allSentences:             [],
 };

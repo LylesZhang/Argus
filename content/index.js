@@ -9,7 +9,7 @@ import { clearFocusMask } from './features/topicFocus.js';
 
 // ── Bootstrap ──────────────────────────────────────────────────────────
 
-chrome.storage.sync.get('draSettings', (data) => {
+chrome.storage.sync.get(['draSettings', 'draWordLists'], (data) => {
   if (data.draSettings) {
     state.settings = { ...DEFAULT_SETTINGS, ...data.draSettings };
     // Migrate legacy setting name
@@ -17,6 +17,7 @@ chrome.storage.sync.get('draSettings', (data) => {
       state.settings.transitionAnimation = data.draSettings.logicAnimation;
     }
   }
+  if (data.draWordLists) state.wordLists = { ...state.wordLists, ...data.draWordLists };
   render();
 });
 
@@ -81,5 +82,10 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'EMOTION_ERROR') {
     state.emotionAIInProgress = false;
+  }
+
+  if (msg.type === 'WORDLISTS_CHANGED') {
+    state.wordLists = { ...state.wordLists, ...msg.wordLists };
+    render();
   }
 });

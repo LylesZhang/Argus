@@ -73,3 +73,48 @@
   border-top: 1px solid rgba(200, 170, 0, 0.25);
   border-bottom: 1px solid rgba(200, 170, 0, 0.25);
 }
+
+/* ── Word selection menu ──────────────────────────────────────────────── */
+
+#dra-word-menu {
+  position: absolute;
+  z-index: 2147483647;
+  background: #1e1b4b;
+  color: #fff;
+  border-radius: 10px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  user-select: none;
+}
+
+#dra-word-menu-text {
+  color: rgba(255, 255, 255, 0.7);
+  font-style: italic;
+  margin-right: 2px;
+}
+
+#dra-word-menu-actions {
+  display: flex;
+  gap: 4px;
+}
+
+#dra-word-menu button {
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: #fff;
+  font-size: 11px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+#dra-word-menu button:hover { background: rgba(255, 255, 255, 0.15); }
+#dra-word-menu button.active { background: rgba(255, 255, 255, 0.25); }

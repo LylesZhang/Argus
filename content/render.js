@@ -8,6 +8,7 @@ import { generateTransitionHighlights } from './features/transitions.js';
 import { extractAllSentences, generateSentenceLabels, requestSentenceLabels } from './features/labels.js';
 import { setupRuler, teardownRuler } from './features/ruler.js';
 import { applyFocusMask, applyFocusMaskByPrefixes } from './features/topicFocus.js';
+import { setupSelectionMenu, teardownSelectionMenu } from './features/selectionMenu.js';
 
 // ── Sentence rendering ─────────────────────────────────────────────────
 
@@ -262,4 +263,9 @@ export function render() {
   } else if (state.topicFocusAIPrefixes) {
     applyFocusMaskByPrefixes(state.topicFocusAIPrefixes);
   }
+
+  const needsSelectionMenu = state.settings.readingAidsEnabled &&
+    (state.settings.emotionColor || state.settings.transitionAnimation);
+  if (needsSelectionMenu) setupSelectionMenu(render);
+  else teardownSelectionMenu();
 }

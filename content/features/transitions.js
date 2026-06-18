@@ -1,6 +1,7 @@
 import { findContentArea } from '../detect.js';
+import { state } from '../state.js';
 
-const TRANSITION_WORDS = new Set([
+export const DEFAULT_TRANSITION_WORDS = [
   // Contrast / Opposition
   'however','nevertheless','nonetheless','notwithstanding','conversely',
   'on the other hand','on the contrary','in contrast','by contrast',
@@ -33,13 +34,14 @@ const TRANSITION_WORDS = new Set([
   // Condition
   'provided that','given that','in the event that','as long as',
   'on the condition that',
-]);
+];
 
 export function generateTransitionHighlights() {
+  const words = state.wordLists.transition ?? DEFAULT_TRANSITION_WORDS;
   const area = findContentArea();
   const text = area.innerText.toLowerCase();
   const highlights = [];
-  for (const phrase of TRANSITION_WORDS) {
+  for (const phrase of words) {
     const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`(?<![a-zA-Z-])${escaped}(?![a-zA-Z-])`);
     if (regex.test(text)) {

@@ -221,7 +221,52 @@
   </div>
 
   <div id="tab-settings" class="tab-panel">
-    <!-- Settings content coming soon -->
+    <div class="panel">
+
+      <div class="section-label">Emotion Words</div>
+
+      <div class="wordlist-section">
+        <div class="wordlist-category-label">Positive</div>
+        <div class="wordlist-chips" id="wl-emotion-positive"></div>
+        <div class="wordlist-add">
+          <input type="text" id="wl-add-positive" placeholder="Add word…">
+          <button id="wl-add-positive-btn">Add</button>
+        </div>
+      </div>
+
+      <div class="wordlist-section">
+        <div class="wordlist-category-label">Negative</div>
+        <div class="wordlist-chips" id="wl-emotion-negative"></div>
+        <div class="wordlist-add">
+          <input type="text" id="wl-add-negative" placeholder="Add word…">
+          <button id="wl-add-negative-btn">Add</button>
+        </div>
+      </div>
+
+      <div class="wordlist-section">
+        <div class="wordlist-category-label">Complex</div>
+        <div class="wordlist-chips" id="wl-emotion-complex"></div>
+        <div class="wordlist-add">
+          <input type="text" id="wl-add-complex" placeholder="Add word…">
+          <button id="wl-add-complex-btn">Add</button>
+        </div>
+      </div>
+
+      <div class="section-label">Transition Words</div>
+
+      <div class="wordlist-section">
+        <div class="wordlist-chips" id="wl-transition"></div>
+        <div class="wordlist-add">
+          <input type="text" id="wl-add-transition" placeholder="Add phrase…">
+          <button id="wl-add-transition-btn">Add</button>
+        </div>
+      </div>
+
+      <div class="wordlist-reset">
+        <button id="wl-reset-all">Reset all to default</button>
+      </div>
+
+    </div>
   </div>
 
   <script src="panel.js"></script>
