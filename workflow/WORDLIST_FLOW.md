@@ -65,7 +65,9 @@ generateTransitionHighlights()
   └── 遍历词表，匹配 contentArea.innerText → 返回 highlights[]
 ```
 
-默认词表导出自各自文件（`DEFAULT_EMOTION_POSITIVE` 等），供 selectionMenu.js 和 panel.js 读取。
+默认词表导出自各自文件（`DEFAULT_EMOTION_POSITIVE` 等），供 selectionMenu.js 读取。
+`panel.js` 是普通 `<script>`（非 module），无法 import content script，因此在 `panel.js` 内部维护一份完全相同的副本 `DEFAULT_WORDS`。
+若将来修改默认词表，`emotions.js` / `transitions.js` 和 `panel.js` 的 `DEFAULT_WORDS` 需同步更新。
 
 ---
 
@@ -134,23 +136,33 @@ button mousedown
 ```
 initWordListEditor()
   └── chrome.storage.sync.get('draWordLists')
-        └── wordLists[key] = data.draWordLists?.[key] ?? DEFAULT_WORDS[key]
+        ├── 若有自定义：wordLists[key] = data.draWordLists[key]（string[]）
+        └── 若没有自定义（null 或缺失）：保持 wordLists[key] = null
         └── renderChips(key, chipsId)   ← 渲染 chip 列表
+
+renderChips(key, chipsId)
+  └── words = wordLists[key] ?? DEFAULT_WORDS[key]
+        ← null 时展示默认词表，已自定义时展示用户词表
+  └── 每个词渲染为 <span class="wl-chip"> + <button class="wl-remove">✕</button>
 
 用户点击 chip 上的 ✕
   └── removeWord(key, word)
-        ├── wordLists[key] = wordLists[key].filter(w => w !== word)
+        ├── current = wordLists[key] ?? DEFAULT_WORDS[key]   ← null 时以默认列表为基础
+        ├── wordLists[key] = current.filter(w => w !== word)
         └── saveAndBroadcast()
 
 用户在输入框输入后点 Add
   └── addWord(key, word, chipsId)
-        ├── wordLists[key] = [...new Set([...wordLists[key], word])]
+        ├── current = wordLists[key] ?? DEFAULT_WORDS[key]   ← null 时以默认列表为基础
+        ├── 已存在则跳过
+        ├── wordLists[key] = [...current, trimmed]
         └── saveAndBroadcast()
 
 用户点 Reset all to default
-  └── wordLists = { ...DEFAULT_WORD_LISTS }
+  └── wordLists = { emotionPositive: null, emotionNegative: null, emotionComplex: null, transition: null }
       chrome.storage.sync.remove('draWordLists')
-      saveAndBroadcast()
+      chrome.runtime.sendMessage({ type: 'WORDLISTS_CHANGED', wordLists })
+      renderChips()   ← null 时自动显示 DEFAULT_WORDS
 
 saveAndBroadcast()
   ├── chrome.storage.sync.set({ draWordLists: wordLists })

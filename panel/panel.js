@@ -379,14 +379,60 @@ function init() {
 
 // ── Word list editor ───────────────────────────────────────────────────
 
-const DEFAULT_WORD_LISTS = {
-  emotionPositive: null,
-  emotionNegative: null,
-  emotionComplex:  null,
-  transition:      null,
+const DEFAULT_WORDS = {
+  emotionPositive: [
+    'joy','delight','elation','bliss','euphoria','jubilation','glee','cheerful','merry','ecstatic',
+    'love','adore','cherish','embrace','compassion','empathy','kindness','warmth','tender','affection',
+    'hope','optimism','inspiration','aspire','dream','vision','faith','belief','confidence','promise',
+    'proud','admire','celebrate','triumph','honor','remarkable','extraordinary','magnificent','outstanding','brilliant',
+    'thrive','flourish','breakthrough','achieve','progress','succeed','innovate','discover','heal','unite',
+    'wonderful','amazing','incredible','fantastic','excellent','beautiful','glorious','grateful','courage','strength',
+  ],
+  emotionNegative: [
+    'fear','dread','terror','horror','panic','fright','anxiety','nightmare','terrifying','horrific',
+    'grief','sorrow','mourning','heartbreak','anguish','despair','desolate','tragic','tragedy','devastate',
+    'anger','rage','fury','hatred','hate','wrath','outrage','indignation','resentment','hostility',
+    'suffer','agony','torment','misery','pain','trauma','brutal','cruel','ruthless','savage',
+    'violence','destroy','collapse','ruin','catastrophe','disaster','crisis','devastation','atrocity','massacre',
+    'abuse','betray','corrupt','injustice','oppression','discrimination','poverty','inequality','exploitation','shame',
+    'loss','failure','defeat','hopeless','helpless','powerless','victim','casualty','threat','danger',
+  ],
+  emotionComplex: [
+    'bittersweet','ambivalent','conflicted','mixed','paradox','ironic','contradictory','ambiguous',
+    'uncertain','uneasy','anxious','apprehensive','troubled','unsettled','precarious','fragile','vulnerable',
+    'nostalgia','wistful','longing','melancholy','wistfulness','yearning','reminisce','haunted',
+    'nuanced','complicated','dilemma','tension','controversial','fraught','delicate','sensitive','paradoxical',
+    'resigned','cynical','skeptical','disillusioned','weary','exhausted','sacrifice','compromise',
+    'disturbing','troubling','perplexing','unsettling','disconcerting','harrowing','sobering','chilling',
+  ],
+  transition: [
+    'however','nevertheless','nonetheless','notwithstanding','conversely',
+    'on the other hand','on the contrary','in contrast','by contrast',
+    'that said','even so','be that as it may','then again','rather',
+    'furthermore','moreover','additionally','likewise','in addition',
+    'by the same token','in like manner','in the same way','in the same fashion',
+    'coupled with','not to mention',
+    'therefore','thus','hence','consequently','accordingly','henceforth',
+    'as a result','for this reason','thereupon','in effect','owing to',
+    'as a consequence','due to','inasmuch as',
+    'although','albeit','whereas','regardless','despite','in spite of',
+    'even though','even if','granted that',
+    'in conclusion','in summary','in short','in brief','to summarize',
+    'overall','all in all','on balance','on the whole','by and large',
+    'in essence','to sum up','in the final analysis','given these points',
+    'all things considered','in a word','for the most part',
+    'in fact','indeed','notably','in other words','that is to say',
+    'to put it differently','to put it another way','namely','specifically',
+    'in particular','markedly','above all','most importantly',
+    'for example','for instance','to illustrate','as an illustration',
+    'meanwhile','subsequently','eventually','formerly','in the meantime',
+    'sooner or later','in due time',
+    'provided that','given that','in the event that','as long as',
+    'on the condition that',
+  ],
 };
 
-let wordLists = { ...DEFAULT_WORD_LISTS };
+let wordLists = { emotionPositive: null, emotionNegative: null, emotionComplex: null, transition: null };
 
 const WL_CONFIG = [
   { key: 'emotionPositive', chipsId: 'wl-emotion-positive', inputId: 'wl-add-positive', btnId: 'wl-add-positive-btn' },
@@ -399,7 +445,7 @@ function renderChips(key, chipsId) {
   const container = document.getElementById(chipsId);
   if (!container) return;
   container.innerHTML = '';
-  const words = wordLists[key] ?? [];
+  const words = wordLists[key] ?? DEFAULT_WORDS[key];
   words.forEach(word => {
     const chip = document.createElement('span');
     chip.className = 'wl-chip';
@@ -420,7 +466,7 @@ function saveAndBroadcast() {
 }
 
 function removeWord(key, word) {
-  wordLists = { ...wordLists, [key]: (wordLists[key] ?? []).filter(w => w !== word) };
+  wordLists = { ...wordLists, [key]: (wordLists[key] ?? DEFAULT_WORDS[key]).filter(w => w !== word) };
   renderChips(key, WL_CONFIG.find(c => c.key === key).chipsId);
   saveAndBroadcast();
 }
@@ -428,7 +474,7 @@ function removeWord(key, word) {
 function addWord(key, word, chipsId) {
   const trimmed = word.trim().toLowerCase();
   if (!trimmed) return;
-  const current = wordLists[key] ?? [];
+  const current = wordLists[key] ?? DEFAULT_WORDS[key];
   if (current.includes(trimmed)) return;
   wordLists = { ...wordLists, [key]: [...current, trimmed] };
   renderChips(key, chipsId);
