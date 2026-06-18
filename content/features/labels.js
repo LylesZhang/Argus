@@ -1,5 +1,6 @@
 import { findContentArea } from '../detect.js';
 import { state } from '../state.js';
+import { splitSentences } from '../utils.js';
 
 export const LABEL_RULES = {
   evidence: [
@@ -39,7 +40,7 @@ export function extractAllSentences() {
   const area = findContentArea();
   return area.innerText
     .split(/\n+/).filter(p => p.trim().length > 20)
-    .flatMap(p => p.trim().split(/(?<=[.!?])\s+(?=[A-Z"'\[])/).filter(s => s.trim()));
+    .flatMap(p => splitSentences(p.trim()).filter(s => s.trim()));
 }
 
 export function generateSentenceLabels() {
