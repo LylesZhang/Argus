@@ -93,6 +93,18 @@ function syncUI() {
 // ── Wire up all controls ───────────────────────────────────────────────
 
 function init() {
+  // Tab switching
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + target).classList.add('active');
+      chrome.storage.local.set({ activeTab: target });
+    });
+  });
+
   // Section switches
   document.getElementById('toggle-typography').addEventListener('change', e => {
     const enabled = e.target.checked;
@@ -371,4 +383,14 @@ chrome.storage.sync.get('draSettings', (data) => {
   if (data.draSettings) settings = { ...DEFAULT_SETTINGS, ...data.draSettings };
   syncUI();
   init();
+});
+
+chrome.storage.local.get('activeTab', (data) => {
+  const tab = data.activeTab || 'effects';
+  document.querySelectorAll('.tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab)
+  );
+  document.querySelectorAll('.tab-panel').forEach(p =>
+    p.classList.toggle('active', p.id === 'tab-' + tab)
+  );
 });

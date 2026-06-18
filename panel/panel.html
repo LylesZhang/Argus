@@ -8,209 +8,220 @@
 </head>
 <body>
 
-  <div class="panel">
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="effects">Effects</button>
+    <button class="tab-btn"        data-tab="settings">Settings</button>
+  </nav>
 
-    <!-- Typography -->
-    <div class="section-label">
-      <span>Typography</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="toggle-typography">
-        <span class="track"></span>
-      </label>
-    </div>
+  <div id="tab-effects" class="tab-panel active">
+    <div class="panel">
 
-    <div class="control-block">
-      <label class="control-label">Font</label>
-      <div class="font-row">
-        <select id="font-family" class="font-select">
-          <option value="">System Default</option>
-          <option value="Georgia">Georgia</option>
-          <option value="Arial">Arial</option>
-          <option value="Verdana">Verdana</option>
-          <option value="OpenDyslexic, sans-serif">OpenDyslexic</option>
-        </select>
-        <div class="bionic-toggle">
+      <!-- Typography -->
+      <div class="section-label">
+        <span>Typography</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-typography">
+          <span class="track"></span>
+        </label>
+      </div>
+
+      <div class="control-block">
+        <label class="control-label">Font</label>
+        <div class="font-row">
+          <select id="font-family" class="font-select">
+            <option value="">System Default</option>
+            <option value="Georgia">Georgia</option>
+            <option value="Arial">Arial</option>
+            <option value="Verdana">Verdana</option>
+            <option value="OpenDyslexic, sans-serif">OpenDyslexic</option>
+          </select>
+          <div class="bionic-toggle">
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-bold">
+              <span class="track"></span>
+            </label>
+            <span class="bionic-label">Bionic Effect</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="control-row">
+        <div class="control-block">
+          <label class="control-label">Font Size</label>
+          <div class="stepper">
+            <button id="font-size-dec" class="stepper-btn">−</button>
+            <div class="stepper-center">
+              <span id="font-size-value" class="stepper-num">18</span>
+              <span class="stepper-unit">px</span>
+            </div>
+            <button id="font-size-inc" class="stepper-btn">+</button>
+          </div>
+          <input type="range" id="font-size-slider" min="14" max="28" step="1" value="18" class="slider">
+        </div>
+        <div class="control-block">
+          <label class="control-label">Line Height</label>
+          <div class="stepper">
+            <button id="line-height-dec" class="stepper-btn">−</button>
+            <div class="stepper-center">
+              <span id="line-height-value" class="stepper-num">1.8</span>
+            </div>
+            <button id="line-height-inc" class="stepper-btn">+</button>
+          </div>
+          <input type="range" id="line-height-slider" min="1.4" max="2.4" step="0.1" value="1.8" class="slider">
+        </div>
+      </div>
+
+      <div class="control-row">
+        <div class="control-block">
+          <label class="control-label">Word Space</label>
+          <div class="stepper">
+            <button id="word-spacing-dec" class="stepper-btn">−</button>
+            <div class="stepper-center">
+              <span id="word-spacing-value" class="stepper-num">0.0</span>
+              <span class="stepper-unit">em</span>
+            </div>
+            <button id="word-spacing-inc" class="stepper-btn">+</button>
+          </div>
+          <input type="range" id="word-spacing-slider" min="0" max="0.5" step="0.05" value="0" class="slider">
+        </div>
+        <div class="control-block">
+          <label class="control-label">Letter Space</label>
+          <div class="stepper">
+            <button id="letter-spacing-dec" class="stepper-btn">−</button>
+            <div class="stepper-center">
+              <span id="letter-spacing-value" class="stepper-num">0.00</span>
+              <span class="stepper-unit">em</span>
+            </div>
+            <button id="letter-spacing-inc" class="stepper-btn">+</button>
+          </div>
+          <input type="range" id="letter-spacing-slider" min="0" max="0.1" step="0.01" value="0" class="slider">
+        </div>
+      </div>
+
+      <div class="control-row">
+        <div class="control-block">
+          <label class="control-label">Text Color</label>
+          <input type="color" id="font-color" value="#2c2c2c" class="color-input">
+        </div>
+        <div class="control-block">
+          <label class="control-label">Background</label>
+          <input type="color" id="bg-color" value="#ffffff" class="color-input">
+        </div>
+      </div>
+
+      <!-- Reading Aids -->
+      <div class="section-label">
+        <span>Reading Aids</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-reading-aids">
+          <span class="track"></span>
+        </label>
+      </div>
+
+      <div class="toggle-grid">
+        <div class="toggle-row">
           <label class="toggle-switch">
-            <input type="checkbox" id="toggle-bold">
+            <input type="checkbox" id="toggle-gradient">
             <span class="track"></span>
           </label>
-          <span class="bionic-label">Bionic Effect</span>
+          <span class="toggle-label">Row Shading</span>
+          <input type="color" id="row-shading-color" value="#64b4f0" class="row-shading-color-input">
+        </div>
+        <div class="toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggle-transition">
+            <span class="track"></span>
+          </label>
+          <span class="toggle-label">Transition Words</span>
         </div>
       </div>
-    </div>
 
-    <div class="control-row">
-      <div class="control-block">
-        <label class="control-label">Font Size</label>
-        <div class="stepper">
-          <button id="font-size-dec" class="stepper-btn">−</button>
-          <div class="stepper-center">
-            <span id="font-size-value" class="stepper-num">18</span>
-            <span class="stepper-unit">px</span>
-          </div>
-          <button id="font-size-inc" class="stepper-btn">+</button>
-        </div>
-        <input type="range" id="font-size-slider" min="14" max="28" step="1" value="18" class="slider">
-      </div>
-      <div class="control-block">
-        <label class="control-label">Line Height</label>
-        <div class="stepper">
-          <button id="line-height-dec" class="stepper-btn">−</button>
-          <div class="stepper-center">
-            <span id="line-height-value" class="stepper-num">1.8</span>
-          </div>
-          <button id="line-height-inc" class="stepper-btn">+</button>
-        </div>
-        <input type="range" id="line-height-slider" min="1.4" max="2.4" step="0.1" value="1.8" class="slider">
-      </div>
-    </div>
-
-    <div class="control-row">
-      <div class="control-block">
-        <label class="control-label">Word Space</label>
-        <div class="stepper">
-          <button id="word-spacing-dec" class="stepper-btn">−</button>
-          <div class="stepper-center">
-            <span id="word-spacing-value" class="stepper-num">0.0</span>
-            <span class="stepper-unit">em</span>
-          </div>
-          <button id="word-spacing-inc" class="stepper-btn">+</button>
-        </div>
-        <input type="range" id="word-spacing-slider" min="0" max="0.5" step="0.05" value="0" class="slider">
-      </div>
-      <div class="control-block">
-        <label class="control-label">Letter Space</label>
-        <div class="stepper">
-          <button id="letter-spacing-dec" class="stepper-btn">−</button>
-          <div class="stepper-center">
-            <span id="letter-spacing-value" class="stepper-num">0.00</span>
-            <span class="stepper-unit">em</span>
-          </div>
-          <button id="letter-spacing-inc" class="stepper-btn">+</button>
-        </div>
-        <input type="range" id="letter-spacing-slider" min="0" max="0.1" step="0.01" value="0" class="slider">
-      </div>
-    </div>
-
-    <div class="control-row">
-      <div class="control-block">
-        <label class="control-label">Text Color</label>
-        <input type="color" id="font-color" value="#2c2c2c" class="color-input">
-      </div>
-      <div class="control-block">
-        <label class="control-label">Background</label>
-        <input type="color" id="bg-color" value="#ffffff" class="color-input">
-      </div>
-    </div>
-
-    <!-- Reading Aids -->
-    <div class="section-label">
-      <span>Reading Aids</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="toggle-reading-aids">
-        <span class="track"></span>
-      </label>
-    </div>
-
-    <div class="toggle-grid">
-      <div class="toggle-row">
+      <div class="toggle-row ruler-row" id="ruler-size-control">
         <label class="toggle-switch">
-          <input type="checkbox" id="toggle-gradient">
+          <input type="checkbox" id="toggle-ruler">
           <span class="track"></span>
         </label>
-        <span class="toggle-label">Row Shading</span>
-        <input type="color" id="row-shading-color" value="#64b4f0" class="row-shading-color-input">
+        <span class="toggle-label">Reading Ruler</span>
+        <input type="range" id="ruler-size-slider" min="1" max="10" step="0.5" value="1.5" class="slider ruler-slider">
+        <span id="ruler-size-value" class="slider-value">1.5 lines</span>
       </div>
-      <div class="toggle-row">
+
+      <div class="toggle-row toggle-row--full">
         <label class="toggle-switch">
-          <input type="checkbox" id="toggle-transition">
+          <input type="checkbox" id="toggle-emotion">
           <span class="track"></span>
         </label>
-        <span class="toggle-label">Transition Words</span>
+        <span class="toggle-label">Emotion Colors</span>
+        <div class="mode-pill" id="emotion-mode-pill">
+          <button class="mode-btn active" data-feature="emotion" data-mode="local">Local</button>
+          <button class="mode-btn" data-feature="emotion" data-mode="ai">AI</button>
+        </div>
       </div>
-    </div>
 
-    <div class="toggle-row ruler-row" id="ruler-size-control">
-      <label class="toggle-switch">
-        <input type="checkbox" id="toggle-ruler">
-        <span class="track"></span>
-      </label>
-      <span class="toggle-label">Reading Ruler</span>
-      <input type="range" id="ruler-size-slider" min="1" max="10" step="0.5" value="1.5" class="slider ruler-slider">
-      <span id="ruler-size-value" class="slider-value">1.5 lines</span>
-    </div>
+      <div class="emotion-colors" id="emotion-colors">
+        <div class="color-row">
+          <span>Positive</span>
+          <input type="color" id="emotion-positive-color" value="#27ae60">
+        </div>
+        <div class="color-row">
+          <span>Negative</span>
+          <input type="color" id="emotion-negative-color" value="#e74c3c">
+        </div>
+        <div class="color-row">
+          <span>Complex</span>
+          <input type="color" id="emotion-complex-color" value="#8e44ad">
+        </div>
+      </div>
 
-    <div class="toggle-row toggle-row--full">
-      <label class="toggle-switch">
-        <input type="checkbox" id="toggle-emotion">
-        <span class="track"></span>
-      </label>
-      <span class="toggle-label">Emotion Colors</span>
-      <div class="mode-pill" id="emotion-mode-pill">
-        <button class="mode-btn active" data-feature="emotion" data-mode="local">Local</button>
-        <button class="mode-btn" data-feature="emotion" data-mode="ai">AI</button>
+      <div class="toggle-row toggle-row--full">
+        <label class="toggle-switch">
+          <input type="checkbox" id="toggle-labels">
+          <span class="track"></span>
+        </label>
+        <span class="toggle-label">Sentence Labels</span>
+        <div class="mode-pill" id="labels-mode-pill">
+          <button class="mode-btn active" data-feature="sentenceLabels" data-mode="local">Local</button>
+          <button class="mode-btn" data-feature="sentenceLabels" data-mode="ai">AI</button>
+        </div>
       </div>
-    </div>
 
-    <div class="emotion-colors" id="emotion-colors">
-      <div class="color-row">
-        <span>Positive</span>
-        <input type="color" id="emotion-positive-color" value="#27ae60">
+      <div class="sentence-label-colors" id="sentence-label-colors">
+        <div class="color-row">
+          <span>Evidence</span>
+          <input type="color" id="label-evidence-color" value="#16a34a">
+        </div>
+        <div class="color-row">
+          <span>Argument</span>
+          <input type="color" id="label-argument-color" value="#0d9488">
+        </div>
+        <div class="color-row">
+          <span>Explanation</span>
+          <input type="color" id="label-explanation-color" value="#9333ea">
+        </div>
       </div>
-      <div class="color-row">
-        <span>Negative</span>
-        <input type="color" id="emotion-negative-color" value="#e74c3c">
-      </div>
-      <div class="color-row">
-        <span>Complex</span>
-        <input type="color" id="emotion-complex-color" value="#8e44ad">
-      </div>
-    </div>
 
-    <div class="toggle-row toggle-row--full">
-      <label class="toggle-switch">
-        <input type="checkbox" id="toggle-labels">
-        <span class="track"></span>
-      </label>
-      <span class="toggle-label">Sentence Labels</span>
-      <div class="mode-pill" id="labels-mode-pill">
-        <button class="mode-btn active" data-feature="sentenceLabels" data-mode="local">Local</button>
-        <button class="mode-btn" data-feature="sentenceLabels" data-mode="ai">AI</button>
+      <!-- Topic Focus -->
+      <div class="section-label topic-focus-header">
+        <span>Topic Focus</span>
+        <div class="mode-pill" id="topic-focus-mode-pill">
+          <button class="mode-btn active" data-feature="topicFocus" data-mode="local">Local</button>
+          <button class="mode-btn"        data-feature="topicFocus" data-mode="ai">AI</button>
+        </div>
       </div>
-    </div>
 
-    <div class="sentence-label-colors" id="sentence-label-colors">
-      <div class="color-row">
-        <span>Evidence</span>
-        <input type="color" id="label-evidence-color" value="#16a34a">
+      <div class="topic-focus-area">
+        <input type="text" id="topic-input" placeholder="Type a topic to focus on…">
+        <div class="topic-buttons">
+          <button id="topic-apply">Apply</button>
+          <button id="topic-clear">Clear</button>
+        </div>
       </div>
-      <div class="color-row">
-        <span>Argument</span>
-        <input type="color" id="label-argument-color" value="#0d9488">
-      </div>
-      <div class="color-row">
-        <span>Explanation</span>
-        <input type="color" id="label-explanation-color" value="#9333ea">
-      </div>
-    </div>
 
-    <!-- Topic Focus -->
-    <div class="section-label topic-focus-header">
-      <span>Topic Focus</span>
-      <div class="mode-pill" id="topic-focus-mode-pill">
-        <button class="mode-btn active" data-feature="topicFocus" data-mode="local">Local</button>
-        <button class="mode-btn"        data-feature="topicFocus" data-mode="ai">AI</button>
-      </div>
     </div>
+  </div>
 
-    <div class="topic-focus-area">
-      <input type="text" id="topic-input" placeholder="Type a topic to focus on…">
-      <div class="topic-buttons">
-        <button id="topic-apply">Apply</button>
-        <button id="topic-clear">Clear</button>
-      </div>
-    </div>
-
+  <div id="tab-settings" class="tab-panel">
+    <!-- Settings content coming soon -->
   </div>
 
   <script src="panel.js"></script>
