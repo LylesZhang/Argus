@@ -9,6 +9,9 @@ export const DEFAULT_SETTINGS = {
   transitionAnimation:   false,
   sentenceLabels:        false,
   sentenceLabelsMode:    'local', // 'ai' | 'local'
+  labelEvidenceColor:    '#16a34a',
+  labelArgumentColor:    '#0d9488',
+  labelExplanationColor: '#9333ea',
   topicFocusMode:        'local', // 'ai' | 'local'
   fontSize:             null,
   lineHeight:           null,

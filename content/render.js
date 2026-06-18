@@ -87,18 +87,18 @@ function splitSentences(text) {
 function buildParagraphHTML(plainText) {
   const sentences = splitSentences(plainText.trim());
 
-  const badge = (s) => {
+  const sentenceLabelClass = (s) => {
     if (!state.settings.sentenceLabels) return '';
     const trimmed = s.trim();
     const idx   = state.allSentences.findIndex(as => as.slice(0, 25) === trimmed.slice(0, 25));
     const label = state.sentenceLabels.find(l => l.index === idx);
-    return label
-      ? `<span class="dra-label dra-label-${label.type}">${label.type.toUpperCase()}</span>`
+    return ['evidence', 'argument', 'explanation'].includes(label?.type)
+      ? ` dra-sentence-label-${label.type}`
       : '';
   };
 
   return sentences.map(s =>
-    `<span class="dra-sentence">${renderSentence(s)}${badge(s)}</span>`
+    `<span class="dra-sentence${sentenceLabelClass(s)}">${renderSentence(s)}</span>`
   ).join(' ');
 }
 
@@ -182,6 +182,9 @@ function applyTransformations() {
   document.documentElement.style.setProperty('--dra-negative', state.settings.emotionNegativeColor);
   document.documentElement.style.setProperty('--dra-complex',  state.settings.emotionComplexColor);
   document.documentElement.style.setProperty('--dra-row-shading', state.settings.rowShadingColor);
+  document.documentElement.style.setProperty('--dra-label-evidence', state.settings.labelEvidenceColor);
+  document.documentElement.style.setProperty('--dra-label-argument', state.settings.labelArgumentColor);
+  document.documentElement.style.setProperty('--dra-label-explanation', state.settings.labelExplanationColor);
 
   // Apply per-element styles (child elements often override contentArea-level styles)
   state.contentArea.querySelectorAll('p, li, blockquote').forEach(para => {

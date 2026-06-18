@@ -16,6 +16,9 @@ const DEFAULT_SETTINGS = {
   transitionAnimation:   false,
   sentenceLabels:        false,
   sentenceLabelsMode:    'local',
+  labelEvidenceColor:    '#16a34a',
+  labelArgumentColor:    '#0d9488',
+  labelExplanationColor: '#9333ea',
   topicFocusMode:        'local',
   fontSize:             18,
   lineHeight:           1.8,
@@ -69,10 +72,14 @@ function syncUI() {
   document.getElementById('emotion-positive-color').value = settings.emotionPositiveColor;
   document.getElementById('emotion-negative-color').value = settings.emotionNegativeColor;
   document.getElementById('emotion-complex-color').value = settings.emotionComplexColor;
+  document.getElementById('label-evidence-color').value = settings.labelEvidenceColor;
+  document.getElementById('label-argument-color').value = settings.labelArgumentColor;
+  document.getElementById('label-explanation-color').value = settings.labelExplanationColor;
   document.getElementById('ruler-size-slider').value  = settings.rulerWindowLines;
   document.getElementById('ruler-size-value').textContent = settings.rulerWindowLines.toFixed(1) + ' lines';
 
   document.getElementById('emotion-colors').classList.toggle('active', settings.emotionColor);
+  document.getElementById('sentence-label-colors').classList.toggle('active', settings.sentenceLabels);
   document.getElementById('toggle-labels').checked = settings.sentenceLabels;
 
   // Sync mode pills to stored settings
@@ -123,6 +130,7 @@ function init() {
       document.getElementById('toggle-labels').checked     = false;
       document.getElementById('toggle-ruler').checked      = false;
       document.getElementById('emotion-colors').classList.remove('active');
+      document.getElementById('sentence-label-colors').classList.remove('active');
       broadcast({
         readingAidsEnabled: false,
         emotionColor: false,
@@ -167,6 +175,7 @@ function init() {
   document.getElementById('toggle-labels').addEventListener('change', e => {
     enableReadingAidIfNeeded(e.target.checked);
     broadcast({ sentenceLabels: e.target.checked });
+    document.getElementById('sentence-label-colors').classList.toggle('active', e.target.checked);
   });
 
   document.getElementById('toggle-ruler').addEventListener('change', e => {
@@ -314,6 +323,15 @@ function init() {
   });
   document.getElementById('emotion-complex-color').addEventListener('input', e => {
     broadcast({ emotionComplexColor: e.target.value });
+  });
+  document.getElementById('label-evidence-color').addEventListener('input', e => {
+    broadcast({ labelEvidenceColor: e.target.value });
+  });
+  document.getElementById('label-argument-color').addEventListener('input', e => {
+    broadcast({ labelArgumentColor: e.target.value });
+  });
+  document.getElementById('label-explanation-color').addEventListener('input', e => {
+    broadcast({ labelExplanationColor: e.target.value });
   });
 
   // Mode pills (AI / Local) for emotion and sentenceLabels

@@ -270,9 +270,10 @@ body {
   pointer-events: none;
 }
 
-/* ── Emotion color sub-panel ─────────────────────────────────────────── */
+/* ── Reading aid color sub-panels ────────────────────────────────────── */
 
-.emotion-colors {
+.emotion-colors,
+.sentence-label-colors {
   padding: 4px 16px 10px 70px;
   display: flex;
   flex-direction: column;
@@ -281,7 +282,8 @@ body {
   pointer-events: none;
   transition: opacity 0.2s;
 }
-.emotion-colors.active { opacity: 1; pointer-events: auto; }
+.emotion-colors.active,
+.sentence-label-colors.active { opacity: 1; pointer-events: auto; }
 
 .color-row {
   display: flex;
