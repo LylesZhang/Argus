@@ -68,7 +68,7 @@ function syncUI() {
   document.getElementById('font-color').value         = settings.fontColor;
   document.getElementById('bg-color').value           = settings.bgColor;
   document.getElementById('row-shading-color').value  = settings.rowShadingColor;
-  document.getElementById('row-shading-color').classList.toggle('is-inactive', !settings.gradientRows);
+  document.getElementById('row-shading-color').classList.toggle('active', settings.gradientRows);
   document.getElementById('emotion-positive-color').value = settings.emotionPositiveColor;
   document.getElementById('emotion-negative-color').value = settings.emotionNegativeColor;
   document.getElementById('emotion-complex-color').value = settings.emotionComplexColor;
@@ -131,6 +131,7 @@ function init() {
       document.getElementById('toggle-ruler').checked      = false;
       document.getElementById('emotion-colors').classList.remove('active');
       document.getElementById('sentence-label-colors').classList.remove('active');
+      document.getElementById('row-shading-color').classList.remove('active');
       broadcast({
         readingAidsEnabled: false,
         emotionColor: false,
@@ -163,7 +164,7 @@ function init() {
 
   document.getElementById('toggle-gradient').addEventListener('change', e => {
     enableReadingAidIfNeeded(e.target.checked);
-    document.getElementById('row-shading-color').classList.toggle('is-inactive', !e.target.checked);
+    document.getElementById('row-shading-color').classList.toggle('active', e.target.checked);
     broadcast({ gradientRows: e.target.checked });
   });
 
@@ -312,7 +313,7 @@ function init() {
   document.getElementById('row-shading-color').addEventListener('input', e => {
     enableReadingAidIfNeeded(true);
     document.getElementById('toggle-gradient').checked = true;
-    document.getElementById('row-shading-color').classList.remove('is-inactive');
+    document.getElementById('row-shading-color').classList.add('active');
     broadcast({ gradientRows: true, rowShadingColor: e.target.value });
   });
   document.getElementById('emotion-positive-color').addEventListener('input', e => {

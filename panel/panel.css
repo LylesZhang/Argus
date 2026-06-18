@@ -262,12 +262,16 @@ body {
   cursor: pointer;
   background: #fff;
   margin-left: auto;
-}
-
-.row-shading-color-input.is-inactive {
   opacity: 0.3;
   filter: grayscale(1);
   pointer-events: none;
+  transition: opacity 0.2s, filter 0.2s;
+}
+
+.row-shading-color-input.active {
+  opacity: 1;
+  filter: none;
+  pointer-events: auto;
 }
 
 /* ── Reading aid color sub-panels ────────────────────────────────────── */
