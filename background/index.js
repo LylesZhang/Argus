@@ -1,3 +1,5 @@
+const API_BASE = 'https://argus-1ygn.onrender.com';
+
 // Background Service Worker
 // Runs in the browser background (not inside any webpage).
 // Phase 1 role: relay messages between the Side Panel and content/index.js.
@@ -26,7 +28,7 @@ async function fetchEmotionAnalysis(text, url) {
 
   let result;
   try {
-    const response = await withTimeout(fetch('http://localhost:3000/api/analyze', {
+    const response = await withTimeout(fetch(`${API_BASE}/api/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, url }),
@@ -49,7 +51,7 @@ async function fetchSentenceLabels(sentences, url) {
 
   let result;
   try {
-    const response = await withTimeout(fetch('http://localhost:3000/api/label', {
+    const response = await withTimeout(fetch(`${API_BASE}/api/label`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sentences }),
@@ -84,7 +86,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     }
 
     if (msg.type === 'FOCUS_ANALYZE') {
-      withTimeout(fetch('http://localhost:3000/api/focus', {
+      withTimeout(fetch(`${API_BASE}/api/focus`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: msg.text, topic: msg.topic }),
