@@ -432,7 +432,7 @@ const DEFAULT_WORDS = {
   ],
 };
 
-let wordLists = { emotionPositive: null, emotionNegative: null, emotionComplex: null, transition: null };
+let wordLists = { ...DEFAULT_WORDS };
 
 const WL_CONFIG = [
   { key: 'emotionPositive', chipsId: 'wl-emotion-positive', inputId: 'wl-add-positive', btnId: 'wl-add-positive-btn' },
@@ -445,7 +445,7 @@ function renderChips(key, chipsId) {
   const container = document.getElementById(chipsId);
   if (!container) return;
   container.innerHTML = '';
-  const words = wordLists[key] ?? DEFAULT_WORDS[key];
+  const words = wordLists[key];
   words.forEach(word => {
     const chip = document.createElement('span');
     chip.className = 'wl-chip';
@@ -466,7 +466,7 @@ function saveAndBroadcast() {
 }
 
 function removeWord(key, word) {
-  wordLists = { ...wordLists, [key]: (wordLists[key] ?? DEFAULT_WORDS[key]).filter(w => w !== word) };
+  wordLists = { ...wordLists, [key]: wordLists[key].filter(w => w !== word) };
   renderChips(key, WL_CONFIG.find(c => c.key === key).chipsId);
   saveAndBroadcast();
 }
@@ -474,7 +474,7 @@ function removeWord(key, word) {
 function addWord(key, word, chipsId) {
   const trimmed = word.trim().toLowerCase();
   if (!trimmed) return;
-  const current = wordLists[key] ?? DEFAULT_WORDS[key];
+  const current = wordLists[key];
   if (current.includes(trimmed)) return;
   wordLists = { ...wordLists, [key]: [...current, trimmed] };
   renderChips(key, chipsId);
@@ -483,7 +483,7 @@ function addWord(key, word, chipsId) {
 
 function initWordListEditor() {
   chrome.storage.sync.get('draWordLists', (data) => {
-    if (data.draWordLists) wordLists = { ...wordLists, ...data.draWordLists };
+    wordLists = { ...DEFAULT_WORDS, ...data.draWordLists };
 
     WL_CONFIG.forEach(({ key, chipsId, inputId, btnId }) => {
       renderChips(key, chipsId);
@@ -502,13 +502,22 @@ function initWordListEditor() {
     });
 
     document.getElementById('wl-reset-all')?.addEventListener('click', () => {
-      wordLists = { emotionPositive: null, emotionNegative: null, emotionComplex: null, transition: null };
-      chrome.storage.sync.remove('draWordLists');
+      wordLists = { ...DEFAULT_WORDS };
+      chrome.storage.sync.set({ draWordLists: wordLists });
       chrome.runtime.sendMessage({ type: 'WORDLISTS_CHANGED', wordLists });
       WL_CONFIG.forEach(({ key, chipsId }) => renderChips(key, chipsId));
     });
   });
 }
+
+// ── Runtime messages ───────────────────────────────────────────────────
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'WORDLISTS_CHANGED') {
+    wordLists = { ...DEFAULT_WORDS, ...msg.wordLists };
+    WL_CONFIG.forEach(({ key, chipsId }) => renderChips(key, chipsId));
+  }
+});
 
 // ── Boot ───────────────────────────────────────────────────────────────
 

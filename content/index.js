@@ -6,6 +6,15 @@ import { state } from './state.js';
 import { render } from './render.js';
 import { findContentArea } from './detect.js';
 import { clearFocusMask } from './features/topicFocus.js';
+import { DEFAULT_EMOTION_POSITIVE, DEFAULT_EMOTION_NEGATIVE, DEFAULT_EMOTION_COMPLEX } from './features/emotions.js';
+import { DEFAULT_TRANSITION_WORDS } from './features/transitions.js';
+
+const DEFAULT_WORD_LISTS = {
+  emotionPositive: [...DEFAULT_EMOTION_POSITIVE],
+  emotionNegative: [...DEFAULT_EMOTION_NEGATIVE],
+  emotionComplex:  [...DEFAULT_EMOTION_COMPLEX],
+  transition:      [...DEFAULT_TRANSITION_WORDS],
+};
 
 // ── Bootstrap ──────────────────────────────────────────────────────────
 
@@ -17,7 +26,12 @@ chrome.storage.sync.get(['draSettings', 'draWordLists'], (data) => {
       state.settings.transitionAnimation = data.draSettings.logicAnimation;
     }
   }
-  if (data.draWordLists) state.wordLists = { ...state.wordLists, ...data.draWordLists };
+  if (data.draWordLists) {
+    state.wordLists = { ...state.wordLists, ...data.draWordLists };
+  } else {
+    state.wordLists = { ...DEFAULT_WORD_LISTS };
+    chrome.storage.sync.set({ draWordLists: state.wordLists });
+  }
   render();
 });
 

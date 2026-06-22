@@ -136,33 +136,31 @@ button mousedown
 ```
 initWordListEditor()
   └── chrome.storage.sync.get('draWordLists')
-        ├── 若有自定义：wordLists[key] = data.draWordLists[key]（string[]）
-        └── 若没有自定义（null 或缺失）：保持 wordLists[key] = null
+        wordLists = { ...DEFAULT_WORDS, ...data.draWordLists }
+        （storage 首次安装时已由 content/index.js 初始化，draWordLists 永远存在）
         └── renderChips(key, chipsId)   ← 渲染 chip 列表
 
 renderChips(key, chipsId)
-  └── words = wordLists[key] ?? DEFAULT_WORDS[key]
-        ← null 时展示默认词表，已自定义时展示用户词表
+  └── words = wordLists[key]   ← 始终是真实数组，不需要 ?? fallback
   └── 每个词渲染为 <span class="wl-chip"> + <button class="wl-remove">✕</button>
 
 用户点击 chip 上的 ✕
   └── removeWord(key, word)
-        ├── current = wordLists[key] ?? DEFAULT_WORDS[key]   ← null 时以默认列表为基础
-        ├── wordLists[key] = current.filter(w => w !== word)
+        ├── wordLists[key] = wordLists[key].filter(w => w !== word)
         └── saveAndBroadcast()
 
 用户在输入框输入后点 Add
   └── addWord(key, word, chipsId)
-        ├── current = wordLists[key] ?? DEFAULT_WORDS[key]   ← null 时以默认列表为基础
+        ├── current = wordLists[key]
         ├── 已存在则跳过
         ├── wordLists[key] = [...current, trimmed]
         └── saveAndBroadcast()
 
 用户点 Reset all to default
-  └── wordLists = { emotionPositive: null, emotionNegative: null, emotionComplex: null, transition: null }
-      chrome.storage.sync.remove('draWordLists')
+  └── wordLists = { ...DEFAULT_WORDS }
+      chrome.storage.sync.set({ draWordLists: wordLists })
       chrome.runtime.sendMessage({ type: 'WORDLISTS_CHANGED', wordLists })
-      renderChips()   ← null 时自动显示 DEFAULT_WORDS
+      renderChips()   ← 显示完整默认词表
 
 saveAndBroadcast()
   ├── chrome.storage.sync.set({ draWordLists: wordLists })

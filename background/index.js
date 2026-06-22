@@ -99,6 +99,10 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
         });
     }
 
+    if (msg.type === 'WORDLISTS_CHANGED') {
+      chrome.runtime.sendMessage(msg).catch(() => {});
+    }
+
     return;
   }
 
