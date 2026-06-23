@@ -54,30 +54,40 @@ function chunkByParagraphs(text, parasPerChunk = 8) {
   return chunks;
 }
 
-async function callGemini(apiKey, prompt) {
-  const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        responseMimeType: 'application/json',
-        maxOutputTokens: 4096,
-        thinkingConfig: { thinkingBudget: 1024 },
-      },
-    }),
-  });
+async function callGemini(apiKey, prompt, retries = 3) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: 'application/json',
+          maxOutputTokens: 4096,
+          thinkingConfig: { thinkingBudget: 0 },
+        },
+      }),
+    });
 
-  if (!response.ok) throw new Error(await response.text());
+    if (response.status === 503 && attempt < retries - 1) {
+      const delay = 1500 * (attempt + 1);
+      console.log(`[Gemini] 503 overloaded, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
+      await new Promise(r => setTimeout(r, delay));
+      continue;
+    }
 
-  const data = await response.json();
-  const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!raw) throw new Error('Empty Gemini response');
+    if (!response.ok) throw new Error(await response.text());
 
-  console.log('Raw Gemini response (first 200):', raw.slice(0, 200));
+    const data = await response.json();
+    const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!raw) throw new Error('Empty Gemini response');
 
-  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-  return JSON.parse(cleaned);
+    console.log('Raw Gemini response (first 200):', raw.slice(0, 200));
+
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+    return JSON.parse(cleaned);
+  }
+  throw new Error('Gemini unavailable after retries');
 }
 
 app.post('/api/analyze', async (req, res) => {
