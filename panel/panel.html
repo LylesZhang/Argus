@@ -187,16 +187,73 @@
 
       <div class="sentence-label-colors" id="sentence-label-colors">
         <div class="color-row">
-          <span>Evidence</span>
-          <input type="color" id="label-evidence-color" value="#16a34a">
+          <span>Article Type</span>
+          <select id="label-lens-select" class="lens-select">
+            <option value="news">News</option>
+            <option value="stem">Academic – STEM</option>
+            <option value="humanities">Academic – Humanities</option>
+            <option value="fiction">Fiction</option>
+          </select>
         </div>
-        <div class="color-row">
-          <span>Argument</span>
-          <input type="color" id="label-argument-color" value="#0d9488">
+
+        <div class="label-legend-group" id="legend-news">
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-core-fact">Core Fact</span>
+            <input type="color" id="label-core-fact-color">
+          </div>
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-context">Context</span>
+            <input type="color" id="label-context-color">
+          </div>
+          <div class="color-row">
+            <span class="label-swatch label-swatch--text" id="swatch-quote">Quote</span>
+            <input type="color" id="label-quote-color">
+          </div>
         </div>
-        <div class="color-row">
-          <span>Explanation</span>
-          <input type="color" id="label-explanation-color" value="#9333ea">
+
+        <div class="label-legend-group" id="legend-stem">
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-concept">Concept</span>
+            <input type="color" id="label-concept-color">
+          </div>
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-mechanism">Mechanism</span>
+            <input type="color" id="label-mechanism-color">
+          </div>
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-constraint">Constraint</span>
+            <input type="color" id="label-constraint-color">
+          </div>
+        </div>
+
+        <div class="label-legend-group" id="legend-humanities">
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-thesis">Thesis</span>
+            <input type="color" id="label-thesis-color">
+          </div>
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-evidence">Evidence</span>
+            <input type="color" id="label-evidence-color">
+          </div>
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-explanation">Explanation</span>
+            <input type="color" id="label-explanation-color">
+          </div>
+        </div>
+
+        <div class="label-legend-group" id="legend-fiction">
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-dialogue">Dialogue</span>
+            <input type="color" id="label-dialogue-color">
+          </div>
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-plot-turn">Plot Turn</span>
+            <input type="color" id="label-plot-turn-color">
+          </div>
+          <div class="color-row">
+            <span class="label-swatch" id="swatch-setting">Setting</span>
+            <input type="color" id="label-setting-color">
+          </div>
         </div>
       </div>
 

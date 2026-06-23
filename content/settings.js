@@ -9,9 +9,19 @@ export const DEFAULT_SETTINGS = {
   transitionAnimation:   false,
   sentenceLabels:        false,
   sentenceLabelsMode:    'local', // 'ai' | 'local'
-  labelEvidenceColor:    '#16a34a',
-  labelArgumentColor:    '#0d9488',
-  labelExplanationColor: '#9333ea',
+  sentenceLabelsLens:    'news',  // 'news' | 'stem' | 'humanities' | 'fiction'
+  labelCoreFactColor:    '#eab308',
+  labelContextColor:     '#3b82f6',
+  labelQuoteColor:       '#ea580c',
+  labelConceptColor:     '#9333ea',
+  labelMechanismColor:   '#f97316',
+  labelConstraintColor:  '#ef4444',
+  labelThesisColor:      '#ca8a04',
+  labelEvidenceColor:    '#22c55e',
+  labelExplanationColor: '#6b7280',
+  labelDialogueColor:    '#ec4899',
+  labelPlotTurnColor:    '#eab308',
+  labelSettingColor:     '#9ca3af',
   topicFocusMode:        'local', // 'ai' | 'local'
   fontSize:             null,
   lineHeight:           null,

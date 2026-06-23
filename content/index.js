@@ -40,7 +40,13 @@ chrome.storage.sync.get(['draSettings', 'draWordLists'], (data) => {
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'SETTINGS_CHANGED') {
     if (msg.payload.rulerActive === false) state.lastRulerY = null;
+    const prevLens = state.settings.sentenceLabelsLens;
     state.settings = { ...state.settings, ...msg.payload };
+    if (msg.payload.sentenceLabelsLens && msg.payload.sentenceLabelsLens !== prevLens) {
+      state.aiSentenceLabels         = [];
+      state.sentenceLabels           = [];
+      state.sentenceLabelsInProgress = false;
+    }
     render();
   }
 

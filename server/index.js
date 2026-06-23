@@ -151,28 +151,90 @@ app.post('/api/focus', async (req, res) => {
   }
 });
 
-const LABEL_PROMPT = (sentences) => `
-Classify each sentence by its rhetorical role. Only include sentences you are
-confident about — omit neutral or transitional ones.
+const LENS_PROMPTS = {
+  news: (sentences) => `
+Classify sentences from this NEWS ARTICLE. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{
-  "labels": [
-    { "index": <number>, "type": "argument" | "evidence" | "explanation" }
-  ]
-}
+{ "labels": [{ "index": <n>, "type": "core-fact" | "context" | "quote" }] }
 
 Definitions:
-- "argument"    — a claim, thesis, or opinion the author asserts
-- "evidence"    — specific facts, statistics, data, citations, or examples
-- "explanation" — explains a cause, mechanism, or meaning (why/how something works)
-`.trim();
+- "core-fact" — the 5W1H lead: who did what, when, where (the core breaking news)
+- "context"   — historical background or framing that explains why the event matters
+- "quote"     — a direct or reported statement from a named official, witness, or expert
+`.trim(),
+
+  stem: (sentences) => `
+Classify sentences from this STEM/ACADEMIC text. Only include sentences you are confident about.
+
+Sentences:
+${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
+
+Return ONLY this JSON:
+{ "labels": [{ "index": <n>, "type": "concept" | "mechanism" | "constraint" }] }
+
+Definitions:
+- "concept"    — defines or introduces a key term, phenomenon, or scientific principle
+- "mechanism"  — describes a causal chain or sequential process (how something works step by step)
+- "constraint" — states a limitation, exception, boundary condition, or caveat
+`.trim(),
+
+  humanities: (sentences) => `
+Classify sentences from this HUMANITIES/SOCIAL SCIENCE text. Only include sentences you are confident about.
+
+Sentences:
+${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
+
+Return ONLY this JSON:
+{ "labels": [{ "index": <n>, "type": "thesis" | "evidence" | "explanation" }] }
+
+Definitions:
+- "thesis"      — the author's central claim, argument, or critical position
+- "evidence"    — cited sources, archival data, statistics, or quoted scholarly works
+- "explanation" — how the author connects evidence to thesis, or rebuts counter-arguments
+`.trim(),
+
+  fiction: (sentences) => `
+Classify sentences from this FICTION/NARRATIVE text. Only include sentences you are confident about.
+
+Sentences:
+${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
+
+Return ONLY this JSON:
+{ "labels": [{ "index": <n>, "type": "dialogue" | "plot-turn" | "setting" }] }
+
+Definitions:
+- "dialogue"   — a character speaks or a line of dialogue is reported
+- "plot-turn"  — a key event, revelation, or dramatic turning point that advances the story
+- "setting"    — describes environment, atmosphere, or interior monologue that does not advance plot
+`.trim(),
+};
+
+async function fetchSentenceLabelsFromGemini(sentences, articleLens) {
+  const apiKey   = process.env.GEMINI_API_KEY;
+  const promptFn = LENS_PROMPTS[articleLens] ?? LENS_PROMPTS['news'];
+  const CHUNK    = 40;
+  let allLabels  = [];
+
+  if (sentences.length <= CHUNK) {
+    const result = await callGemini(apiKey, promptFn(sentences));
+    allLabels = result?.labels ?? [];
+  } else {
+    for (let i = 0; i < sentences.length; i += CHUNK) {
+      const chunk  = sentences.slice(i, i + CHUNK);
+      const result = await callGemini(apiKey, promptFn(chunk));
+      const offset = (result?.labels ?? []).map(l => ({ ...l, index: l.index + i }));
+      allLabels    = allLabels.concat(offset);
+    }
+  }
+  return allLabels;
+}
 
 app.post('/api/label', async (req, res) => {
-  const { sentences } = req.body;
+  const { sentences, articleLens } = req.body;
   if (!Array.isArray(sentences) || sentences.length === 0) {
     return res.status(400).json({ error: 'sentences array required' });
   }
@@ -180,8 +242,8 @@ app.post('/api/label', async (req, res) => {
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
   try {
-    const result = await callGemini(apiKey, LABEL_PROMPT(sentences));
-    res.json(result);
+    const labels = await fetchSentenceLabelsFromGemini(sentences, articleLens ?? 'news');
+    res.json({ labels });
   } catch (err) {
     console.error('Label error:', err);
     res.status(500).json({ error: 'Internal server error' });
