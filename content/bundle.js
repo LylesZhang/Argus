@@ -417,8 +417,13 @@
     return highlights;
   }
   function requestEmotionAnalysis() {
+    console.log("[EMO] request called | inProgress:", state.emotionAIInProgress, "| cached:", state.aiEmotionHighlights.length);
     if (state.emotionAIInProgress) return;
-    if (state.aiEmotionHighlights.length > 0) return;
+    if (state.aiEmotionHighlights.length > 0) {
+      console.log("[EMO] early return: using cache");
+      return;
+    }
+    console.log("[EMO] sending new request");
     state.emotionAIInProgress = true;
     const area = findContentArea();
     chrome.runtime.sendMessage({ type: "EMOTION_REQUEST", url: window.location.href, text: area.innerText.trim() });
@@ -1152,8 +1157,10 @@
     }
     if (msg.type === "LABEL_RESULT") {
       state.sentenceLabelsInProgress = false;
-      state.aiSentenceLabels = msg.labels || [];
-      state.sentenceLabels = state.aiSentenceLabels;
+      if (msg.labels?.length > 0) {
+        state.aiSentenceLabels = msg.labels;
+        state.sentenceLabels = state.aiSentenceLabels;
+      }
       render();
     }
     if (msg.type === "LABEL_ERROR") {
@@ -1177,8 +1184,11 @@
       clearFocusMask();
     }
     if (msg.type === "EMOTION_RESULT") {
+      console.log("[EMO] result received | highlights:", msg.highlights?.length ?? "null");
       state.emotionAIInProgress = false;
-      state.aiEmotionHighlights = msg.highlights || [];
+      if (msg.highlights?.length > 0) {
+        state.aiEmotionHighlights = msg.highlights;
+      }
       render();
     }
     if (msg.type === "EMOTION_ERROR") {

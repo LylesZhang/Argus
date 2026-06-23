@@ -72,8 +72,10 @@ export function generateEmotionHighlights() {
 }
 
 export function requestEmotionAnalysis() {
+  console.log('[EMO] request called | inProgress:', state.emotionAIInProgress, '| cached:', state.aiEmotionHighlights.length);
   if (state.emotionAIInProgress)            return;
-  if (state.aiEmotionHighlights.length > 0) return;
+  if (state.aiEmotionHighlights.length > 0) { console.log('[EMO] early return: using cache'); return; }
+  console.log('[EMO] sending new request');
   state.emotionAIInProgress = true;
   const area = findContentArea();
   chrome.runtime.sendMessage({ type: 'EMOTION_REQUEST', url: window.location.href, text: area.innerText.trim() });

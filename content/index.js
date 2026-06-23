@@ -59,8 +59,10 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'LABEL_RESULT') {
     state.sentenceLabelsInProgress = false;
-    state.aiSentenceLabels         = msg.labels || [];
-    state.sentenceLabels           = state.aiSentenceLabels;
+    if (msg.labels?.length > 0) {
+      state.aiSentenceLabels = msg.labels;
+      state.sentenceLabels   = state.aiSentenceLabels;
+    }
     render();
   }
 
@@ -89,8 +91,11 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'EMOTION_RESULT') {
+    console.log('[EMO] result received | highlights:', msg.highlights?.length ?? 'null');
     state.emotionAIInProgress = false;
-    state.aiEmotionHighlights = msg.highlights || [];
+    if (msg.highlights?.length > 0) {
+      state.aiEmotionHighlights = msg.highlights;
+    }
     render();
   }
 
