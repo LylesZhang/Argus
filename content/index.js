@@ -74,6 +74,9 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'LABEL_ERROR') {
     state.sentenceLabelsInProgress = false;
+    if (state.settings.sentenceLabels && state.settings.sentenceLabelsMode === 'ai') {
+      setTimeout(() => render(), 8000);
+    }
   }
 
   if (msg.type === 'FOCUS_AI_REQUEST') {

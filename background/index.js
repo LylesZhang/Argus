@@ -11,7 +11,7 @@ const API_BASE = 'https://argus-1ygn.onrender.com';
 const emotionCache    = new Map();
 const labelCache      = new Map();
 const CACHE_TTL_MS    = 30 * 60 * 1000; // 30 minutes
-const FETCH_TIMEOUT_MS = 10_000;
+const FETCH_TIMEOUT_MS = 90_000;
 
 function withTimeout(promise) {
   return Promise.race([

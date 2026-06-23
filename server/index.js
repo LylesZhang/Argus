@@ -229,15 +229,21 @@ async function fetchSentenceLabelsFromGemini(sentences, articleLens) {
   const CHUNK    = 40;
   let allLabels  = [];
 
+  const runChunk = async (chunk, offset) => {
+    try {
+      const result = await callGemini(apiKey, promptFn(chunk));
+      return (result?.labels ?? []).map(l => ({ ...l, index: l.index + offset }));
+    } catch (err) {
+      console.error(`[label] chunk offset=${offset} failed, skipping:`, err.message.slice(0, 80));
+      return [];
+    }
+  };
+
   if (sentences.length <= CHUNK) {
-    const result = await callGemini(apiKey, promptFn(sentences));
-    allLabels = result?.labels ?? [];
+    allLabels = await runChunk(sentences, 0);
   } else {
     for (let i = 0; i < sentences.length; i += CHUNK) {
-      const chunk  = sentences.slice(i, i + CHUNK);
-      const result = await callGemini(apiKey, promptFn(chunk));
-      const offset = (result?.labels ?? []).map(l => ({ ...l, index: l.index + i }));
-      allLabels    = allLabels.concat(offset);
+      allLabels = allLabels.concat(await runChunk(sentences.slice(i, i + CHUNK), i));
     }
   }
   return allLabels;
