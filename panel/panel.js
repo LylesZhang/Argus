@@ -42,9 +42,22 @@ const DEFAULT_SETTINGS = {
   emotionComplexColor:  '#8e44ad',
   rulerActive:          false,
   rulerWindowLines:     1.5,
+  autoScrollActive:     false,
+  autoScrollSpeed:      2,
 };
 
 let settings = { ...DEFAULT_SETTINGS };
+
+function clampAutoScrollSpeed(value) {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return DEFAULT_SETTINGS.autoScrollSpeed;
+  if (raw > 10) return Math.min(10, Math.max(1, Math.round(1 + ((raw - 15) * 9 / 165))));
+  return Math.min(10, Math.max(1, Math.round(raw)));
+}
+
+function formatAutoScrollSpeed(value) {
+  return 'Speed ' + String(value).padStart(2, '0');
+}
 
 // ── Lens legend switcher ───────────────────────────────────────────────
 
@@ -72,6 +85,7 @@ function syncUI() {
   document.getElementById('toggle-gradient').checked  = settings.gradientRows;
   document.getElementById('toggle-transition').checked = settings.transitionAnimation;
   document.getElementById('toggle-ruler').checked     = settings.rulerActive;
+  document.getElementById('toggle-auto-scroll').checked = settings.autoScrollActive;
 
   document.getElementById('font-family').value        = settings.fontFamily ?? '';
   document.getElementById('font-size-slider').value   = settings.fontSize ?? 18;
@@ -106,6 +120,9 @@ function syncUI() {
   switchLensLegend(settings.sentenceLabelsLens ?? 'news');
   document.getElementById('ruler-size-slider').value  = settings.rulerWindowLines;
   document.getElementById('ruler-size-value').textContent = settings.rulerWindowLines.toFixed(1) + ' lines';
+  const autoScrollSpeed = clampAutoScrollSpeed(settings.autoScrollSpeed);
+  document.getElementById('auto-scroll-speed-slider').value = autoScrollSpeed;
+  document.getElementById('auto-scroll-speed-value').textContent = formatAutoScrollSpeed(autoScrollSpeed);
 
   document.getElementById('emotion-colors').classList.toggle('active', settings.emotionColor);
   document.getElementById('sentence-label-colors').classList.toggle('active', settings.sentenceLabels);
@@ -170,6 +187,7 @@ function init() {
       document.getElementById('toggle-transition').checked = false;
       document.getElementById('toggle-labels').checked     = false;
       document.getElementById('toggle-ruler').checked      = false;
+      document.getElementById('toggle-auto-scroll').checked = false;
       document.getElementById('emotion-colors').classList.remove('active');
       document.getElementById('sentence-label-colors').classList.remove('active');
       document.getElementById('row-shading-color').classList.remove('active');
@@ -178,6 +196,7 @@ function init() {
         emotionColor: false,
         gradientRows: false,  transitionAnimation: false,
         sentenceLabels: false, rulerActive: false,
+        autoScrollActive: false,
       });
     } else {
       broadcast({ readingAidsEnabled: true });
@@ -226,10 +245,21 @@ function init() {
     document.getElementById('ruler-size-control').classList.toggle('active', e.target.checked);
   });
 
+  document.getElementById('toggle-auto-scroll').addEventListener('change', e => {
+    enableReadingAidIfNeeded(e.target.checked);
+    broadcast({ autoScrollActive: e.target.checked });
+  });
+
   document.getElementById('ruler-size-slider').addEventListener('input', e => {
     const v = parseFloat(e.target.value);
     document.getElementById('ruler-size-value').textContent = v.toFixed(1) + ' lines';
     broadcast({ rulerWindowLines: v });
+  });
+
+  document.getElementById('auto-scroll-speed-slider').addEventListener('input', e => {
+    const v = clampAutoScrollSpeed(e.target.value);
+    document.getElementById('auto-scroll-speed-value').textContent = formatAutoScrollSpeed(v);
+    broadcast({ autoScrollSpeed: v });
   });
 
   // Typography controls — auto-enable parent if any control is adjusted while parent is off

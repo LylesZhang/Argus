@@ -335,10 +335,29 @@ body {
 
 /* ── Ruler inline row ────────────────────────────────────────────────── */
 
-.ruler-row { border-top: 1px solid var(--border); }
-.ruler-row .toggle-label { flex: 1; }
-.ruler-slider { width: 75px; flex-shrink: 0; }
-.ruler-row .slider-value { white-space: nowrap; flex-shrink: 0; }
+.ruler-row,
+.auto-scroll-row { border-top: 1px solid var(--border); }
+.ruler-row .toggle-label,
+.auto-scroll-row .toggle-label {
+  flex: 0 0 105px;
+}
+.ruler-slider,
+.auto-scroll-slider {
+  width: 84px;
+  flex-shrink: 0;
+}
+.ruler-row .slider-value,
+.auto-scroll-row .slider-value { white-space: nowrap; flex-shrink: 0; }
+.ruler-row .slider-value {
+  width: 62px;
+  text-align: right;
+}
+.auto-scroll-row .slider-value {
+  width: 68px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
 
 /* ── AI / Local mode pill ────────────────────────────────────────────── */
 

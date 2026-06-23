@@ -38,7 +38,9 @@
     emotionNegativeColor: "#e74c3c",
     emotionComplexColor: "#8e44ad",
     rulerActive: false,
-    rulerWindowLines: 1.5
+    rulerWindowLines: 1.5,
+    autoScrollActive: false,
+    autoScrollSpeed: 2
   };
 
   // content/state.js
@@ -683,6 +685,34 @@
     document.removeEventListener("mousemove", updateRuler);
   }
 
+  // content/features/autoScroll.js
+  var frameId = null;
+  var lastTime = null;
+  var speedPxPerSecond = 30;
+  function speedLevelToPixelsPerSecond(level) {
+    const raw = Number(level);
+    const safeLevel = raw > 10 ? Math.min(10, Math.max(1, Math.round(1 + (raw - 15) * 9 / 165))) : Math.min(10, Math.max(1, Math.round(raw || 2)));
+    return 15 + (safeLevel - 1) * (165 / 9);
+  }
+  function tick(timestamp) {
+    if (lastTime === null) lastTime = timestamp;
+    const elapsedSeconds = (timestamp - lastTime) / 1e3;
+    lastTime = timestamp;
+    window.scrollBy({ top: speedPxPerSecond * elapsedSeconds, left: 0, behavior: "auto" });
+    frameId = requestAnimationFrame(tick);
+  }
+  function setupAutoScroll(speed) {
+    speedPxPerSecond = speedLevelToPixelsPerSecond(speed);
+    if (frameId !== null) return;
+    lastTime = null;
+    frameId = requestAnimationFrame(tick);
+  }
+  function teardownAutoScroll() {
+    if (frameId !== null) cancelAnimationFrame(frameId);
+    frameId = null;
+    lastTime = null;
+  }
+
   // content/features/topicFocus.js
   var STOP_WORDS = /* @__PURE__ */ new Set([
     "a",
@@ -1139,6 +1169,11 @@
     }
     if (state.settings.readingAidsEnabled && state.settings.rulerActive) setupRuler();
     else teardownRuler();
+    if (state.settings.readingAidsEnabled && state.settings.autoScrollActive) {
+      setupAutoScroll(state.settings.autoScrollSpeed);
+    } else {
+      teardownAutoScroll();
+    }
   }
   function removeTransformations() {
     if (!state.contentArea) return;
@@ -1172,6 +1207,8 @@
     }
     if (state.settings.typographyEnabled || state.settings.readingAidsEnabled || state.topicFocusKeywords || state.topicFocusAIPrefixes) {
       applyTransformations();
+    } else {
+      teardownAutoScroll();
     }
     if (state.topicFocusKeywords) {
       applyFocusMask(state.topicFocusKeywords);

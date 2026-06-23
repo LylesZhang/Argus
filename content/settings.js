@@ -33,4 +33,6 @@ export const DEFAULT_SETTINGS = {
   emotionComplexColor:  '#8e44ad',
   rulerActive:          false,
   rulerWindowLines:     1.5,
+  autoScrollActive:     false,
+  autoScrollSpeed:      2,
 };

@@ -7,6 +7,7 @@ import { generateEmotionHighlights, requestEmotionAnalysis } from './features/em
 import { generateTransitionHighlights } from './features/transitions.js';
 import { extractAllSentences, generateSentenceLabels, requestSentenceLabels } from './features/labels.js';
 import { setupRuler, teardownRuler } from './features/ruler.js';
+import { setupAutoScroll, teardownAutoScroll } from './features/autoScroll.js';
 import { applyFocusMask, applyFocusMaskByPrefixes } from './features/topicFocus.js';
 import { setupSelectionMenu, teardownSelectionMenu } from './features/selectionMenu.js';
 
@@ -228,6 +229,12 @@ function applyTransformations() {
 
   if (state.settings.readingAidsEnabled && state.settings.rulerActive) setupRuler();
   else teardownRuler();
+
+  if (state.settings.readingAidsEnabled && state.settings.autoScrollActive) {
+    setupAutoScroll(state.settings.autoScrollSpeed);
+  } else {
+    teardownAutoScroll();
+  }
 }
 
 function removeTransformations() {
@@ -273,6 +280,8 @@ export function render() {
   if (state.settings.typographyEnabled || state.settings.readingAidsEnabled ||
       state.topicFocusKeywords || state.topicFocusAIPrefixes) {
     applyTransformations();
+  } else {
+    teardownAutoScroll();
   }
   if (state.topicFocusKeywords) {
     applyFocusMask(state.topicFocusKeywords);
