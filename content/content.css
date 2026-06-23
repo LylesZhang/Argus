@@ -14,23 +14,79 @@
 
 /* ── Sentence Type Highlights ────────────────────────────────────────── */
 
-.dra-sentence-label-evidence,
-.dra-sentence-label-argument,
-.dra-sentence-label-explanation {
+/* Lens: 新闻 */
+.dra-label-core-fact {
+  background: color-mix(in srgb, var(--dra-label-core-fact, #eab308) 28%, transparent);
+  font-weight: 700;
+  padding: 1px 3px;
+  border-radius: 4px;
+}
+.dra-label-context {
+  background: color-mix(in srgb, var(--dra-label-context, #3b82f6) 12%, transparent);
+  border-left: 3px solid color-mix(in srgb, var(--dra-label-context, #3b82f6) 45%, transparent);
+  padding: 1px 3px 1px 6px;
+  border-radius: 0 4px 4px 0;
+}
+.dra-label-quote {
+  background: color-mix(in srgb, var(--dra-label-quote, #ea580c) 18%, transparent);
+  font-style: italic;
   padding: 1px 3px;
   border-radius: 4px;
 }
 
-.dra-sentence-label-evidence {
-  background: color-mix(in srgb, var(--dra-label-evidence, #16a34a) 18%, transparent);
+/* Lens: 学术-理工 */
+.dra-label-concept {
+  background: color-mix(in srgb, var(--dra-label-concept, #9333ea) 12%, transparent);
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+  padding: 1px 3px;
+  border-radius: 4px;
+}
+.dra-label-mechanism {
+  background: color-mix(in srgb, var(--dra-label-mechanism, #f97316) 14%, transparent);
+  padding: 1px 3px;
+  border-radius: 4px;
+}
+.dra-label-constraint {
+  background: color-mix(in srgb, var(--dra-label-constraint, #ef4444) 12%, transparent);
+  padding: 1px 3px;
+  border-radius: 4px;
 }
 
-.dra-sentence-label-argument {
-  background: color-mix(in srgb, var(--dra-label-argument, #0d9488) 18%, transparent);
+/* Lens: 学术-人文 */
+.dra-label-thesis {
+  background: color-mix(in srgb, var(--dra-label-thesis, #ca8a04) 18%, transparent);
+  outline: 1.5px solid color-mix(in srgb, var(--dra-label-thesis, #ca8a04) 35%, transparent);
+  border-radius: 3px;
+  padding: 1px 3px;
+}
+.dra-label-evidence {
+  background: color-mix(in srgb, var(--dra-label-evidence, #22c55e) 14%, transparent);
+  padding: 1px 3px;
+  border-radius: 4px;
+}
+.dra-label-explanation {
+  background: color-mix(in srgb, var(--dra-label-explanation, #6b7280) 12%, transparent);
+  padding: 1px 3px;
+  border-radius: 4px;
 }
 
-.dra-sentence-label-explanation {
-  background: color-mix(in srgb, var(--dra-label-explanation, #9333ea) 18%, transparent);
+/* Lens: 小说 */
+.dra-label-dialogue {
+  background: color-mix(in srgb, var(--dra-label-dialogue, #ec4899) 12%, transparent);
+  padding: 1px 3px;
+  border-radius: 4px;
+}
+.dra-label-plot-turn {
+  background: color-mix(in srgb, var(--dra-label-plot-turn, #eab308) 25%, transparent);
+  padding: 1px 3px;
+  border-radius: 4px;
+}
+.dra-label-setting {
+  background: color-mix(in srgb, var(--dra-label-setting, #9ca3af) 12%, transparent);
+  padding: 1px 3px;
+  border-radius: 4px;
 }
 
 /* ── Transition Word Highlight ───────────────────────────────────────── */

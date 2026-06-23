@@ -43,8 +43,9 @@ async function fetchEmotionAnalysis(text, url) {
   return result;
 }
 
-async function fetchSentenceLabels(sentences, url) {
-  const cached = labelCache.get(url);
+async function fetchSentenceLabels(sentences, url, articleLens = 'news') {
+  const cacheKey = `${url}|${articleLens}`;
+  const cached = labelCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     return cached.result;
   }
@@ -54,7 +55,7 @@ async function fetchSentenceLabels(sentences, url) {
     const response = await withTimeout(fetch(`${API_BASE}/api/label`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sentences }),
+      body: JSON.stringify({ sentences, articleLens }),
     }));
     if (!response.ok) return null;
     result = await response.json();
@@ -62,7 +63,7 @@ async function fetchSentenceLabels(sentences, url) {
     return null;
   }
 
-  if (result?.labels) labelCache.set(url, { result: result.labels, timestamp: Date.now() });
+  if (result?.labels) labelCache.set(cacheKey, { result: result.labels, timestamp: Date.now() });
   return result?.labels ?? null;
 }
 
@@ -79,7 +80,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     }
 
     if (msg.type === 'LABEL_REQUEST') {
-      fetchSentenceLabels(msg.sentences, sender.tab.url).then(labels => {
+      fetchSentenceLabels(msg.sentences, sender.tab.url, msg.articleLens).then(labels => {
         const type = labels ? 'LABEL_RESULT' : 'LABEL_ERROR';
         chrome.tabs.sendMessage(sender.tab.id, labels ? { type, labels } : { type });
       });

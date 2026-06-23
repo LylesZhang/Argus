@@ -16,9 +16,19 @@ const DEFAULT_SETTINGS = {
   transitionAnimation:   false,
   sentenceLabels:        false,
   sentenceLabelsMode:    'local',
-  labelEvidenceColor:    '#16a34a',
-  labelArgumentColor:    '#0d9488',
-  labelExplanationColor: '#9333ea',
+  sentenceLabelsLens:    'news',
+  labelCoreFactColor:    '#eab308',
+  labelContextColor:     '#3b82f6',
+  labelQuoteColor:       '#ea580c',
+  labelConceptColor:     '#9333ea',
+  labelMechanismColor:   '#f97316',
+  labelConstraintColor:  '#ef4444',
+  labelThesisColor:      '#ca8a04',
+  labelEvidenceColor:    '#22c55e',
+  labelExplanationColor: '#6b7280',
+  labelDialogueColor:    '#ec4899',
+  labelPlotTurnColor:    '#eab308',
+  labelSettingColor:     '#9ca3af',
   topicFocusMode:        'local',
   fontSize:             18,
   lineHeight:           1.8,
@@ -29,12 +39,20 @@ const DEFAULT_SETTINGS = {
   bgColor:              '#ffffff',
   emotionPositiveColor: '#27ae60',
   emotionNegativeColor: '#e74c3c',
-  emotionComplexColor: '#8e44ad',
+  emotionComplexColor:  '#8e44ad',
   rulerActive:          false,
   rulerWindowLines:     1.5,
 };
 
 let settings = { ...DEFAULT_SETTINGS };
+
+// ── Lens legend switcher ───────────────────────────────────────────────
+
+function switchLensLegend(lens) {
+  ['news', 'stem', 'humanities', 'fiction'].forEach(l => {
+    document.getElementById(`legend-${l}`).style.display = l === lens ? '' : 'none';
+  });
+}
 
 // ── Send updated settings to background (which relays to content script) ─
 
@@ -72,9 +90,20 @@ function syncUI() {
   document.getElementById('emotion-positive-color').value = settings.emotionPositiveColor;
   document.getElementById('emotion-negative-color').value = settings.emotionNegativeColor;
   document.getElementById('emotion-complex-color').value = settings.emotionComplexColor;
-  document.getElementById('label-evidence-color').value = settings.labelEvidenceColor;
-  document.getElementById('label-argument-color').value = settings.labelArgumentColor;
-  document.getElementById('label-explanation-color').value = settings.labelExplanationColor;
+  document.getElementById('label-core-fact-color').value  = settings.labelCoreFactColor;
+  document.getElementById('label-context-color').value    = settings.labelContextColor;
+  document.getElementById('label-quote-color').value      = settings.labelQuoteColor;
+  document.getElementById('label-concept-color').value    = settings.labelConceptColor;
+  document.getElementById('label-mechanism-color').value  = settings.labelMechanismColor;
+  document.getElementById('label-constraint-color').value = settings.labelConstraintColor;
+  document.getElementById('label-thesis-color').value     = settings.labelThesisColor;
+  document.getElementById('label-evidence-color').value      = settings.labelEvidenceColor;
+  document.getElementById('label-explanation-color').value   = settings.labelExplanationColor;
+  document.getElementById('label-dialogue-color').value      = settings.labelDialogueColor;
+  document.getElementById('label-plot-turn-color').value    = settings.labelPlotTurnColor;
+  document.getElementById('label-setting-color').value      = settings.labelSettingColor;
+  document.getElementById('label-lens-select').value = settings.sentenceLabelsLens ?? 'news';
+  switchLensLegend(settings.sentenceLabelsLens ?? 'news');
   document.getElementById('ruler-size-slider').value  = settings.rulerWindowLines;
   document.getElementById('ruler-size-value').textContent = settings.rulerWindowLines.toFixed(1) + ' lines';
 
@@ -337,14 +366,29 @@ function init() {
   document.getElementById('emotion-complex-color').addEventListener('input', e => {
     broadcast({ emotionComplexColor: e.target.value });
   });
-  document.getElementById('label-evidence-color').addEventListener('input', e => {
-    broadcast({ labelEvidenceColor: e.target.value });
+  document.getElementById('label-lens-select').addEventListener('change', e => {
+    switchLensLegend(e.target.value);
+    broadcast({ sentenceLabelsLens: e.target.value });
   });
-  document.getElementById('label-argument-color').addEventListener('input', e => {
-    broadcast({ labelArgumentColor: e.target.value });
-  });
-  document.getElementById('label-explanation-color').addEventListener('input', e => {
-    broadcast({ labelExplanationColor: e.target.value });
+
+  const labelColorMap = {
+    'label-core-fact-color':   'labelCoreFactColor',
+    'label-context-color':     'labelContextColor',
+    'label-quote-color':       'labelQuoteColor',
+    'label-concept-color':     'labelConceptColor',
+    'label-mechanism-color':   'labelMechanismColor',
+    'label-constraint-color':  'labelConstraintColor',
+    'label-thesis-color':      'labelThesisColor',
+    'label-evidence-color':    'labelEvidenceColor',
+    'label-explanation-color': 'labelExplanationColor',
+    'label-dialogue-color':    'labelDialogueColor',
+    'label-plot-turn-color':   'labelPlotTurnColor',
+    'label-setting-color':     'labelSettingColor',
+  };
+  Object.entries(labelColorMap).forEach(([id, key]) => {
+    document.getElementById(id).addEventListener('input', e => {
+      broadcast({ [key]: e.target.value });
+    });
   });
 
   // Mode pills (AI / Local) for emotion and sentenceLabels

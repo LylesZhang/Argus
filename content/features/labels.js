@@ -2,38 +2,65 @@ import { findContentArea } from '../detect.js';
 import { state } from '../state.js';
 import { splitSentences } from '../utils.js';
 
-export const LABEL_RULES = {
-  evidence: [
-    /for (example|instance)/i,
-    /according to/i,
-    /research (shows|suggests|finds|indicates)/i,
-    /studies (show|suggest|indicate|found)/i,
-    /data (shows|reveals|indicates|suggests)/i,
-    /\d+(\.\d+)?(\s?%| million| billion| thousand)/,
-    /evidence (shows|suggests|indicates)/i,
-    /survey(s)? (show|found|reveal)/i,
-    /report(s)? (show|found|reveal|indicate)/i,
-    /statistics (show|reveal)/i,
-  ],
-  argument: [
-    /\b(should|must|ought to|need to|have to)\b/i,
-    /it is (clear|evident|obvious|crucial|essential|imperative) that/i,
-    /\b(argue|contend|assert|claim|maintain|insist)\b/i,
-    /we (must|need|should|cannot|can no longer)/i,
-    /it is time to/i,
-    /the (solution|answer|key) (is|lies)/i,
-  ],
-  explanation: [
-    /\bbecause\b/i,
-    /this (means|causes|results in|leads to|explains)/i,
-    /as a result/i,
-    /due to (the|this|a)/i,
-    /explains (why|how)/i,
-    /the reason (is|why|for)/i,
-    /in other words/i,
-    /that is (to say)?/i,
-    /this (is because|occurs because|happens because)/i,
-  ],
+export const LENS_RULES = {
+  news: {
+    'core-fact': [
+      /\b(announced|confirmed|declared|signed|approved|passed|killed|arrested|elected|won|lost)\b/i,
+      /\b(breaking|just in|update|developing)\b/i,
+    ],
+    context: [
+      /\b(in the wake of|following years of|historically|since \d{4}|long.standing|decades.long)\b/i,
+      /\b(background|context|previously|at the time)\b/i,
+    ],
+    quote: [
+      /[""][^""]{8,}[""].*\b(said|told|stated|added|wrote)\b/i,
+      /\b(said|according to|told reporters?|spokesperson)\b.*[""][^""]{5,}[""]/i,
+    ],
+  },
+  stem: {
+    concept: [
+      /\bis defined as\b/i,
+      /\b(known as|referred to as|termed|called)\b/i,
+      /\bthe (process|phenomenon|principle|law|theory|property) of\b/i,
+    ],
+    mechanism: [
+      /\b(first|then|next|subsequently|as a result|this causes|leading to|which triggers|therefore|thus|consequently)\b/i,
+    ],
+    constraint: [
+      /\b(however|but|except when|unless|only (when|if)|provided that|in the absence of)\b/i,
+      /\b(limitation|caveat|assumption|cannot|does not apply|fails when)\b/i,
+    ],
+  },
+  humanities: {
+    thesis: [
+      /\b(this (paper|essay|article|study) (argues?|contends?|proposes?|demonstrates?))\b/i,
+      /\b(I argue|I contend|my (claim|argument|thesis) is)\b/i,
+    ],
+    evidence: [
+      /\b(according to|cited in|as [A-Z][a-z]+ (\(\d{4}\))? (noted?|argues?|writes?))\b/i,
+      /\b(historical records?|archival|census data|survey(s)?|statistics show)\b/i,
+      /\(\d{4}[,)]/,
+    ],
+    explanation: [
+      /\b(this (means?|suggests?|indicates?|demonstrates?|reveals?|implies?))\b/i,
+      /\b(in other words|that is to say|put differently|this is because)\b/i,
+      /\b(explains? (why|how)|the reason (is|why|for))\b/i,
+    ],
+  },
+  fiction: {
+    dialogue: [
+      /^["""«].{5,}["""»]/,
+      /\b(said|whispered|shouted|replied|asked|muttered|exclaimed|cried)\b/i,
+    ],
+    'plot-turn': [
+      /\b(suddenly|at that moment|without warning|for the first time|everything changed|realized|discovered|revealed)\b/i,
+      /\b(shot|killed|ran|burst|collapsed|vanished|appeared|attacked|escaped)\b/i,
+    ],
+    setting: [
+      /\b(the (room|air|sky|street|forest|castle|ocean|light|darkness|silence))\b/i,
+      /\b(smelled?|felt|looked|seemed|appeared|stretched|loomed|glittered|faded)\b/i,
+    ],
+  },
 };
 
 export function extractAllSentences() {
@@ -44,10 +71,12 @@ export function extractAllSentences() {
 }
 
 export function generateSentenceLabels() {
+  const lens      = state.settings.sentenceLabelsLens ?? 'news';
+  const rules     = LENS_RULES[lens];
   const sentences = extractAllSentences();
-  const labels = [];
+  const labels    = [];
   sentences.forEach((s, i) => {
-    for (const [type, patterns] of Object.entries(LABEL_RULES)) {
+    for (const [type, patterns] of Object.entries(rules)) {
       if (patterns.some(rx => rx.test(s))) {
         labels.push({ index: i, type });
         break;
@@ -58,9 +87,13 @@ export function generateSentenceLabels() {
 }
 
 export function requestSentenceLabels() {
-  if (state.sentenceLabelsInProgress)      return;
-  if (state.aiSentenceLabels.length > 0)   return;
+  if (state.sentenceLabelsInProgress)    return;
+  if (state.aiSentenceLabels.length > 0) return;
   state.sentenceLabelsInProgress = true;
   state.allSentences = extractAllSentences();
-  chrome.runtime.sendMessage({ type: 'LABEL_REQUEST', sentences: state.allSentences });
+  chrome.runtime.sendMessage({
+    type:        'LABEL_REQUEST',
+    sentences:   state.allSentences,
+    articleLens: state.settings.sentenceLabelsLens ?? 'news',
+  });
 }

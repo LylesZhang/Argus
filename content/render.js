@@ -69,13 +69,20 @@ function renderSentence(s) {
 function buildParagraphHTML(plainText) {
   const sentences = splitSentences(plainText.trim());
 
+  const VALID_LABEL_TYPES = new Set([
+    'core-fact', 'context', 'quote',
+    'concept', 'mechanism', 'constraint',
+    'thesis', 'evidence', 'explanation',
+    'dialogue', 'plot-turn', 'setting',
+  ]);
+
   const sentenceLabelClass = (s) => {
     if (!state.settings.sentenceLabels) return '';
     const trimmed = s.trim();
     const idx   = state.allSentences.findIndex(as => as.slice(0, 25) === trimmed.slice(0, 25));
     const label = state.sentenceLabels.find(l => l.index === idx);
-    return ['evidence', 'argument', 'explanation'].includes(label?.type)
-      ? ` dra-sentence-label-${label.type}`
+    return VALID_LABEL_TYPES.has(label?.type)
+      ? ` dra-label-${label.type}`
       : '';
   };
 
@@ -164,9 +171,18 @@ function applyTransformations() {
   document.documentElement.style.setProperty('--dra-negative', state.settings.emotionNegativeColor);
   document.documentElement.style.setProperty('--dra-complex',  state.settings.emotionComplexColor);
   document.documentElement.style.setProperty('--dra-row-shading', state.settings.rowShadingColor);
-  document.documentElement.style.setProperty('--dra-label-evidence', state.settings.labelEvidenceColor);
-  document.documentElement.style.setProperty('--dra-label-argument', state.settings.labelArgumentColor);
-  document.documentElement.style.setProperty('--dra-label-explanation', state.settings.labelExplanationColor);
+  document.documentElement.style.setProperty('--dra-label-core-fact',   state.settings.labelCoreFactColor);
+  document.documentElement.style.setProperty('--dra-label-context',     state.settings.labelContextColor);
+  document.documentElement.style.setProperty('--dra-label-quote',       state.settings.labelQuoteColor);
+  document.documentElement.style.setProperty('--dra-label-concept',     state.settings.labelConceptColor);
+  document.documentElement.style.setProperty('--dra-label-mechanism',   state.settings.labelMechanismColor);
+  document.documentElement.style.setProperty('--dra-label-constraint',  state.settings.labelConstraintColor);
+  document.documentElement.style.setProperty('--dra-label-thesis',      state.settings.labelThesisColor);
+  document.documentElement.style.setProperty('--dra-label-evidence',     state.settings.labelEvidenceColor);
+  document.documentElement.style.setProperty('--dra-label-explanation',  state.settings.labelExplanationColor);
+  document.documentElement.style.setProperty('--dra-label-dialogue',     state.settings.labelDialogueColor);
+  document.documentElement.style.setProperty('--dra-label-plot-turn',    state.settings.labelPlotTurnColor);
+  document.documentElement.style.setProperty('--dra-label-setting',      state.settings.labelSettingColor);
 
   // Apply per-element styles (child elements often override contentArea-level styles)
   state.contentArea.querySelectorAll('p, li, blockquote').forEach(para => {

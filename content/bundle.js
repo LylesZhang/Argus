@@ -13,9 +13,20 @@
     sentenceLabels: false,
     sentenceLabelsMode: "local",
     // 'ai' | 'local'
-    labelEvidenceColor: "#16a34a",
-    labelArgumentColor: "#0d9488",
-    labelExplanationColor: "#9333ea",
+    sentenceLabelsLens: "news",
+    // 'news' | 'stem' | 'humanities' | 'fiction'
+    labelCoreFactColor: "#eab308",
+    labelContextColor: "#3b82f6",
+    labelQuoteColor: "#ea580c",
+    labelConceptColor: "#9333ea",
+    labelMechanismColor: "#f97316",
+    labelConstraintColor: "#ef4444",
+    labelThesisColor: "#ca8a04",
+    labelEvidenceColor: "#22c55e",
+    labelExplanationColor: "#6b7280",
+    labelDialogueColor: "#ec4899",
+    labelPlotTurnColor: "#eab308",
+    labelSettingColor: "#9ca3af",
     topicFocusMode: "local",
     // 'ai' | 'local'
     fontSize: null,
@@ -551,48 +562,77 @@
   }
 
   // content/features/labels.js
-  var LABEL_RULES = {
-    evidence: [
-      /for (example|instance)/i,
-      /according to/i,
-      /research (shows|suggests|finds|indicates)/i,
-      /studies (show|suggest|indicate|found)/i,
-      /data (shows|reveals|indicates|suggests)/i,
-      /\d+(\.\d+)?(\s?%| million| billion| thousand)/,
-      /evidence (shows|suggests|indicates)/i,
-      /survey(s)? (show|found|reveal)/i,
-      /report(s)? (show|found|reveal|indicate)/i,
-      /statistics (show|reveal)/i
-    ],
-    argument: [
-      /\b(should|must|ought to|need to|have to)\b/i,
-      /it is (clear|evident|obvious|crucial|essential|imperative) that/i,
-      /\b(argue|contend|assert|claim|maintain|insist)\b/i,
-      /we (must|need|should|cannot|can no longer)/i,
-      /it is time to/i,
-      /the (solution|answer|key) (is|lies)/i
-    ],
-    explanation: [
-      /\bbecause\b/i,
-      /this (means|causes|results in|leads to|explains)/i,
-      /as a result/i,
-      /due to (the|this|a)/i,
-      /explains (why|how)/i,
-      /the reason (is|why|for)/i,
-      /in other words/i,
-      /that is (to say)?/i,
-      /this (is because|occurs because|happens because)/i
-    ]
+  var LENS_RULES = {
+    news: {
+      "core-fact": [
+        /\b(announced|confirmed|declared|signed|approved|passed|killed|arrested|elected|won|lost)\b/i,
+        /\b(breaking|just in|update|developing)\b/i
+      ],
+      context: [
+        /\b(in the wake of|following years of|historically|since \d{4}|long.standing|decades.long)\b/i,
+        /\b(background|context|previously|at the time)\b/i
+      ],
+      quote: [
+        /[""][^""]{8,}[""].*\b(said|told|stated|added|wrote)\b/i,
+        /\b(said|according to|told reporters?|spokesperson)\b.*[""][^""]{5,}[""]/i
+      ]
+    },
+    stem: {
+      concept: [
+        /\bis defined as\b/i,
+        /\b(known as|referred to as|termed|called)\b/i,
+        /\bthe (process|phenomenon|principle|law|theory|property) of\b/i
+      ],
+      mechanism: [
+        /\b(first|then|next|subsequently|as a result|this causes|leading to|which triggers|therefore|thus|consequently)\b/i
+      ],
+      constraint: [
+        /\b(however|but|except when|unless|only (when|if)|provided that|in the absence of)\b/i,
+        /\b(limitation|caveat|assumption|cannot|does not apply|fails when)\b/i
+      ]
+    },
+    humanities: {
+      thesis: [
+        /\b(this (paper|essay|article|study) (argues?|contends?|proposes?|demonstrates?))\b/i,
+        /\b(I argue|I contend|my (claim|argument|thesis) is)\b/i
+      ],
+      evidence: [
+        /\b(according to|cited in|as [A-Z][a-z]+ (\(\d{4}\))? (noted?|argues?|writes?))\b/i,
+        /\b(historical records?|archival|census data|survey(s)?|statistics show)\b/i,
+        /\(\d{4}[,)]/
+      ],
+      explanation: [
+        /\b(this (means?|suggests?|indicates?|demonstrates?|reveals?|implies?))\b/i,
+        /\b(in other words|that is to say|put differently|this is because)\b/i,
+        /\b(explains? (why|how)|the reason (is|why|for))\b/i
+      ]
+    },
+    fiction: {
+      dialogue: [
+        /^["""«].{5,}["""»]/,
+        /\b(said|whispered|shouted|replied|asked|muttered|exclaimed|cried)\b/i
+      ],
+      "plot-turn": [
+        /\b(suddenly|at that moment|without warning|for the first time|everything changed|realized|discovered|revealed)\b/i,
+        /\b(shot|killed|ran|burst|collapsed|vanished|appeared|attacked|escaped)\b/i
+      ],
+      setting: [
+        /\b(the (room|air|sky|street|forest|castle|ocean|light|darkness|silence))\b/i,
+        /\b(smelled?|felt|looked|seemed|appeared|stretched|loomed|glittered|faded)\b/i
+      ]
+    }
   };
   function extractAllSentences() {
     const area = findContentArea();
     return area.innerText.split(/\n+/).filter((p) => p.trim().length > 20).flatMap((p) => splitSentences(p.trim()).filter((s) => s.trim()));
   }
   function generateSentenceLabels() {
+    const lens = state.settings.sentenceLabelsLens ?? "news";
+    const rules = LENS_RULES[lens];
     const sentences = extractAllSentences();
     const labels = [];
     sentences.forEach((s, i) => {
-      for (const [type, patterns] of Object.entries(LABEL_RULES)) {
+      for (const [type, patterns] of Object.entries(rules)) {
         if (patterns.some((rx) => rx.test(s))) {
           labels.push({ index: i, type });
           break;
@@ -606,7 +646,11 @@
     if (state.aiSentenceLabels.length > 0) return;
     state.sentenceLabelsInProgress = true;
     state.allSentences = extractAllSentences();
-    chrome.runtime.sendMessage({ type: "LABEL_REQUEST", sentences: state.allSentences });
+    chrome.runtime.sendMessage({
+      type: "LABEL_REQUEST",
+      sentences: state.allSentences,
+      articleLens: state.settings.sentenceLabelsLens ?? "news"
+    });
   }
 
   // content/features/ruler.js
@@ -943,12 +987,26 @@
   }
   function buildParagraphHTML(plainText) {
     const sentences = splitSentences(plainText.trim());
+    const VALID_LABEL_TYPES = /* @__PURE__ */ new Set([
+      "core-fact",
+      "context",
+      "quote",
+      "concept",
+      "mechanism",
+      "constraint",
+      "thesis",
+      "evidence",
+      "explanation",
+      "dialogue",
+      "plot-turn",
+      "setting"
+    ]);
     const sentenceLabelClass = (s) => {
       if (!state.settings.sentenceLabels) return "";
       const trimmed = s.trim();
       const idx = state.allSentences.findIndex((as) => as.slice(0, 25) === trimmed.slice(0, 25));
       const label = state.sentenceLabels.find((l) => l.index === idx);
-      return ["evidence", "argument", "explanation"].includes(label?.type) ? ` dra-sentence-label-${label.type}` : "";
+      return VALID_LABEL_TYPES.has(label?.type) ? ` dra-label-${label.type}` : "";
     };
     return sentences.map(
       (s) => `<span class="dra-sentence${sentenceLabelClass(s)}">${renderSentence(s)}</span>`
@@ -1039,9 +1097,18 @@
     document.documentElement.style.setProperty("--dra-negative", state.settings.emotionNegativeColor);
     document.documentElement.style.setProperty("--dra-complex", state.settings.emotionComplexColor);
     document.documentElement.style.setProperty("--dra-row-shading", state.settings.rowShadingColor);
+    document.documentElement.style.setProperty("--dra-label-core-fact", state.settings.labelCoreFactColor);
+    document.documentElement.style.setProperty("--dra-label-context", state.settings.labelContextColor);
+    document.documentElement.style.setProperty("--dra-label-quote", state.settings.labelQuoteColor);
+    document.documentElement.style.setProperty("--dra-label-concept", state.settings.labelConceptColor);
+    document.documentElement.style.setProperty("--dra-label-mechanism", state.settings.labelMechanismColor);
+    document.documentElement.style.setProperty("--dra-label-constraint", state.settings.labelConstraintColor);
+    document.documentElement.style.setProperty("--dra-label-thesis", state.settings.labelThesisColor);
     document.documentElement.style.setProperty("--dra-label-evidence", state.settings.labelEvidenceColor);
-    document.documentElement.style.setProperty("--dra-label-argument", state.settings.labelArgumentColor);
     document.documentElement.style.setProperty("--dra-label-explanation", state.settings.labelExplanationColor);
+    document.documentElement.style.setProperty("--dra-label-dialogue", state.settings.labelDialogueColor);
+    document.documentElement.style.setProperty("--dra-label-plot-turn", state.settings.labelPlotTurnColor);
+    document.documentElement.style.setProperty("--dra-label-setting", state.settings.labelSettingColor);
     state.contentArea.querySelectorAll("p, li, blockquote").forEach((para) => {
       if (para.innerText.trim().length < 20) return;
       if (state.settings.typographyEnabled) {
@@ -1141,7 +1208,13 @@
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "SETTINGS_CHANGED") {
       if (msg.payload.rulerActive === false) state.lastRulerY = null;
+      const prevLens = state.settings.sentenceLabelsLens;
       state.settings = { ...state.settings, ...msg.payload };
+      if (msg.payload.sentenceLabelsLens && msg.payload.sentenceLabelsLens !== prevLens) {
+        state.aiSentenceLabels = [];
+        state.sentenceLabels = [];
+        state.sentenceLabelsInProgress = false;
+      }
       render();
     }
     if (msg.type === "FOCUS_APPLY" && msg.keywords?.length) {
