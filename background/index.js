@@ -31,7 +31,7 @@ async function fetchEmotionAnalysis(text, url) {
     const response = await withTimeout(fetch(`${API_BASE}/api/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, url }),
+      body: JSON.stringify({ text }),
     }));
     if (!response.ok) return null;
     result = await response.json();
