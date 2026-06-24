@@ -430,16 +430,16 @@
     return highlights;
   }
   function requestEmotionAnalysis() {
-    console.log("[EMO] request called | inProgress:", state.emotionAIInProgress, "| cached:", state.aiEmotionHighlights.length);
     if (state.emotionAIInProgress) return;
-    if (state.aiEmotionHighlights.length > 0) {
-      console.log("[EMO] early return: using cache");
-      return;
-    }
-    console.log("[EMO] sending new request");
+    if (state.aiEmotionHighlights.length > 0) return;
     state.emotionAIInProgress = true;
+    chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "loading" });
     const area = findContentArea();
-    chrome.runtime.sendMessage({ type: "EMOTION_REQUEST", url: window.location.href, text: area.innerText.trim() });
+    chrome.runtime.sendMessage({
+      type: "EMOTION_REQUEST",
+      url: window.location.href,
+      text: area.innerText.trim()
+    });
   }
 
   // content/features/transitions.js
@@ -648,6 +648,7 @@
     if (state.aiSentenceLabels.length > 0) return;
     state.sentenceLabelsInProgress = true;
     state.allSentences = extractAllSentences();
+    chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "loading" });
     chrome.runtime.sendMessage({
       type: "LABEL_REQUEST",
       sentences: state.allSentences,
@@ -1595,19 +1596,17 @@
         state.aiSentenceLabels = msg.labels;
         state.sentenceLabels = state.aiSentenceLabels;
       }
+      chrome.runtime.sendMessage({
+        type: "AI_STATUS",
+        feature: "labels",
+        status: msg.labels?.length > 0 ? "success" : "error"
+      });
       render();
       refreshImmersiveReader();
     }
     if (msg.type === "LABEL_ERROR") {
-      if (state.settings.sentenceLabels && state.settings.sentenceLabelsMode === "ai") {
-        setTimeout(() => {
-          state.sentenceLabelsInProgress = false;
-          render();
-          refreshImmersiveReader();
-        }, 8e3);
-      } else {
-        state.sentenceLabelsInProgress = false;
-      }
+      state.sentenceLabelsInProgress = false;
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "error" });
     }
     if (msg.type === "FOCUS_AI_REQUEST") {
       state.topicFocusKeywords = null;
@@ -1620,11 +1619,13 @@
     }
     if (msg.type === "FOCUS_RESULT") {
       state.topicFocusAIPrefixes = msg.relevant || [];
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "focus", status: "success" });
       render();
       refreshImmersiveReader();
     }
     if (msg.type === "FOCUS_ERROR") {
       state.topicFocusAIPrefixes = null;
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "focus", status: "error" });
       clearFocusMask();
     }
     if (msg.type === "EMOTION_RESULT") {
@@ -1633,11 +1634,29 @@
       if (msg.highlights?.length > 0) {
         state.aiEmotionHighlights = msg.highlights;
       }
+      chrome.runtime.sendMessage({
+        type: "AI_STATUS",
+        feature: "emotion",
+        status: msg.highlights?.length > 0 ? "success" : "error"
+      });
       render();
       refreshImmersiveReader();
     }
     if (msg.type === "EMOTION_ERROR") {
       state.emotionAIInProgress = false;
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "error" });
+    }
+    if (msg.type === "AI_RETRY") {
+      if (msg.feature === "emotion") {
+        state.aiEmotionHighlights = [];
+        state.emotionAIInProgress = false;
+      }
+      if (msg.feature === "labels") {
+        state.aiSentenceLabels = [];
+        state.sentenceLabels = [];
+        state.sentenceLabelsInProgress = false;
+      }
+      render();
     }
     if (msg.type === "WORDLISTS_CHANGED") {
       state.wordLists = { ...state.wordLists, ...msg.wordLists };

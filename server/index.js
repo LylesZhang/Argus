@@ -11,6 +11,33 @@ app.use(express.json());
 const GEMINI_URL =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
+// ── Per-chunk retry config ─────────────────────────────────────────────
+const CHUNK_TIMEOUT_MS  = 20_000; // single Gemini call timeout
+const CHUNK_MAX_RETRIES = 3;
+const FAIL_THRESHOLD    = 0.5;    // >50% chunks failed → overall failure
+
+// Retry any error (not just 503); caller passes AbortController signal per attempt
+async function runChunkWithRetry(fn, label) {
+  for (let attempt = 1; attempt <= CHUNK_MAX_RETRIES; attempt++) {
+    const ctrl = new AbortController();
+    const tid  = setTimeout(() => ctrl.abort(), CHUNK_TIMEOUT_MS);
+    try {
+      const result = await fn(ctrl.signal);
+      clearTimeout(tid);
+      return result;
+    } catch (err) {
+      clearTimeout(tid);
+      console.warn(`[${label}] attempt ${attempt}/${CHUNK_MAX_RETRIES} failed: ${err.message.slice(0, 60)}`);
+      if (attempt < CHUNK_MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+      }
+    }
+  }
+  return null;
+}
+
+// ── Prompts ────────────────────────────────────────────────────────────
+
 const PROMPT = (text, budget) => `
 <article>
 ${text}
@@ -54,41 +81,39 @@ function chunkByParagraphs(text, parasPerChunk = 8) {
   return chunks;
 }
 
-async function callGemini(apiKey, prompt, retries = 3) {
-  for (let attempt = 0; attempt < retries; attempt++) {
-    const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          maxOutputTokens: 4096,
-          thinkingConfig: { thinkingBudget: 0 },
-        },
-      }),
-    });
+// ── Gemini caller (no built-in retry — handled by runChunkWithRetry) ──
 
-    if (response.status === 503 && attempt < retries - 1) {
-      const delay = 1500 * (attempt + 1);
-      console.log(`[Gemini] 503 overloaded, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
-      await new Promise(r => setTimeout(r, delay));
-      continue;
-    }
+async function callGemini(apiKey, prompt, signal) {
+  const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: 'application/json',
+        maxOutputTokens: 4096,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
+    }),
+    signal,
+  });
 
-    if (!response.ok) throw new Error(await response.text());
-
-    const data = await response.json();
-    const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!raw) throw new Error('Empty Gemini response');
-
-    console.log('Raw Gemini response (first 200):', raw.slice(0, 200));
-
-    const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
-    return JSON.parse(cleaned);
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`Gemini ${response.status}: ${body.slice(0, 100)}`);
   }
-  throw new Error('Gemini unavailable after retries');
+
+  const data = await response.json();
+  const raw  = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!raw) throw new Error('Empty Gemini response');
+
+  console.log('Raw Gemini response (first 200):', raw.slice(0, 200));
+
+  const cleaned = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '').trim();
+  return JSON.parse(cleaned);
 }
+
+// ── /api/analyze ───────────────────────────────────────────────────────
 
 app.post('/api/analyze', async (req, res) => {
   const { text } = req.body;
@@ -98,33 +123,43 @@ app.post('/api/analyze', async (req, res) => {
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
-  }
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
   try {
-    const clipped      = text.slice(0, 60000);
-    const wordCount    = clipped.split(/\s+/).length;
-    const totalBudget  = Math.floor(wordCount / 100) * 6;
-    const chunks       = chunkByParagraphs(clipped);
-    const chunkBudget  = Math.max(4, Math.floor(totalBudget / chunks.length));
+    const clipped     = text.slice(0, 60000);
+    const wordCount   = clipped.split(/\s+/).length;
+    const totalBudget = Math.floor(wordCount / 100) * 6;
+    const chunks      = chunkByParagraphs(clipped);
+    const chunkBudget = Math.max(4, Math.floor(totalBudget / chunks.length));
 
     console.log(`[analyze] wordCount=${wordCount} totalBudget=${totalBudget} chunks=${chunks.length} chunkBudget=${chunkBudget}`);
 
-    const results    = await Promise.all(chunks.map(c => callGemini(apiKey, PROMPT(c, chunkBudget))));
+    const highlights = [];
+    let failCount    = 0;
 
-    results.forEach((r, i) =>
-      console.log(`[chunk ${i}] highlights=${r.highlights?.length ?? 'ERROR'}`)
-    );
+    for (let i = 0; i < chunks.length; i++) {
+      const result = await runChunkWithRetry(
+        signal => callGemini(apiKey, PROMPT(chunks[i], chunkBudget), signal),
+        `analyze-chunk-${i}`
+      );
+      if (result?.highlights?.length > 0) {
+        highlights.push(...result.highlights);
+        console.log(`[chunk ${i}] highlights=${result.highlights.length}`);
+      } else {
+        failCount++;
+        console.warn(`[analyze] chunk ${i} produced no results after all retries`);
+      }
+    }
 
-    const highlights = results.flatMap(r => r.highlights || []);
-
-    res.json({ highlights });
+    const success = chunks.length === 0 || failCount / chunks.length <= FAIL_THRESHOLD;
+    res.json({ highlights, success });
   } catch (err) {
     console.error('Server error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// ── /api/focus ─────────────────────────────────────────────────────────
 
 const FOCUS_PROMPT = (text, topic) => `
 Article:
@@ -153,13 +188,19 @@ app.post('/api/focus', async (req, res) => {
 
   try {
     const clipped = text.slice(0, 60000);
-    const result  = await callGemini(apiKey, FOCUS_PROMPT(clipped, topic));
+    const result  = await runChunkWithRetry(
+      signal => callGemini(apiKey, FOCUS_PROMPT(clipped, topic), signal),
+      'focus'
+    );
+    if (!result) return res.status(503).json({ error: 'Gemini unavailable' });
     res.json(result);
   } catch (err) {
     console.error('Focus error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// ── /api/label ─────────────────────────────────────────────────────────
 
 const LENS_PROMPTS = {
   news: (sentences) => `
@@ -227,26 +268,38 @@ async function fetchSentenceLabelsFromGemini(sentences, articleLens) {
   const apiKey   = process.env.GEMINI_API_KEY;
   const promptFn = LENS_PROMPTS[articleLens] ?? LENS_PROMPTS['news'];
   const CHUNK    = 40;
-  let allLabels  = [];
 
-  const runChunk = async (chunk, offset) => {
-    try {
-      const result = await callGemini(apiKey, promptFn(chunk));
-      return (result?.labels ?? []).map(l => ({ ...l, index: l.index + offset }));
-    } catch (err) {
-      console.error(`[label] chunk offset=${offset} failed, skipping:`, err.message.slice(0, 80));
-      return [];
+  const processChunk = async (chunk, offset) => {
+    const result = await runChunkWithRetry(
+      signal => callGemini(apiKey, promptFn(chunk), signal),
+      `label-chunk-offset-${offset}`
+    );
+    if (result?.labels?.length > 0) {
+      return result.labels.map(l => ({ ...l, index: l.index + offset }));
     }
+    return null;
   };
 
+  const allLabels = [];
+  let failCount   = 0;
+  let totalChunks = 0;
+
   if (sentences.length <= CHUNK) {
-    allLabels = await runChunk(sentences, 0);
+    totalChunks = 1;
+    const labels = await processChunk(sentences, 0);
+    if (labels) allLabels.push(...labels);
+    else failCount++;
   } else {
     for (let i = 0; i < sentences.length; i += CHUNK) {
-      allLabels = allLabels.concat(await runChunk(sentences.slice(i, i + CHUNK), i));
+      totalChunks++;
+      const labels = await processChunk(sentences.slice(i, i + CHUNK), i);
+      if (labels) allLabels.push(...labels);
+      else failCount++;
     }
   }
-  return allLabels;
+
+  const success = totalChunks === 0 || failCount / totalChunks <= FAIL_THRESHOLD;
+  return { labels: allLabels, success };
 }
 
 app.post('/api/label', async (req, res) => {
@@ -258,8 +311,8 @@ app.post('/api/label', async (req, res) => {
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
   try {
-    const labels = await fetchSentenceLabelsFromGemini(sentences, articleLens ?? 'news');
-    res.json({ labels });
+    const { labels, success } = await fetchSentenceLabelsFromGemini(sentences, articleLens ?? 'news');
+    res.json({ labels, success });
   } catch (err) {
     console.error('Label error:', err);
     res.status(500).json({ error: 'Internal server error' });

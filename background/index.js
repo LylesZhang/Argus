@@ -8,63 +8,81 @@ const API_BASE = 'https://argus-1ygn.onrender.com';
 // ── Analysis cache ─────────────────────────────────────────────────────
 // Keyed by page URL. Cleared when the service worker restarts.
 
-const emotionCache    = new Map();
-const labelCache      = new Map();
-const CACHE_TTL_MS    = 30 * 60 * 1000; // 30 minutes
+const emotionCache   = new Map();
+const emotionPending = new Map(); // in-flight emotion promises, prevents concurrent duplicate fetches
+const labelCache     = new Map();
+const labelPending   = new Map(); // in-flight label promises, prevents concurrent duplicate fetches
+const CACHE_TTL_MS   = 30 * 60 * 1000; // 30 minutes
 const FETCH_TIMEOUT_MS = 90_000;
 
-function withTimeout(promise) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), FETCH_TIMEOUT_MS)),
-  ]);
+async function fetchWithAbortTimeout(url, options) {
+  const ctrl = new AbortController();
+  const tid  = setTimeout(() => ctrl.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { ...options, signal: ctrl.signal });
+    clearTimeout(tid);
+    return res;
+  } catch (err) {
+    clearTimeout(tid);
+    throw err;
+  }
 }
 
 async function fetchEmotionAnalysis(text, url) {
   const cached = emotionCache.get(url);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return cached.result;
-  }
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) return cached.result;
+  if (emotionPending.has(url)) return emotionPending.get(url);
 
-  let result;
-  try {
-    const response = await withTimeout(fetch(`${API_BASE}/api/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text }),
-    }));
-    if (!response.ok) return null;
-    result = await response.json();
-  } catch {
-    return null;
-  }
+  const promise = (async () => {
+    try {
+      const response = await fetchWithAbortTimeout(`${API_BASE}/api/analyze`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ text }),
+      });
+      if (!response.ok) return null;
+      const result = await response.json();
+      if (!result.success) return null;
+      emotionCache.set(url, { result, timestamp: Date.now() });
+      return result;
+    } catch {
+      return null;
+    } finally {
+      emotionPending.delete(url);
+    }
+  })();
 
-  emotionCache.set(url, { result, timestamp: Date.now() });
-  return result;
+  emotionPending.set(url, promise);
+  return promise;
 }
 
 async function fetchSentenceLabels(sentences, url, articleLens = 'news') {
   const cacheKey = `${url}|${articleLens}`;
   const cached = labelCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return cached.result;
-  }
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) return cached.result;
+  if (labelPending.has(cacheKey)) return labelPending.get(cacheKey);
 
-  let result;
-  try {
-    const response = await withTimeout(fetch(`${API_BASE}/api/label`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sentences, articleLens }),
-    }));
-    if (!response.ok) return null;
-    result = await response.json();
-  } catch {
-    return null;
-  }
+  const promise = (async () => {
+    try {
+      const response = await fetchWithAbortTimeout(`${API_BASE}/api/label`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ sentences, articleLens }),
+      });
+      if (!response.ok) return null;
+      const result = await response.json();
+      if (!result.success) return null;
+      if (result.labels) labelCache.set(cacheKey, { result: result.labels, timestamp: Date.now() });
+      return result.labels ?? null;
+    } catch {
+      return null;
+    } finally {
+      labelPending.delete(cacheKey);
+    }
+  })();
 
-  if (result?.labels) labelCache.set(cacheKey, { result: result.labels, timestamp: Date.now() });
-  return result?.labels ?? null;
+  labelPending.set(cacheKey, promise);
+  return promise;
 }
 
 // ── Message relay & analysis handler ──────────────────────────────────
@@ -87,11 +105,11 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     }
 
     if (msg.type === 'FOCUS_ANALYZE') {
-      withTimeout(fetch(`${API_BASE}/api/focus`, {
-        method: 'POST',
+      fetchWithAbortTimeout(`${API_BASE}/api/focus`, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: msg.text, topic: msg.topic }),
-      }))
+        body:    JSON.stringify({ text: msg.text, topic: msg.topic }),
+      })
         .then(r => r.ok ? r.json() : null)
         .catch(() => null)
         .then(result => {
@@ -103,6 +121,10 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     }
 
     if (msg.type === 'WORDLISTS_CHANGED') {
+      chrome.runtime.sendMessage(msg).catch(() => {});
+    }
+
+    if (msg.type === 'AI_STATUS') {
       chrome.runtime.sendMessage(msg).catch(() => {});
     }
 
@@ -126,6 +148,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === 'FOCUS_CLEAR')        forwardToActiveTab();
   if (msg.type === 'FOCUS_AI_REQUEST')   forwardToActiveTab();
   if (msg.type === 'WORDLISTS_CHANGED')  forwardToActiveTab();
+  if (msg.type === 'AI_RETRY')           forwardToActiveTab();
   if (msg.type === 'OPEN_IMMERSIVE_READER') forwardToActiveTab();
   if (msg.type === 'CLOSE_IMMERSIVE_READER') forwardToActiveTab();
 });

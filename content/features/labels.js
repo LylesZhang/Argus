@@ -91,6 +91,7 @@ export function requestSentenceLabels() {
   if (state.aiSentenceLabels.length > 0) return;
   state.sentenceLabelsInProgress = true;
   state.allSentences = extractAllSentences();
+  chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'loading' });
   chrome.runtime.sendMessage({
     type:        'LABEL_REQUEST',
     sentences:   state.allSentences,

@@ -59,6 +59,30 @@ function formatAutoScrollSpeed(value) {
   return 'Speed ' + String(value).padStart(2, '0');
 }
 
+// ── AI status indicator ────────────────────────────────────────────────
+
+function updateAIStatus(feature, status) {
+  const el = document.getElementById(`${feature}-ai-status`);
+  if (!el) return;
+  if (!status) {
+    el.classList.add('hidden');
+    el.removeAttribute('data-state');
+    el.innerHTML = '';
+    return;
+  }
+  el.classList.remove('hidden');
+  el.setAttribute('data-state', status);
+  if (status !== 'error') {
+    el.textContent = status === 'loading' ? 'Analyzing...' : 'Done';
+  } else {
+    el.innerHTML = 'Failed <button class="ai-retry-btn">Retry</button>';
+    el.querySelector('.ai-retry-btn').addEventListener('click', () => {
+      updateAIStatus(feature, 'loading');
+      chrome.runtime.sendMessage({ type: 'AI_RETRY', feature });
+    });
+  }
+}
+
 // ── Lens legend switcher ───────────────────────────────────────────────
 
 function switchLensLegend(lens) {
@@ -422,6 +446,7 @@ function init() {
   });
 
   // Mode pills (AI / Local) for emotion and sentenceLabels
+  const STATUS_FEATURE = { emotion: 'emotion', sentenceLabels: 'labels', topicFocus: 'focus' };
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const feature = btn.dataset.feature;  // 'emotion' | 'sentenceLabels'
@@ -429,6 +454,7 @@ function init() {
       const modeKey = feature + 'Mode';    // 'emotionMode' | 'sentenceLabelsMode'
       btn.closest('.mode-pill').querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      if (mode === 'local') updateAIStatus(STATUS_FEATURE[feature], null);
       broadcast({ [modeKey]: mode });
     });
   });
@@ -438,6 +464,7 @@ function init() {
     const raw = document.getElementById('topic-input').value.trim();
     if (!raw) return;
     if (settings.topicFocusMode === 'ai') {
+      updateAIStatus('focus', 'loading');
       chrome.runtime.sendMessage({ type: 'FOCUS_AI_REQUEST', topic: raw });
     } else {
       const keywords = raw.toLowerCase().split(/\s+/).filter(w => w.length > 2);
@@ -447,6 +474,7 @@ function init() {
 
   document.getElementById('topic-clear').addEventListener('click', () => {
     document.getElementById('topic-input').value = '';
+    updateAIStatus('focus', null);
     chrome.runtime.sendMessage({ type: 'FOCUS_CLEAR' });
   });
 
@@ -602,6 +630,9 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'WORDLISTS_CHANGED') {
     wordLists = { ...DEFAULT_WORDS, ...msg.wordLists };
     WL_CONFIG.forEach(({ key, chipsId }) => renderChips(key, chipsId));
+  }
+  if (msg.type === 'AI_STATUS') {
+    updateAIStatus(msg.feature, msg.status);
   }
 });
 
