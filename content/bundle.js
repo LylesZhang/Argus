@@ -1274,7 +1274,14 @@
       render();
     }
     if (msg.type === "LABEL_ERROR") {
-      state.sentenceLabelsInProgress = false;
+      if (state.settings.sentenceLabels && state.settings.sentenceLabelsMode === "ai") {
+        setTimeout(() => {
+          state.sentenceLabelsInProgress = false;
+          render();
+        }, 8e3);
+      } else {
+        state.sentenceLabelsInProgress = false;
+      }
     }
     if (msg.type === "FOCUS_AI_REQUEST") {
       state.topicFocusKeywords = null;
