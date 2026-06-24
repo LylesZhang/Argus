@@ -111,13 +111,16 @@ app.post('/api/analyze', async (req, res) => {
 
     console.log(`[analyze] wordCount=${wordCount} totalBudget=${totalBudget} chunks=${chunks.length} chunkBudget=${chunkBudget}`);
 
-    const results    = await Promise.all(chunks.map(c => callGemini(apiKey, PROMPT(c, chunkBudget))));
-
-    results.forEach((r, i) =>
-      console.log(`[chunk ${i}] highlights=${r.highlights?.length ?? 'ERROR'}`)
-    );
-
-    const highlights = results.flatMap(r => r.highlights || []);
+    const highlights = [];
+    for (let i = 0; i < chunks.length; i++) {
+      try {
+        const r = await callGemini(apiKey, PROMPT(chunks[i], chunkBudget));
+        console.log(`[chunk ${i}] highlights=${r.highlights?.length ?? 'ERROR'}`);
+        highlights.push(...(r.highlights || []));
+      } catch (err) {
+        console.error(`[analyze] chunk ${i} failed, skipping:`, err.message.slice(0, 80));
+      }
+    }
 
     res.json({ highlights });
   } catch (err) {

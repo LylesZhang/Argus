@@ -10,6 +10,7 @@ const API_BASE = 'https://argus-1ygn.onrender.com';
 
 const emotionCache    = new Map();
 const labelCache      = new Map();
+const labelPending    = new Map(); // 正在进行中的 fetch promise，避免并发重复请求
 const CACHE_TTL_MS    = 30 * 60 * 1000; // 30 minutes
 const FETCH_TIMEOUT_MS = 90_000;
 
@@ -50,21 +51,33 @@ async function fetchSentenceLabels(sentences, url, articleLens = 'news') {
     return cached.result;
   }
 
-  let result;
-  try {
-    const response = await withTimeout(fetch(`${API_BASE}/api/label`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sentences, articleLens }),
-    }));
-    if (!response.ok) return null;
-    result = await response.json();
-  } catch {
-    return null;
+  // 同一个 key 已有请求进行中，直接复用同一个 promise，不发第二次请求
+  if (labelPending.has(cacheKey)) {
+    return labelPending.get(cacheKey);
   }
 
-  if (result?.labels) labelCache.set(cacheKey, { result: result.labels, timestamp: Date.now() });
-  return result?.labels ?? null;
+  const promise = (async () => {
+    let result;
+    try {
+      const response = await withTimeout(fetch(`${API_BASE}/api/label`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sentences, articleLens }),
+      }));
+      if (!response.ok) return null;
+      result = await response.json();
+    } catch {
+      return null;
+    } finally {
+      labelPending.delete(cacheKey);
+    }
+
+    if (result?.labels) labelCache.set(cacheKey, { result: result.labels, timestamp: Date.now() });
+    return result?.labels ?? null;
+  })();
+
+  labelPending.set(cacheKey, promise);
+  return promise;
 }
 
 // ── Message relay & analysis handler ──────────────────────────────────
