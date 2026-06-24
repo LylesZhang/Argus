@@ -8,6 +8,7 @@ import { findContentArea } from './detect.js';
 import { clearFocusMask } from './features/topicFocus.js';
 import { DEFAULT_EMOTION_POSITIVE, DEFAULT_EMOTION_NEGATIVE, DEFAULT_EMOTION_COMPLEX } from './features/emotions.js';
 import { DEFAULT_TRANSITION_WORDS } from './features/transitions.js';
+import { openImmersiveReader, closeImmersiveReader, refreshImmersiveReader } from './features/immersiveReader.js';
 
 const DEFAULT_WORD_LISTS = {
   emotionPositive: [...DEFAULT_EMOTION_POSITIVE],
@@ -48,12 +49,14 @@ chrome.runtime.onMessage.addListener((msg) => {
       state.sentenceLabelsInProgress = false;
     }
     render();
+    refreshImmersiveReader();
   }
 
   if (msg.type === 'FOCUS_APPLY' && msg.keywords?.length) {
     state.topicFocusAIPrefixes = null;
     state.topicFocusKeywords   = msg.keywords;
     render();
+    refreshImmersiveReader();
   }
 
   if (msg.type === 'FOCUS_CLEAR') {
@@ -61,6 +64,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     state.topicFocusAIPrefixes = null;
     clearFocusMask();
     render();
+    refreshImmersiveReader();
   }
 
   if (msg.type === 'LABEL_RESULT') {
@@ -70,6 +74,7 @@ chrome.runtime.onMessage.addListener((msg) => {
       state.sentenceLabels   = state.aiSentenceLabels;
     }
     render();
+    refreshImmersiveReader();
   }
 
   if (msg.type === 'LABEL_ERROR') {
@@ -77,6 +82,7 @@ chrome.runtime.onMessage.addListener((msg) => {
       setTimeout(() => {
         state.sentenceLabelsInProgress = false;
         render();
+        refreshImmersiveReader();
       }, 8000);
     } else {
       state.sentenceLabelsInProgress = false;
@@ -96,6 +102,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'FOCUS_RESULT') {
     state.topicFocusAIPrefixes = msg.relevant || [];
     render();
+    refreshImmersiveReader();
   }
 
   if (msg.type === 'FOCUS_ERROR') {
@@ -110,6 +117,7 @@ chrome.runtime.onMessage.addListener((msg) => {
       state.aiEmotionHighlights = msg.highlights;
     }
     render();
+    refreshImmersiveReader();
   }
 
   if (msg.type === 'EMOTION_ERROR') {
@@ -119,5 +127,14 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'WORDLISTS_CHANGED') {
     state.wordLists = { ...state.wordLists, ...msg.wordLists };
     render();
+    refreshImmersiveReader();
+  }
+
+  if (msg.type === 'OPEN_IMMERSIVE_READER') {
+    openImmersiveReader();
+  }
+
+  if (msg.type === 'CLOSE_IMMERSIVE_READER') {
+    closeImmersiveReader();
   }
 });

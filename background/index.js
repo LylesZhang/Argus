@@ -106,6 +106,10 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
       chrome.runtime.sendMessage(msg).catch(() => {});
     }
 
+    if (msg.type === 'IMMERSIVE_READER_STATUS') {
+      chrome.runtime.sendMessage(msg).catch(() => {});
+    }
+
     return;
   }
 
@@ -122,6 +126,8 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === 'FOCUS_CLEAR')        forwardToActiveTab();
   if (msg.type === 'FOCUS_AI_REQUEST')   forwardToActiveTab();
   if (msg.type === 'WORDLISTS_CHANGED')  forwardToActiveTab();
+  if (msg.type === 'OPEN_IMMERSIVE_READER') forwardToActiveTab();
+  if (msg.type === 'CLOSE_IMMERSIVE_READER') forwardToActiveTab();
 });
 
 // ── Side Panel opener ──────────────────────────────────────────────────

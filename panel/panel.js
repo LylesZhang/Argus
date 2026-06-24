@@ -449,7 +449,19 @@ function init() {
     document.getElementById('topic-input').value = '';
     chrome.runtime.sendMessage({ type: 'FOCUS_CLEAR' });
   });
+
+  document.getElementById('toggle-immersive-reader').addEventListener('change', e => {
+    chrome.runtime.sendMessage({
+      type: e.target.checked ? 'OPEN_IMMERSIVE_READER' : 'CLOSE_IMMERSIVE_READER',
+    });
+  });
 }
+
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type !== 'IMMERSIVE_READER_STATUS') return;
+  const toggle = document.getElementById('toggle-immersive-reader');
+  if (toggle) toggle.checked = Boolean(msg.active);
+});
 
 // ── Word list editor ───────────────────────────────────────────────────
 
