@@ -87,8 +87,14 @@ export function generateSentenceLabels() {
 }
 
 export function requestSentenceLabels() {
-  if (state.sentenceLabelsInProgress)    return;
-  if (state.aiSentenceLabels.length > 0) return;
+  if (state.sentenceLabelsInProgress) {
+    chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'loading' });
+    return;
+  }
+  if (state.aiSentenceLabels.length > 0) {
+    chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'success' });
+    return;
+  }
   state.sentenceLabelsInProgress = true;
   state.allSentences = extractAllSentences();
   chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'loading' });

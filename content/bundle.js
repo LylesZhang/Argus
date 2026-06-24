@@ -430,8 +430,14 @@
     return highlights;
   }
   function requestEmotionAnalysis() {
-    if (state.emotionAIInProgress) return;
-    if (state.aiEmotionHighlights.length > 0) return;
+    if (state.emotionAIInProgress) {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "loading" });
+      return;
+    }
+    if (state.aiEmotionHighlights.length > 0) {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "success" });
+      return;
+    }
     state.emotionAIInProgress = true;
     chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "loading" });
     const area = findContentArea();
@@ -644,8 +650,14 @@
     return labels;
   }
   function requestSentenceLabels() {
-    if (state.sentenceLabelsInProgress) return;
-    if (state.aiSentenceLabels.length > 0) return;
+    if (state.sentenceLabelsInProgress) {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "loading" });
+      return;
+    }
+    if (state.aiSentenceLabels.length > 0) {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "success" });
+      return;
+    }
     state.sentenceLabelsInProgress = true;
     state.allSentences = extractAllSentences();
     chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "loading" });
