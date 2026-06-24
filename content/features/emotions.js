@@ -72,11 +72,14 @@ export function generateEmotionHighlights() {
 }
 
 export function requestEmotionAnalysis() {
-  console.log('[EMO] request called | inProgress:', state.emotionAIInProgress, '| cached:', state.aiEmotionHighlights.length);
   if (state.emotionAIInProgress)            return;
-  if (state.aiEmotionHighlights.length > 0) { console.log('[EMO] early return: using cache'); return; }
-  console.log('[EMO] sending new request');
+  if (state.aiEmotionHighlights.length > 0) return;
   state.emotionAIInProgress = true;
+  chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'loading' });
   const area = findContentArea();
-  chrome.runtime.sendMessage({ type: 'EMOTION_REQUEST', url: window.location.href, text: area.innerText.trim() });
+  chrome.runtime.sendMessage({
+    type: 'EMOTION_REQUEST',
+    url:  window.location.href,
+    text: area.innerText.trim(),
+  });
 }

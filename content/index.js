@@ -57,7 +57,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'FOCUS_CLEAR') {
-    state.topicFocusKeywords  = null;
+    state.topicFocusKeywords   = null;
     state.topicFocusAIPrefixes = null;
     clearFocusMask();
     render();
@@ -69,18 +69,16 @@ chrome.runtime.onMessage.addListener((msg) => {
       state.aiSentenceLabels = msg.labels;
       state.sentenceLabels   = state.aiSentenceLabels;
     }
+    chrome.runtime.sendMessage({
+      type: 'AI_STATUS', feature: 'labels',
+      status: msg.labels?.length > 0 ? 'success' : 'error',
+    });
     render();
   }
 
   if (msg.type === 'LABEL_ERROR') {
-    if (state.settings.sentenceLabels && state.settings.sentenceLabelsMode === 'ai') {
-      setTimeout(() => {
-        state.sentenceLabelsInProgress = false;
-        render();
-      }, 8000);
-    } else {
-      state.sentenceLabelsInProgress = false;
-    }
+    state.sentenceLabelsInProgress = false;
+    chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'error' });
   }
 
   if (msg.type === 'FOCUS_AI_REQUEST') {
@@ -95,11 +93,13 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'FOCUS_RESULT') {
     state.topicFocusAIPrefixes = msg.relevant || [];
+    chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'focus', status: 'success' });
     render();
   }
 
   if (msg.type === 'FOCUS_ERROR') {
     state.topicFocusAIPrefixes = null;
+    chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'focus', status: 'error' });
     clearFocusMask();
   }
 
@@ -109,11 +109,29 @@ chrome.runtime.onMessage.addListener((msg) => {
     if (msg.highlights?.length > 0) {
       state.aiEmotionHighlights = msg.highlights;
     }
+    chrome.runtime.sendMessage({
+      type: 'AI_STATUS', feature: 'emotion',
+      status: msg.highlights?.length > 0 ? 'success' : 'error',
+    });
     render();
   }
 
   if (msg.type === 'EMOTION_ERROR') {
     state.emotionAIInProgress = false;
+    chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'error' });
+  }
+
+  if (msg.type === 'AI_RETRY') {
+    if (msg.feature === 'emotion') {
+      state.aiEmotionHighlights = [];
+      state.emotionAIInProgress = false;
+    }
+    if (msg.feature === 'labels') {
+      state.aiSentenceLabels         = [];
+      state.sentenceLabels           = [];
+      state.sentenceLabelsInProgress = false;
+    }
+    render();
   }
 
   if (msg.type === 'WORDLISTS_CHANGED') {

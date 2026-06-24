@@ -438,6 +438,7 @@
     }
     console.log("[EMO] sending new request");
     state.emotionAIInProgress = true;
+    chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "loading" });
     const area = findContentArea();
     chrome.runtime.sendMessage({ type: "EMOTION_REQUEST", url: window.location.href, text: area.innerText.trim() });
   }
@@ -648,6 +649,7 @@
     if (state.aiSentenceLabels.length > 0) return;
     state.sentenceLabelsInProgress = true;
     state.allSentences = extractAllSentences();
+    chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "loading" });
     chrome.runtime.sendMessage({
       type: "LABEL_REQUEST",
       sentences: state.allSentences,
@@ -1271,9 +1273,11 @@
         state.aiSentenceLabels = msg.labels;
         state.sentenceLabels = state.aiSentenceLabels;
       }
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: msg.labels?.length > 0 ? "success" : "error" });
       render();
     }
     if (msg.type === "LABEL_ERROR") {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "error" });
       if (state.settings.sentenceLabels && state.settings.sentenceLabelsMode === "ai") {
         setTimeout(() => {
           state.sentenceLabelsInProgress = false;
@@ -1294,10 +1298,12 @@
     }
     if (msg.type === "FOCUS_RESULT") {
       state.topicFocusAIPrefixes = msg.relevant || [];
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "focus", status: "success" });
       render();
     }
     if (msg.type === "FOCUS_ERROR") {
       state.topicFocusAIPrefixes = null;
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "focus", status: "error" });
       clearFocusMask();
     }
     if (msg.type === "EMOTION_RESULT") {
@@ -1306,10 +1312,12 @@
       if (msg.highlights?.length > 0) {
         state.aiEmotionHighlights = msg.highlights;
       }
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: msg.highlights?.length > 0 ? "success" : "error" });
       render();
     }
     if (msg.type === "EMOTION_ERROR") {
       state.emotionAIInProgress = false;
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "error" });
     }
     if (msg.type === "WORDLISTS_CHANGED") {
       state.wordLists = { ...state.wordLists, ...msg.wordLists };
