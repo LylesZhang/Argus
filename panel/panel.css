@@ -327,6 +327,7 @@ body {
 
 .toggle-row--full {
   border-top: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 
 .toggle-label { font-size: var(--control-font-size); color: #333; }
@@ -537,21 +538,41 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   50%       { opacity: 0.3; }
 }
 
+.ai-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  width: 100%;
+  padding-bottom: 4px;
+}
+.ai-status-row.hidden { display: none; }
+
 .ai-retry-btn {
   margin-left: 4px;
   padding: 1px 7px;
   font-size: var(--label-font-size);
   font-weight: 500;
-  border: 1px solid #b91c1c;
+  border: 1px solid #9ca3af;
   border-radius: 4px;
   background: transparent;
-  color: #b91c1c;
+  color: #6b7280;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
   text-transform: none;
   letter-spacing: normal;
 }
-.ai-retry-btn:hover { background: #fee2e2; }
+.ai-retry-btn:hover { background: #f3f4f6; }
+.ai-retry-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.ai-retry-btn:disabled:hover { background: transparent; }
+
+.ai-status-row:has([data-state="error"]) .ai-retry-btn:not(:disabled) {
+  border-color: #b91c1c;
+  color: #b91c1c;
+}
+.ai-status-row:has([data-state="error"]) .ai-retry-btn:not(:disabled):hover {
+  background: #fee2e2;
+}
 
 /* ── Topic Focus area ────────────────────────────────────────────────── */
 

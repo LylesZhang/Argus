@@ -165,7 +165,9 @@ function reInjectAnnotations(renderedHTML, annotations) {
 // ── DOM transformations ────────────────────────────────────────────────
 
 function applyTransformations() {
-  state.contentArea = findContentArea();
+  if (!state.contentArea || !document.contains(state.contentArea)) {
+    state.contentArea = findContentArea();
+  }
 
   // Expose emotion colors as CSS variables so content.css can use them
   document.documentElement.style.setProperty('--dra-positive', state.settings.emotionPositiveColor);

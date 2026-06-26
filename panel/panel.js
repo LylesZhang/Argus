@@ -87,23 +87,22 @@ function savePanelSize(size) {
 function updateAIStatus(feature, status) {
   const el = document.getElementById(`${feature}-ai-status`);
   if (!el) return;
+
+  const retryBtn = el.closest('.ai-status-row')?.querySelector('.ai-retry-btn');
+
   if (!status) {
     el.classList.add('hidden');
     el.removeAttribute('data-state');
-    el.innerHTML = '';
+    el.textContent = '';
+    if (retryBtn) retryBtn.disabled = false;
     return;
   }
   el.classList.remove('hidden');
   el.setAttribute('data-state', status);
-  if (status !== 'error') {
-    el.textContent = status === 'loading' ? 'Analyzing...' : 'Done';
-  } else {
-    el.innerHTML = 'Failed <button class="ai-retry-btn">Retry</button>';
-    el.querySelector('.ai-retry-btn').addEventListener('click', () => {
-      updateAIStatus(feature, 'loading');
-      chrome.runtime.sendMessage({ type: 'AI_RETRY', feature });
-    });
-  }
+  el.textContent = status === 'loading' ? 'Analyzing…'
+                 : status === 'success' ? 'Done'
+                 : 'Failed';
+  if (retryBtn) retryBtn.disabled = (status === 'loading');
 }
 
 // ── Lens legend switcher ───────────────────────────────────────────────
@@ -186,6 +185,9 @@ function syncUI() {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
   });
+
+  document.getElementById('emotion-ai-row').classList.toggle('hidden', settings.emotionMode !== 'ai');
+  document.getElementById('labels-ai-row').classList.toggle('hidden', settings.sentenceLabelsMode !== 'ai');
 }
 
 // ── Wire up all controls ───────────────────────────────────────────────
@@ -487,15 +489,26 @@ function init() {
 
   // Mode pills (AI / Local) for emotion and sentenceLabels
   const STATUS_FEATURE = { emotion: 'emotion', sentenceLabels: 'labels', topicFocus: 'focus' };
+  const AI_ROW_ID      = { emotion: 'emotion-ai-row', sentenceLabels: 'labels-ai-row' };
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      const feature = btn.dataset.feature;  // 'emotion' | 'sentenceLabels'
-      const mode    = btn.dataset.mode;     // 'ai' | 'local'
-      const modeKey = feature + 'Mode';    // 'emotionMode' | 'sentenceLabelsMode'
+      const feature = btn.dataset.feature;
+      const mode    = btn.dataset.mode;
+      const modeKey = feature + 'Mode';
       btn.closest('.mode-pill').querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      const rowId = AI_ROW_ID[feature];
+      if (rowId) document.getElementById(rowId).classList.toggle('hidden', mode !== 'ai');
       if (mode === 'local') updateAIStatus(STATUS_FEATURE[feature], null);
       broadcast({ [modeKey]: mode });
+    });
+  });
+
+  document.querySelectorAll('.ai-retry-btn[data-feature]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const feature = btn.dataset.feature;
+      updateAIStatus(feature, 'loading');
+      chrome.runtime.sendMessage({ type: 'AI_RETRY', feature });
     });
   });
 

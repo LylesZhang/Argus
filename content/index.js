@@ -34,6 +34,20 @@ chrome.storage.sync.get(['draSettings', 'draWordLists'], (data) => {
     chrome.storage.sync.set({ draWordLists: state.wordLists });
   }
   render();
+
+  // SPA navigation: reset cached contentArea and stale AI results on URL change
+  let _lastUrl = location.href;
+  let _renderTimer;
+  new MutationObserver(() => {
+    if (location.href === _lastUrl) return;
+    _lastUrl = location.href;
+    state.contentArea        = null;
+    state.aiEmotionHighlights = [];
+    state.aiSentenceLabels   = [];
+    state.sentenceLabels     = [];
+    clearTimeout(_renderTimer);
+    _renderTimer = setTimeout(() => render(), 500);
+  }).observe(document.body, { childList: true, subtree: true });
 });
 
 // ── Message router ─────────────────────────────────────────────────────

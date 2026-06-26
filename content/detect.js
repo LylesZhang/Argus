@@ -4,6 +4,7 @@
 // Fallback: <body>.
 
 const PLATFORM_SELECTORS = {
+  'apnews.com':           ['.RichTextStoryBody'],
   'wikipedia.org':        ['#mw-content-text .mw-parser-output', '#mw-content-text'],
   'github.com':           ['.markdown-body'],
   'news.ycombinator.com': ['.fatitem'],
@@ -32,7 +33,10 @@ export function findContentArea() {
   ];
   for (const sel of candidates) {
     const el = document.querySelector(sel);
-    if (el && el.innerText.trim().length > 300) return el;
+    if (!el || el.innerText.trim().length <= 300) continue;
+    const idClass = ((el.id || '') + ' ' + (el.className || '')).toLowerCase();
+    if (idClass.includes('comment') || idClass.includes('replies') || idClass.includes('discussion')) continue;
+    return el;
   }
   return document.body;
 }

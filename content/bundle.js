@@ -69,6 +69,7 @@
 
   // content/detect.js
   var PLATFORM_SELECTORS = {
+    "apnews.com": [".RichTextStoryBody"],
     "wikipedia.org": ["#mw-content-text .mw-parser-output", "#mw-content-text"],
     "github.com": [".markdown-body"],
     "news.ycombinator.com": [".fatitem"],
@@ -99,7 +100,10 @@
     ];
     for (const sel of candidates) {
       const el = document.querySelector(sel);
-      if (el && el.innerText.trim().length > 300) return el;
+      if (!el || el.innerText.trim().length <= 300) continue;
+      const idClass = ((el.id || "") + " " + (el.className || "")).toLowerCase();
+      if (idClass.includes("comment") || idClass.includes("replies") || idClass.includes("discussion")) continue;
+      return el;
     }
     return document.body;
   }
@@ -1136,7 +1140,9 @@
     return result;
   }
   function applyTransformations() {
-    state.contentArea = findContentArea();
+    if (!state.contentArea || !document.contains(state.contentArea)) {
+      state.contentArea = findContentArea();
+    }
     document.documentElement.style.setProperty("--dra-positive", state.settings.emotionPositiveColor);
     document.documentElement.style.setProperty("--dra-negative", state.settings.emotionNegativeColor);
     document.documentElement.style.setProperty("--dra-complex", state.settings.emotionComplexColor);
@@ -1576,6 +1582,18 @@
       chrome.storage.sync.set({ draWordLists: state.wordLists });
     }
     render();
+    let _lastUrl = location.href;
+    let _renderTimer;
+    new MutationObserver(() => {
+      if (location.href === _lastUrl) return;
+      _lastUrl = location.href;
+      state.contentArea = null;
+      state.aiEmotionHighlights = [];
+      state.aiSentenceLabels = [];
+      state.sentenceLabels = [];
+      clearTimeout(_renderTimer);
+      _renderTimer = setTimeout(() => render(), 500);
+    }).observe(document.body, { childList: true, subtree: true });
   });
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "SETTINGS_CHANGED") {
