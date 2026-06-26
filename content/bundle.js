@@ -1,6 +1,7 @@
 (() => {
   // content/settings.js
   var DEFAULT_SETTINGS = {
+    panelSize: "comfortable",
     typographyEnabled: false,
     readingAidsEnabled: false,
     boldBeginning: false,

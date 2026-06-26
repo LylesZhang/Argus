@@ -6,6 +6,7 @@
 // ── Default settings (must match DEFAULT_SETTINGS in content/index.js) ─
 
 const DEFAULT_SETTINGS = {
+  panelSize:             'comfortable',
   typographyEnabled:     false,
   readingAidsEnabled:    false,
   boldBeginning:         false,
@@ -59,6 +60,28 @@ function formatAutoScrollSpeed(value) {
   return 'Speed ' + String(value).padStart(2, '0');
 }
 
+function numericSetting(key, fallback) {
+  const raw = settings[key];
+  if (raw === null || raw === undefined || raw === '') return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function applyPanelSize(size) {
+  const nextSize = ['compact', 'comfortable', 'large'].includes(size) ? size : DEFAULT_SETTINGS.panelSize;
+  document.body.dataset.panelSize = nextSize;
+  document.querySelectorAll('.panel-size-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.panelSize === nextSize);
+  });
+}
+
+function savePanelSize(size) {
+  const nextSize = ['compact', 'comfortable', 'large'].includes(size) ? size : DEFAULT_SETTINGS.panelSize;
+  settings = { ...settings, panelSize: nextSize };
+  applyPanelSize(nextSize);
+  chrome.storage.sync.set({ draSettings: settings });
+}
+
 // ── AI status indicator ────────────────────────────────────────────────
 
 function updateAIStatus(feature, status) {
@@ -102,6 +125,7 @@ function broadcast(changed) {
 // ── Sync all UI controls to match current settings ─────────────────────
 
 function syncUI() {
+  applyPanelSize(settings.panelSize);
   document.getElementById('toggle-typography').checked   = settings.typographyEnabled;
   document.getElementById('toggle-reading-aids').checked = settings.readingAidsEnabled;
   document.getElementById('toggle-bold').checked      = settings.boldBeginning;
@@ -112,14 +136,18 @@ function syncUI() {
   document.getElementById('toggle-auto-scroll').checked = settings.autoScrollActive;
 
   document.getElementById('font-family').value        = settings.fontFamily ?? '';
-  document.getElementById('font-size-slider').value   = settings.fontSize ?? 18;
-  document.getElementById('font-size-value').textContent = settings.fontSize ?? 18;
-  document.getElementById('line-height-slider').value = settings.lineHeight ?? 1.8;
-  document.getElementById('line-height-value').textContent = (settings.lineHeight ?? 1.8).toFixed(1);
-  document.getElementById('word-spacing-slider').value   = settings.wordSpacing;
-  document.getElementById('word-spacing-value').textContent = settings.wordSpacing.toFixed(1);
-  document.getElementById('letter-spacing-slider').value = settings.letterSpacing;
-  document.getElementById('letter-spacing-value').textContent = settings.letterSpacing.toFixed(2);
+  const fontSize = numericSetting('fontSize', 18);
+  const lineHeight = numericSetting('lineHeight', 1.8);
+  const wordSpacing = numericSetting('wordSpacing', 0);
+  const letterSpacing = numericSetting('letterSpacing', 0);
+  document.getElementById('font-size-slider').value   = fontSize;
+  document.getElementById('font-size-value').textContent = fontSize;
+  document.getElementById('line-height-slider').value = lineHeight;
+  document.getElementById('line-height-value').textContent = lineHeight.toFixed(1);
+  document.getElementById('word-spacing-slider').value   = wordSpacing;
+  document.getElementById('word-spacing-value').textContent = wordSpacing.toFixed(2);
+  document.getElementById('letter-spacing-slider').value = letterSpacing;
+  document.getElementById('letter-spacing-value').textContent = letterSpacing.toFixed(2);
 
   document.getElementById('font-color').value         = settings.fontColor;
   document.getElementById('bg-color').value           = settings.bgColor;
@@ -163,6 +191,10 @@ function syncUI() {
 // ── Wire up all controls ───────────────────────────────────────────────
 
 function init() {
+  document.querySelectorAll('.panel-size-btn').forEach(btn => {
+    btn.addEventListener('click', () => savePanelSize(btn.dataset.panelSize));
+  });
+
   // Tab switching
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -185,7 +217,7 @@ function init() {
       document.getElementById('line-height-slider').value           = 1.8;
       document.getElementById('line-height-value').textContent      = '1.8';
       document.getElementById('word-spacing-slider').value          = 0;
-      document.getElementById('word-spacing-value').textContent     = '0.0';
+      document.getElementById('word-spacing-value').textContent     = '0.00';
       document.getElementById('letter-spacing-slider').value        = 0;
       document.getElementById('letter-spacing-value').textContent   = '0.00';
       document.getElementById('font-color').value                   = '#2c2c2c';
@@ -302,17 +334,19 @@ function init() {
 
   // Font size — stepper
   document.getElementById('font-size-dec').addEventListener('click', () => {
-    if (settings.fontSize <= 14) return;
+    const current = numericSetting('fontSize', 18);
+    if (current <= 14) return;
     enableTypographyIfNeeded();
-    const v = settings.fontSize - 1;
+    const v = current - 1;
     document.getElementById('font-size-slider').value = v;
     document.getElementById('font-size-value').textContent = v;
     broadcast({ fontSize: v });
   });
   document.getElementById('font-size-inc').addEventListener('click', () => {
-    if (settings.fontSize >= 28) return;
+    const current = numericSetting('fontSize', 18);
+    if (current >= 28) return;
     enableTypographyIfNeeded();
-    const v = settings.fontSize + 1;
+    const v = current + 1;
     document.getElementById('font-size-slider').value = v;
     document.getElementById('font-size-value').textContent = v;
     broadcast({ fontSize: v });
@@ -326,17 +360,19 @@ function init() {
 
   // Line height — stepper
   document.getElementById('line-height-dec').addEventListener('click', () => {
-    if (settings.lineHeight <= 1.4) return;
+    const current = numericSetting('lineHeight', 1.8);
+    if (current <= 1.4) return;
     enableTypographyIfNeeded();
-    const v = Math.round((settings.lineHeight - 0.1) * 10) / 10;
+    const v = Math.round((current - 0.1) * 10) / 10;
     document.getElementById('line-height-slider').value = v;
     document.getElementById('line-height-value').textContent = v.toFixed(1);
     broadcast({ lineHeight: v });
   });
   document.getElementById('line-height-inc').addEventListener('click', () => {
-    if (settings.lineHeight >= 2.4) return;
+    const current = numericSetting('lineHeight', 1.8);
+    if (current >= 2.4) return;
     enableTypographyIfNeeded();
-    const v = Math.round((settings.lineHeight + 0.1) * 10) / 10;
+    const v = Math.round((current + 0.1) * 10) / 10;
     document.getElementById('line-height-slider').value = v;
     document.getElementById('line-height-value').textContent = v.toFixed(1);
     broadcast({ lineHeight: v });
@@ -350,41 +386,45 @@ function init() {
 
   // Word spacing — stepper + slider
   document.getElementById('word-spacing-dec').addEventListener('click', () => {
-    if (settings.wordSpacing <= 0) return;
+    const current = numericSetting('wordSpacing', 0);
+    if (current <= 0) return;
     enableTypographyIfNeeded();
-    const v = Math.max(0, Math.round((settings.wordSpacing - 0.05) * 100) / 100);
+    const v = Math.max(0, Math.round((current - 0.05) * 100) / 100);
     document.getElementById('word-spacing-slider').value = v;
-    document.getElementById('word-spacing-value').textContent = v.toFixed(1);
+    document.getElementById('word-spacing-value').textContent = v.toFixed(2);
     broadcast({ wordSpacing: v });
   });
   document.getElementById('word-spacing-inc').addEventListener('click', () => {
-    if (settings.wordSpacing >= 0.5) return;
+    const current = numericSetting('wordSpacing', 0);
+    if (current >= 0.5) return;
     enableTypographyIfNeeded();
-    const v = Math.min(0.5, Math.round((settings.wordSpacing + 0.05) * 100) / 100);
+    const v = Math.min(0.5, Math.round((current + 0.05) * 100) / 100);
     document.getElementById('word-spacing-slider').value = v;
-    document.getElementById('word-spacing-value').textContent = v.toFixed(1);
+    document.getElementById('word-spacing-value').textContent = v.toFixed(2);
     broadcast({ wordSpacing: v });
   });
   document.getElementById('word-spacing-slider').addEventListener('input', e => {
     enableTypographyIfNeeded();
     const v = parseFloat(e.target.value);
-    document.getElementById('word-spacing-value').textContent = v.toFixed(1);
+    document.getElementById('word-spacing-value').textContent = v.toFixed(2);
     broadcast({ wordSpacing: v });
   });
 
   // Letter spacing — stepper + slider
   document.getElementById('letter-spacing-dec').addEventListener('click', () => {
-    if (settings.letterSpacing <= 0) return;
+    const current = numericSetting('letterSpacing', 0);
+    if (current <= 0) return;
     enableTypographyIfNeeded();
-    const v = Math.max(0, Math.round((settings.letterSpacing - 0.01) * 1000) / 1000);
+    const v = Math.max(0, Math.round((current - 0.01) * 1000) / 1000);
     document.getElementById('letter-spacing-slider').value = v;
     document.getElementById('letter-spacing-value').textContent = v.toFixed(2);
     broadcast({ letterSpacing: v });
   });
   document.getElementById('letter-spacing-inc').addEventListener('click', () => {
-    if (settings.letterSpacing >= 0.1) return;
+    const current = numericSetting('letterSpacing', 0);
+    if (current >= 0.1) return;
     enableTypographyIfNeeded();
-    const v = Math.min(0.1, Math.round((settings.letterSpacing + 0.01) * 1000) / 1000);
+    const v = Math.min(0.1, Math.round((current + 0.01) * 1000) / 1000);
     document.getElementById('letter-spacing-slider').value = v;
     document.getElementById('letter-spacing-value').textContent = v.toFixed(2);
     broadcast({ letterSpacing: v });
