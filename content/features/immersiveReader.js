@@ -220,8 +220,8 @@ function applyReaderStyle(root) {
   article.style.fontFamily = state.settings.typographyEnabled && state.settings.fontFamily ? state.settings.fontFamily : '';
   article.style.wordSpacing = state.settings.typographyEnabled && state.settings.wordSpacing ? `${state.settings.wordSpacing}em` : '';
   article.style.letterSpacing = state.settings.typographyEnabled && state.settings.letterSpacing ? `${state.settings.letterSpacing}em` : '';
-  article.style.color = state.settings.typographyEnabled && state.settings.fontColor ? state.settings.fontColor : '';
-  article.style.background = state.settings.typographyEnabled && state.settings.bgColor ? state.settings.bgColor : '';
+  article.style.color = '';
+  article.style.background = '';
   root.classList.toggle('dra-reader-row-shading', Boolean(state.settings.readingAidsEnabled && state.settings.gradientRows));
   root.classList.toggle('dra-reader-ruler-active', Boolean(state.settings.readingAidsEnabled && state.settings.rulerActive));
 

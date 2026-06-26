@@ -285,6 +285,11 @@ body {
   background: #fff;
 }
 
+.control-block.disabled {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
 /* ── Toggle switch ───────────────────────────────────────────────────── */
 
 .toggle-switch { flex-shrink: 0; cursor: pointer; }

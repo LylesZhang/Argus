@@ -547,6 +547,11 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type !== 'IMMERSIVE_READER_STATUS') return;
   const toggle = document.getElementById('toggle-immersive-reader');
   if (toggle) toggle.checked = Boolean(msg.active);
+  const inReader = Boolean(msg.active);
+  document.getElementById('font-color').disabled = inReader;
+  document.getElementById('bg-color').disabled   = inReader;
+  document.getElementById('font-color').closest('.control-block').classList.toggle('disabled', inReader);
+  document.getElementById('bg-color').closest('.control-block').classList.toggle('disabled', inReader);
 });
 
 // ── Word list editor ───────────────────────────────────────────────────
