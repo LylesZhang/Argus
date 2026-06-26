@@ -148,7 +148,20 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === 'FOCUS_CLEAR')        forwardToActiveTab();
   if (msg.type === 'FOCUS_AI_REQUEST')   forwardToActiveTab();
   if (msg.type === 'WORDLISTS_CHANGED')  forwardToActiveTab();
-  if (msg.type === 'AI_RETRY')           forwardToActiveTab();
+  if (msg.type === 'AI_RETRY') {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs[0]) return;
+      const url = tabs[0].url;
+      if (msg.feature === 'emotion') {
+        emotionCache.delete(url);
+        emotionPending.delete(url);
+      } else if (msg.feature === 'labels') {
+        for (const key of [...labelCache.keys()])   if (key.startsWith(url + '|')) labelCache.delete(key);
+        for (const key of [...labelPending.keys()]) if (key.startsWith(url + '|')) labelPending.delete(key);
+      }
+      chrome.tabs.sendMessage(tabs[0].id, msg);
+    });
+  }
   if (msg.type === 'OPEN_IMMERSIVE_READER') forwardToActiveTab();
   if (msg.type === 'CLOSE_IMMERSIVE_READER') forwardToActiveTab();
 });

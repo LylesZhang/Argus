@@ -99,9 +99,9 @@ function updateAIStatus(feature, status) {
   }
   el.classList.remove('hidden');
   el.setAttribute('data-state', status);
-  el.textContent = status === 'loading' ? 'Analyzing…'
-                 : status === 'success' ? 'Done'
-                 : 'Failed';
+  el.textContent = status === 'loading' ? ''
+                 : status === 'success' ? '✓'
+                 : '✕';
   if (retryBtn) retryBtn.disabled = (status === 'loading');
 }
 
