@@ -186,8 +186,8 @@ function syncUI() {
     });
   });
 
-  document.getElementById('emotion-ai-row').classList.toggle('hidden', settings.emotionMode !== 'ai');
-  document.getElementById('labels-ai-row').classList.toggle('hidden', settings.sentenceLabelsMode !== 'ai');
+  document.getElementById('emotion-ai-row').classList.toggle('hidden', !settings.emotionColor || settings.emotionMode !== 'ai');
+  document.getElementById('labels-ai-row').classList.toggle('hidden', !settings.sentenceLabels || settings.sentenceLabelsMode !== 'ai');
 }
 
 // ── Wire up all controls ───────────────────────────────────────────────
@@ -278,6 +278,7 @@ function init() {
     enableReadingAidIfNeeded(e.target.checked);
     broadcast({ emotionColor: e.target.checked });
     document.getElementById('emotion-colors').classList.toggle('active', e.target.checked);
+    document.getElementById('emotion-ai-row').classList.toggle('hidden', !e.target.checked || settings.emotionMode !== 'ai');
   });
 
   document.getElementById('toggle-gradient').addEventListener('change', e => {
@@ -295,6 +296,7 @@ function init() {
     enableReadingAidIfNeeded(e.target.checked);
     broadcast({ sentenceLabels: e.target.checked });
     document.getElementById('sentence-label-colors').classList.toggle('active', e.target.checked);
+    document.getElementById('labels-ai-row').classList.toggle('hidden', !e.target.checked || settings.sentenceLabelsMode !== 'ai');
   });
 
   document.getElementById('toggle-ruler').addEventListener('change', e => {
@@ -498,7 +500,10 @@ function init() {
       btn.closest('.mode-pill').querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const rowId = AI_ROW_ID[feature];
-      if (rowId) document.getElementById(rowId).classList.toggle('hidden', mode !== 'ai');
+      if (rowId) {
+        const featureOn = feature === 'emotion' ? settings.emotionColor : settings.sentenceLabels;
+        document.getElementById(rowId).classList.toggle('hidden', mode !== 'ai' || !featureOn);
+      }
       if (mode === 'local') updateAIStatus(STATUS_FEATURE[feature], null);
       broadcast({ [modeKey]: mode });
     });
