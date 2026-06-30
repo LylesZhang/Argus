@@ -45,6 +45,8 @@ const DEFAULT_SETTINGS = {
   rulerWindowLines:     1.5,
   autoScrollActive:     false,
   autoScrollSpeed:      2,
+  typewriterActive:     false,
+  typewriterSpeed:      5,
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -58,6 +60,16 @@ function clampAutoScrollSpeed(value) {
 }
 
 function formatAutoScrollSpeed(value) {
+  return 'Speed ' + String(value).padStart(2, '0');
+}
+
+function clampTypewriterSpeed(value) {
+  const raw = Number(value);
+  if (!Number.isFinite(raw)) return DEFAULT_SETTINGS.typewriterSpeed;
+  return Math.min(10, Math.max(1, Math.round(raw)));
+}
+
+function formatTypewriterSpeed(value) {
   return 'Speed ' + String(value).padStart(2, '0');
 }
 
@@ -237,6 +249,11 @@ function syncUI() {
   document.getElementById('auto-scroll-speed-slider').value = autoScrollSpeed;
   document.getElementById('auto-scroll-speed-value').textContent = formatAutoScrollSpeed(autoScrollSpeed);
 
+  document.getElementById('toggle-typewriter').checked = settings.typewriterActive;
+  const typewriterSpeed = clampTypewriterSpeed(settings.typewriterSpeed);
+  document.getElementById('typewriter-speed-slider').value = typewriterSpeed;
+  document.getElementById('typewriter-speed-value').textContent = formatTypewriterSpeed(typewriterSpeed);
+
   document.getElementById('emotion-colors').classList.toggle('active', settings.emotionColor);
   document.getElementById('sentence-label-colors').classList.toggle('active', settings.sentenceLabels);
   document.getElementById('toggle-labels').checked = settings.sentenceLabels;
@@ -378,6 +395,16 @@ function init() {
     const v = parseFloat(e.target.value);
     document.getElementById('ruler-size-value').textContent = v.toFixed(1) + ' lines';
     broadcast({ rulerWindowLines: v });
+  });
+
+  document.getElementById('toggle-typewriter').addEventListener('change', e => {
+    broadcast({ typewriterActive: e.target.checked });
+  });
+
+  document.getElementById('typewriter-speed-slider').addEventListener('input', e => {
+    const v = clampTypewriterSpeed(e.target.value);
+    document.getElementById('typewriter-speed-value').textContent = formatTypewriterSpeed(v);
+    broadcast({ typewriterSpeed: v });
   });
 
   document.getElementById('auto-scroll-speed-slider').addEventListener('input', e => {
@@ -616,6 +643,16 @@ chrome.runtime.onMessage.addListener((msg) => {
   document.getElementById('bg-color').disabled   = inReader;
   document.getElementById('font-color').closest('.control-block').classList.toggle('disabled', inReader);
   document.getElementById('bg-color').closest('.control-block').classList.toggle('disabled', inReader);
+
+  const twToggle = document.getElementById('toggle-typewriter');
+  const twSlider = document.getElementById('typewriter-speed-slider');
+  twToggle.disabled = !inReader;
+  twSlider.disabled = !inReader;
+  document.getElementById('typewriter-control').classList.toggle('disabled', !inReader);
+  if (!inReader && twToggle.checked) {
+    twToggle.checked = false;
+    broadcast({ typewriterActive: false });
+  }
 });
 
 // ── Word list editor ───────────────────────────────────────────────────
