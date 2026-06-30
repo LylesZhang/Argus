@@ -1,5 +1,8 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+[hidden] { display: none !important; }
+.section-content-collapsed { display: none !important; }
+
 :root {
   --navy:   #1e1b4b;
   --teal:   #5aaea9;
@@ -82,7 +85,7 @@ body {
 .section-label {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: var(--row-gap);
   font-size: var(--section-font-size);
   font-weight: 700;
@@ -91,6 +94,75 @@ body {
   color: var(--navy);
   padding: 18px 16px 10px;
   border-top: 1px solid var(--border);
+}
+
+.section-label > span {
+  min-width: 0;
+}
+
+.section-label > .toggle-switch,
+.section-label > .ai-controls {
+  margin-left: auto;
+}
+
+.section-label-collapsed > .ai-controls {
+  display: none;
+}
+
+.collapse-btn {
+  width: 26px;
+  height: 26px;
+  margin-left: -2px;
+  margin-right: 4px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.section-reset-btn {
+  border: 1px solid rgba(231, 76, 60, 0.28);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.85);
+  color: #c0392b;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: var(--small-font-size);
+  font-weight: 700;
+  min-height: 24px;
+  padding: 3px 8px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.section-reset-btn:hover {
+  background: #fff0f0;
+  border-color: rgba(231, 76, 60, 0.45);
+}
+
+.collapse-btn:hover {
+  background: rgba(90, 174, 168, 0.1);
+  border-color: rgba(90, 174, 169, 0);
+}
+
+.collapse-btn::before {
+  content: "";
+  position: absolute;
+  left: 9px;
+  top: 8px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--navy);
+  border-bottom: 2px solid var(--navy);
+  transform: rotate(45deg);
+  transition: transform 0.18s, top 0.18s;
+}
+
+.collapse-btn.collapsed::before {
+  top: 10px;
+  transform: rotate(-45deg);
 }
 
 .section-label:first-child { border-top: none; }
@@ -736,21 +808,3 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   cursor: pointer;
 }
 .wordlist-add button:hover { background: #2d2a63; }
-
-.wordlist-reset {
-  padding: 12px 16px 16px;
-  border-top: 1px solid var(--border);
-}
-
-.wordlist-reset button {
-  width: 100%;
-  padding: 8px 0;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fff;
-  color: #e74c3c;
-  font-size: calc(var(--control-font-size) - 1px);
-  font-weight: 600;
-  cursor: pointer;
-}
-.wordlist-reset button:hover { background: #fff0f0; }

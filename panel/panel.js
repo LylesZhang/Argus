@@ -48,6 +48,7 @@ const DEFAULT_SETTINGS = {
 };
 
 let settings = { ...DEFAULT_SETTINGS };
+let sectionCollapseState = {};
 
 function clampAutoScrollSpeed(value) {
   const raw = Number(value);
@@ -80,6 +81,67 @@ function savePanelSize(size) {
   settings = { ...settings, panelSize: nextSize };
   applyPanelSize(nextSize);
   chrome.storage.sync.set({ draSettings: settings });
+}
+
+function getSectionTitle(label) {
+  return label.querySelector('span')?.textContent?.trim() || '';
+}
+
+function getSectionId(label) {
+  const tabPanel = label.closest('.tab-panel');
+  return `${tabPanel?.id || 'panel'}:${getSectionTitle(label).toLowerCase().replace(/\s+/g, '-')}`;
+}
+
+function getSectionContent(label) {
+  const content = [];
+  let node = label.nextElementSibling;
+  while (node && !node.classList.contains('section-label')) {
+    content.push(node);
+    node = node.nextElementSibling;
+  }
+  return content;
+}
+
+function applySectionCollapse(label, collapsed) {
+  const button = label.querySelector('.collapse-btn');
+  label.classList.toggle('section-label-collapsed', collapsed);
+  getSectionContent(label).forEach(el => {
+    el.hidden = collapsed;
+    el.classList.toggle('section-content-collapsed', collapsed);
+  });
+  if (button) {
+    button.classList.toggle('collapsed', collapsed);
+    button.setAttribute('aria-expanded', String(!collapsed));
+    button.setAttribute('aria-label', collapsed ? `Expand ${getSectionTitle(label)}` : `Collapse ${getSectionTitle(label)}`);
+  }
+}
+
+function initSectionCollapse() {
+  const labels = [...document.querySelectorAll('.tab-panel .section-label')];
+  const collapsible = labels
+    .map(label => ({ label, id: getSectionId(label), content: getSectionContent(label) }))
+    .filter(section => section.content.length > 0);
+
+  collapsible.forEach(({ label }) => {
+    if (label.querySelector('.collapse-btn')) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'collapse-btn';
+    label.insertBefore(button, label.children[1] || null);
+  });
+
+  chrome.storage.local.get('panelSectionCollapse', data => {
+    sectionCollapseState = data.panelSectionCollapse || {};
+    collapsible.forEach(({ label, id }) => {
+      applySectionCollapse(label, Boolean(sectionCollapseState[id]));
+      label.querySelector('.collapse-btn')?.addEventListener('click', () => {
+        const collapsed = !sectionCollapseState[id];
+        sectionCollapseState = { ...sectionCollapseState, [id]: collapsed };
+        chrome.storage.local.set({ panelSectionCollapse: sectionCollapseState });
+        applySectionCollapse(label, collapsed);
+      });
+    });
+  });
 }
 
 // ── AI status indicator ────────────────────────────────────────────────
@@ -193,6 +255,8 @@ function syncUI() {
 // ── Wire up all controls ───────────────────────────────────────────────
 
 function init() {
+  initSectionCollapse();
+
   document.querySelectorAll('.panel-size-btn').forEach(btn => {
     btn.addEventListener('click', () => savePanelSize(btn.dataset.panelSize));
   });
@@ -658,6 +722,15 @@ function addWord(key, word, chipsId) {
   saveAndBroadcast();
 }
 
+function resetWordListSection(keys) {
+  keys.forEach(key => {
+    wordLists = { ...wordLists, [key]: [...DEFAULT_WORDS[key]] };
+    const config = WL_CONFIG.find(c => c.key === key);
+    if (config) renderChips(key, config.chipsId);
+  });
+  saveAndBroadcast();
+}
+
 function initWordListEditor() {
   chrome.storage.sync.get('draWordLists', (data) => {
     wordLists = { ...DEFAULT_WORDS, ...data.draWordLists };
@@ -678,11 +751,12 @@ function initWordListEditor() {
       });
     });
 
-    document.getElementById('wl-reset-all')?.addEventListener('click', () => {
-      wordLists = { ...DEFAULT_WORDS };
-      chrome.storage.sync.set({ draWordLists: wordLists });
-      chrome.runtime.sendMessage({ type: 'WORDLISTS_CHANGED', wordLists });
-      WL_CONFIG.forEach(({ key, chipsId }) => renderChips(key, chipsId));
+    document.getElementById('wl-reset-emotion')?.addEventListener('click', () => {
+      resetWordListSection(['emotionPositive', 'emotionNegative', 'emotionComplex']);
+    });
+
+    document.getElementById('wl-reset-transition')?.addEventListener('click', () => {
+      resetWordListSection(['transition']);
     });
   });
 }

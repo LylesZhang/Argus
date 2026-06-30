@@ -75,7 +75,7 @@
         <div class="control-block">
           <label class="control-label">Word Space</label>
           <div class="stepper">
-            <button id="word-spacing-dec" class="stepper-btn">−</button>
+            <button id="word-spacing-dec" class="stepper-btn">-</button>
             <div class="stepper-center">
               <span id="word-spacing-value" class="stepper-num">0.00</span>
               <span class="stepper-unit">em</span>
@@ -87,7 +87,7 @@
         <div class="control-block">
           <label class="control-label">Letter Space</label>
           <div class="stepper">
-            <button id="letter-spacing-dec" class="stepper-btn">−</button>
+            <button id="letter-spacing-dec" class="stepper-btn">-</button>
             <div class="stepper-center">
               <span id="letter-spacing-value" class="stepper-num">0.00</span>
               <span class="stepper-unit">em</span>
@@ -314,7 +314,7 @@
   <div id="tab-settings" class="tab-panel">
     <div class="panel">
 
-      <div class="section-label">Panel Display</div>
+      <div class="section-label"><span>Panel Display</span></div>
 
       <div class="settings-row">
         <span class="settings-row-label">Panel Size</span>
@@ -325,7 +325,10 @@
         </div>
       </div>
 
-      <div class="section-label">Emotion Words</div>
+      <div class="section-label">
+        <span>Emotion Words</span>
+        <button type="button" id="wl-reset-emotion" class="section-reset-btn">Reset</button>
+      </div>
 
       <div class="wordlist-section">
         <div class="wordlist-category-label">Positive</div>
@@ -354,7 +357,10 @@
         </div>
       </div>
 
-      <div class="section-label">Transition Words</div>
+      <div class="section-label">
+        <span>Transition Words</span>
+        <button type="button" id="wl-reset-transition" class="section-reset-btn">Reset</button>
+      </div>
 
       <div class="wordlist-section">
         <div class="wordlist-chips" id="wl-transition"></div>
@@ -362,10 +368,6 @@
           <input type="text" id="wl-add-transition" placeholder="Add phrase…">
           <button id="wl-add-transition-btn">Add</button>
         </div>
-      </div>
-
-      <div class="wordlist-reset">
-        <button id="wl-reset-all">Reset all to default</button>
       </div>
 
     </div>
