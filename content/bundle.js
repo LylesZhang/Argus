@@ -874,372 +874,6 @@
     });
   }
 
-  // content/features/selectionMenu.js
-  var MENU_ID = "dra-word-menu";
-  var listening = false;
-  var _render = null;
-  var KEY_MAP = {
-    positive: "emotionPositive",
-    negative: "emotionNegative",
-    complex: "emotionComplex",
-    transition: "transition"
-  };
-  var DEFAULT_MAP = {
-    emotionPositive: DEFAULT_EMOTION_POSITIVE,
-    emotionNegative: DEFAULT_EMOTION_NEGATIVE,
-    emotionComplex: DEFAULT_EMOTION_COMPLEX,
-    transition: DEFAULT_TRANSITION_WORDS
-  };
-  function getCurrentList(key) {
-    return state.wordLists[key] ?? DEFAULT_MAP[key];
-  }
-  function getMenu() {
-    return document.getElementById(MENU_ID);
-  }
-  function hideMenu() {
-    const menu = getMenu();
-    if (menu) menu.remove();
-  }
-  function showMenu(word, rect) {
-    hideMenu();
-    const menu = document.createElement("div");
-    menu.id = MENU_ID;
-    const label = document.createElement("span");
-    label.id = "dra-word-menu-text";
-    label.textContent = `"${word}"`;
-    menu.appendChild(label);
-    const actions = document.createElement("div");
-    actions.id = "dra-word-menu-actions";
-    const buttons = [
-      { id: "positive", label: "Positive" },
-      { id: "negative", label: "Negative" },
-      { id: "complex", label: "Complex" },
-      { id: "transition", label: "Transition" }
-    ];
-    buttons.forEach(({ id, label: btnLabel }) => {
-      const key = KEY_MAP[id];
-      const inList = getCurrentList(key).includes(word);
-      const btn = document.createElement("button");
-      btn.textContent = (inList ? "\u2713 " : "\uFF0B ") + btnLabel;
-      if (inList) btn.classList.add("active");
-      btn.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleWord(word, key, inList);
-        hideMenu();
-      });
-      actions.appendChild(btn);
-    });
-    menu.appendChild(actions);
-    document.body.appendChild(menu);
-    const menuH = menu.offsetHeight || 44;
-    let top = rect.top + window.scrollY - menuH - 8;
-    let left = rect.left + window.scrollX;
-    if (left + menu.offsetWidth > window.innerWidth - 8) {
-      left = window.innerWidth - menu.offsetWidth - 8;
-    }
-    if (top < window.scrollY + 8) top = rect.bottom + window.scrollY + 8;
-    menu.style.top = top + "px";
-    menu.style.left = left + "px";
-  }
-  function toggleWord(word, key, currentlyInList) {
-    const current = getCurrentList(key);
-    const updated = currentlyInList ? current.filter((w) => w !== word) : [.../* @__PURE__ */ new Set([...current, word])];
-    state.wordLists = { ...state.wordLists, [key]: updated };
-    chrome.storage.sync.set({ draWordLists: state.wordLists });
-    chrome.runtime.sendMessage({ type: "WORDLISTS_CHANGED", wordLists: state.wordLists });
-    if (_render) _render();
-  }
-  function onMouseUp() {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) {
-      hideMenu();
-      return;
-    }
-    const word = sel.toString().trim().toLowerCase();
-    if (!word || word.length > 60 || /\s{2,}/.test(word)) {
-      hideMenu();
-      return;
-    }
-    const range = sel.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
-    showMenu(word, rect);
-  }
-  function onSelectionChange() {
-    const sel = window.getSelection();
-    if (!sel || sel.isCollapsed) hideMenu();
-  }
-  function setupSelectionMenu(renderFn) {
-    _render = renderFn;
-    if (listening) return;
-    listening = true;
-    document.addEventListener("mouseup", onMouseUp);
-    document.addEventListener("selectionchange", onSelectionChange);
-  }
-  function teardownSelectionMenu() {
-    if (!listening) return;
-    listening = false;
-    document.removeEventListener("mouseup", onMouseUp);
-    document.removeEventListener("selectionchange", onSelectionChange);
-    hideMenu();
-  }
-
-  // content/render.js
-  function hasEmbeddedContent(el) {
-    if (el.querySelector("img, svg, picture, video, audio, canvas, iframe, input, button, select")) return true;
-    for (const child of el.querySelectorAll("i, span, a, em")) {
-      if (!child.textContent.trim()) return true;
-    }
-    return false;
-  }
-  function renderSentence(s) {
-    const matches = [];
-    for (const h of state.articleHighlights) {
-      if (h.context) {
-        const normS = s.replace(/\s+/g, " ").toLowerCase();
-        const normCtx = h.context.replace(/\*+/g, "").replace(/\s+/g, " ").toLowerCase().trim();
-        if (normCtx && !normS.includes(normCtx)) continue;
-      }
-      const escaped = h.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      const regex = new RegExp(`(?<![a-zA-Z-])${escaped}(?![a-zA-Z-])`, "i");
-      const m = regex.exec(s);
-      if (m) matches.push({ start: m.index, end: m.index + m[0].length, h });
-    }
-    matches.sort((a, b) => a.start - b.start);
-    const deduped = [];
-    let lastEnd = 0;
-    for (const m of matches) {
-      if (m.start >= lastEnd) {
-        deduped.push(m);
-        lastEnd = m.end;
-      }
-    }
-    const bionic = (t) => state.settings.boldBeginning ? applyBionicToText(t) : t;
-    if (deduped.length === 0) return bionic(s);
-    let result = "";
-    let pos = 0;
-    for (const { start, end, h } of deduped) {
-      if (pos < start) result += bionic(s.slice(pos, start));
-      const inner = bionic(s.slice(start, end));
-      if (state.settings.transitionAnimation && h.category === "transition") {
-        result += `<span class="dra-transition-word">${inner}</span>`;
-      } else if (state.settings.emotionColor && h.category.startsWith("emotion")) {
-        result += `<span class="dra-${h.category}">${inner}</span>`;
-      } else {
-        result += inner;
-      }
-      pos = end;
-    }
-    if (pos < s.length) result += bionic(s.slice(pos));
-    return result;
-  }
-  function buildParagraphHTML(plainText) {
-    const sentences = splitSentences(plainText.trim());
-    const VALID_LABEL_TYPES = /* @__PURE__ */ new Set([
-      "core-fact",
-      "context",
-      "quote",
-      "concept",
-      "mechanism",
-      "constraint",
-      "thesis",
-      "evidence",
-      "explanation",
-      "dialogue",
-      "plot-turn",
-      "setting"
-    ]);
-    const sentenceLabelClass = (s) => {
-      if (!state.settings.sentenceLabels) return "";
-      const trimmed = s.trim();
-      const idx = state.allSentences.findIndex((as) => as.slice(0, 25) === trimmed.slice(0, 25));
-      const label = state.sentenceLabels.find((l) => l.index === idx);
-      return VALID_LABEL_TYPES.has(label?.type) ? ` dra-label-${label.type}` : "";
-    };
-    return sentences.map(
-      (s) => `<span class="dra-sentence${sentenceLabelClass(s)}">${renderSentence(s)}</span>`
-    ).join(" ");
-  }
-  var INLINE_TAGS = /* @__PURE__ */ new Set([
-    "a",
-    "abbr",
-    "b",
-    "bdi",
-    "cite",
-    "code",
-    "data",
-    "del",
-    "dfn",
-    "em",
-    "i",
-    "ins",
-    "kbd",
-    "mark",
-    "q",
-    "s",
-    "samp",
-    "small",
-    "span",
-    "strong",
-    "sub",
-    "sup",
-    "time",
-    "u",
-    "var"
-  ]);
-  function extractInlineAnnotations(innerHTML) {
-    const container = document.createElement("div");
-    container.innerHTML = innerHTML;
-    const annotations = [];
-    let textPos = 0;
-    function walk(node) {
-      if (node.nodeType === Node.TEXT_NODE) {
-        textPos += node.textContent.replace(/[ \t\r\n]+/g, " ").length;
-        return;
-      }
-      if (node.nodeType !== Node.ELEMENT_NODE) return;
-      const name = node.tagName.toLowerCase();
-      if (name === "br") {
-        textPos++;
-        return;
-      }
-      if (INLINE_TAGS.has(name)) {
-        const openTag = node.outerHTML.match(/^<[^>]+>/)?.[0] ?? `<${name}>`;
-        annotations.push({ textPos, tag: openTag });
-        for (const child of node.childNodes) walk(child);
-        annotations.push({ textPos, tag: `</${name}>` });
-      } else {
-        for (const child of node.childNodes) walk(child);
-      }
-    }
-    for (const child of container.childNodes) walk(child);
-    return annotations;
-  }
-  function reInjectAnnotations(renderedHTML, annotations) {
-    if (!annotations.length) return renderedHTML;
-    const textToHtmlPos = [];
-    let inTag = false;
-    for (let i = 0; i < renderedHTML.length; i++) {
-      const c = renderedHTML[i];
-      if (c === "<") {
-        inTag = true;
-        continue;
-      }
-      if (c === ">") {
-        inTag = false;
-        continue;
-      }
-      if (!inTag) textToHtmlPos.push(i);
-    }
-    const sorted = annotations.map((a, idx) => ({ ...a, idx })).sort((a, b) => b.textPos - a.textPos || b.idx - a.idx);
-    let result = renderedHTML;
-    for (const { textPos, tag } of sorted) {
-      const htmlPos = textPos < textToHtmlPos.length ? textToHtmlPos[textPos] : result.length;
-      result = result.slice(0, htmlPos) + tag + result.slice(htmlPos);
-    }
-    return result;
-  }
-  function applyTransformations() {
-    if (!state.contentArea || !document.contains(state.contentArea)) {
-      state.contentArea = findContentArea();
-    }
-    document.documentElement.style.setProperty("--dra-positive", state.settings.emotionPositiveColor);
-    document.documentElement.style.setProperty("--dra-negative", state.settings.emotionNegativeColor);
-    document.documentElement.style.setProperty("--dra-complex", state.settings.emotionComplexColor);
-    document.documentElement.style.setProperty("--dra-row-shading", state.settings.rowShadingColor);
-    document.documentElement.style.setProperty("--dra-label-core-fact", state.settings.labelCoreFactColor);
-    document.documentElement.style.setProperty("--dra-label-context", state.settings.labelContextColor);
-    document.documentElement.style.setProperty("--dra-label-quote", state.settings.labelQuoteColor);
-    document.documentElement.style.setProperty("--dra-label-concept", state.settings.labelConceptColor);
-    document.documentElement.style.setProperty("--dra-label-mechanism", state.settings.labelMechanismColor);
-    document.documentElement.style.setProperty("--dra-label-constraint", state.settings.labelConstraintColor);
-    document.documentElement.style.setProperty("--dra-label-thesis", state.settings.labelThesisColor);
-    document.documentElement.style.setProperty("--dra-label-evidence", state.settings.labelEvidenceColor);
-    document.documentElement.style.setProperty("--dra-label-explanation", state.settings.labelExplanationColor);
-    document.documentElement.style.setProperty("--dra-label-dialogue", state.settings.labelDialogueColor);
-    document.documentElement.style.setProperty("--dra-label-plot-turn", state.settings.labelPlotTurnColor);
-    document.documentElement.style.setProperty("--dra-label-setting", state.settings.labelSettingColor);
-    state.contentArea.querySelectorAll("p, li, blockquote").forEach((para) => {
-      if (para.innerText.trim().length < 20) return;
-      if (state.settings.typographyEnabled) {
-        injectOpenDyslexicFont();
-        if (state.settings.fontSize) para.style.fontSize = state.settings.fontSize + "px";
-        if (state.settings.lineHeight) para.style.lineHeight = String(state.settings.lineHeight);
-        if (state.settings.fontFamily) para.style.fontFamily = state.settings.fontFamily;
-        if (state.settings.wordSpacing) para.style.wordSpacing = state.settings.wordSpacing + "em";
-        if (state.settings.letterSpacing) para.style.letterSpacing = state.settings.letterSpacing + "em";
-        if (state.settings.fontColor) para.style.color = state.settings.fontColor;
-      }
-      const needsSentenceWrap = state.settings.emotionColor || state.settings.transitionAnimation || state.settings.sentenceLabels;
-      const shouldWrap = state.settings.readingAidsEnabled && needsSentenceWrap || state.settings.typographyEnabled && state.settings.boldBeginning || state.topicFocusKeywords !== null || state.topicFocusAIPrefixes !== null;
-      if (shouldWrap && !hasEmbeddedContent(para)) {
-        const originalHTML = para.innerHTML;
-        if (!state.originalHTML.has(para)) state.originalHTML.set(para, originalHTML);
-        const annotations = extractInlineAnnotations(originalHTML);
-        const rendered = buildParagraphHTML(para.innerText);
-        para.innerHTML = reInjectAnnotations(rendered, annotations);
-      }
-      if (state.settings.readingAidsEnabled && state.settings.gradientRows) {
-        const lh = parseFloat(getComputedStyle(para).lineHeight);
-        para.style.backgroundImage = `repeating-linear-gradient(to bottom, color-mix(in srgb, var(--dra-row-shading) 18%, transparent) 0px, color-mix(in srgb, var(--dra-row-shading) 18%, transparent) ${lh}px, transparent ${lh}px, transparent ${lh * 2}px)`;
-      }
-    });
-    if (state.settings.typographyEnabled && state.settings.bgColor) {
-      state.contentArea.style.background = state.settings.bgColor;
-    }
-    if (state.settings.readingAidsEnabled && state.settings.rulerActive) setupRuler();
-    else teardownRuler();
-    if (state.settings.readingAidsEnabled && state.settings.autoScrollActive) {
-      setupAutoScroll(state.settings.autoScrollSpeed);
-    } else {
-      teardownAutoScroll();
-    }
-  }
-  function removeTransformations() {
-    if (!state.contentArea) return;
-    state.contentArea.querySelectorAll("p, li, blockquote").forEach((para) => {
-      if (state.originalHTML.has(para)) para.innerHTML = state.originalHTML.get(para);
-      ["fontSize", "lineHeight", "fontFamily", "wordSpacing", "letterSpacing", "color", "backgroundImage"].forEach((prop) => {
-        para.style[prop] = "";
-      });
-    });
-    state.contentArea.style.background = "";
-    teardownRuler();
-  }
-  function render() {
-    removeTransformations();
-    if (state.settings.readingAidsEnabled) {
-      const transitionHL = state.settings.transitionAnimation ? generateTransitionHighlights() : [];
-      const emotionHL = !state.settings.emotionColor ? [] : state.settings.emotionMode === "local" ? generateEmotionHighlights() : state.aiEmotionHighlights;
-      state.articleHighlights = [...emotionHL, ...transitionHL];
-      if (state.settings.sentenceLabels) {
-        state.allSentences = extractAllSentences();
-        if (state.settings.sentenceLabelsMode === "local") {
-          state.sentenceLabels = generateSentenceLabels();
-        } else {
-          state.sentenceLabels = state.aiSentenceLabels;
-        }
-      }
-      const needsEmotionAI = state.settings.emotionColor && state.settings.emotionMode === "ai";
-      const needsLabelsAI = state.settings.sentenceLabels && state.settings.sentenceLabelsMode === "ai";
-      if (needsEmotionAI) requestEmotionAnalysis();
-      if (needsLabelsAI) requestSentenceLabels();
-    }
-    if (state.settings.typographyEnabled || state.settings.readingAidsEnabled || state.topicFocusKeywords || state.topicFocusAIPrefixes) {
-      applyTransformations();
-    } else {
-      teardownAutoScroll();
-    }
-    if (state.topicFocusKeywords) {
-      applyFocusMask(state.topicFocusKeywords);
-    } else if (state.topicFocusAIPrefixes) {
-      applyFocusMaskByPrefixes(state.topicFocusAIPrefixes);
-    }
-    const needsSelectionMenu = state.settings.readingAidsEnabled && (state.settings.emotionColor || state.settings.transitionAnimation);
-    if (needsSelectionMenu) setupSelectionMenu(render);
-    else teardownSelectionMenu();
-  }
-
   // content/features/immersiveReader.js
   var READER_ID = "dra-immersive-reader";
   var MIN_BLOCK_LENGTH = 40;
@@ -1559,6 +1193,373 @@
     document.documentElement.classList.remove("dra-reader-open");
     document.removeEventListener("keydown", onKeydown);
     if (hadReader && !suppressStatusMessage) notifyReaderStatus(false);
+  }
+
+  // content/features/selectionMenu.js
+  var MENU_ID = "dra-word-menu";
+  var listening = false;
+  var _render = null;
+  var KEY_MAP = {
+    positive: "emotionPositive",
+    negative: "emotionNegative",
+    complex: "emotionComplex",
+    transition: "transition"
+  };
+  var DEFAULT_MAP = {
+    emotionPositive: DEFAULT_EMOTION_POSITIVE,
+    emotionNegative: DEFAULT_EMOTION_NEGATIVE,
+    emotionComplex: DEFAULT_EMOTION_COMPLEX,
+    transition: DEFAULT_TRANSITION_WORDS
+  };
+  function getCurrentList(key) {
+    return state.wordLists[key] ?? DEFAULT_MAP[key];
+  }
+  function getMenu() {
+    return document.getElementById(MENU_ID);
+  }
+  function hideMenu() {
+    const menu = getMenu();
+    if (menu) menu.remove();
+  }
+  function showMenu(word, rect) {
+    hideMenu();
+    const menu = document.createElement("div");
+    menu.id = MENU_ID;
+    const label = document.createElement("span");
+    label.id = "dra-word-menu-text";
+    label.textContent = `"${word}"`;
+    menu.appendChild(label);
+    const actions = document.createElement("div");
+    actions.id = "dra-word-menu-actions";
+    const buttons = [
+      { id: "positive", label: "Positive" },
+      { id: "negative", label: "Negative" },
+      { id: "complex", label: "Complex" },
+      { id: "transition", label: "Transition" }
+    ];
+    buttons.forEach(({ id, label: btnLabel }) => {
+      const key = KEY_MAP[id];
+      const inList = getCurrentList(key).includes(word);
+      const btn = document.createElement("button");
+      btn.textContent = (inList ? "\u2713 " : "\uFF0B ") + btnLabel;
+      if (inList) btn.classList.add("active");
+      btn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleWord(word, key, inList);
+        hideMenu();
+      });
+      actions.appendChild(btn);
+    });
+    menu.appendChild(actions);
+    document.body.appendChild(menu);
+    const menuH = menu.offsetHeight || 44;
+    let top = rect.top + window.scrollY - menuH - 8;
+    let left = rect.left + window.scrollX;
+    if (left + menu.offsetWidth > window.innerWidth - 8) {
+      left = window.innerWidth - menu.offsetWidth - 8;
+    }
+    if (top < window.scrollY + 8) top = rect.bottom + window.scrollY + 8;
+    menu.style.top = top + "px";
+    menu.style.left = left + "px";
+  }
+  function toggleWord(word, key, currentlyInList) {
+    const current = getCurrentList(key);
+    const updated = currentlyInList ? current.filter((w) => w !== word) : [.../* @__PURE__ */ new Set([...current, word])];
+    state.wordLists = { ...state.wordLists, [key]: updated };
+    chrome.storage.sync.set({ draWordLists: state.wordLists });
+    chrome.runtime.sendMessage({ type: "WORDLISTS_CHANGED", wordLists: state.wordLists });
+    if (_render) _render();
+    refreshImmersiveReader();
+  }
+  function onMouseUp() {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) {
+      hideMenu();
+      return;
+    }
+    const word = sel.toString().trim().toLowerCase();
+    if (!word || word.length > 60 || /\s{2,}/.test(word)) {
+      hideMenu();
+      return;
+    }
+    const range = sel.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    showMenu(word, rect);
+  }
+  function onSelectionChange() {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed) hideMenu();
+  }
+  function setupSelectionMenu(renderFn) {
+    _render = renderFn;
+    if (listening) return;
+    listening = true;
+    document.addEventListener("mouseup", onMouseUp);
+    document.addEventListener("selectionchange", onSelectionChange);
+  }
+  function teardownSelectionMenu() {
+    if (!listening) return;
+    listening = false;
+    document.removeEventListener("mouseup", onMouseUp);
+    document.removeEventListener("selectionchange", onSelectionChange);
+    hideMenu();
+  }
+
+  // content/render.js
+  function hasEmbeddedContent(el) {
+    if (el.querySelector("img, svg, picture, video, audio, canvas, iframe, input, button, select")) return true;
+    for (const child of el.querySelectorAll("i, span, a, em")) {
+      if (!child.textContent.trim()) return true;
+    }
+    return false;
+  }
+  function renderSentence(s) {
+    const matches = [];
+    for (const h of state.articleHighlights) {
+      if (h.context) {
+        const normS = s.replace(/\s+/g, " ").toLowerCase();
+        const normCtx = h.context.replace(/\*+/g, "").replace(/\s+/g, " ").toLowerCase().trim();
+        if (normCtx && !normS.includes(normCtx)) continue;
+      }
+      const escaped = h.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`(?<![a-zA-Z-])${escaped}(?![a-zA-Z-])`, "i");
+      const m = regex.exec(s);
+      if (m) matches.push({ start: m.index, end: m.index + m[0].length, h });
+    }
+    matches.sort((a, b) => a.start - b.start);
+    const deduped = [];
+    let lastEnd = 0;
+    for (const m of matches) {
+      if (m.start >= lastEnd) {
+        deduped.push(m);
+        lastEnd = m.end;
+      }
+    }
+    const bionic = (t) => state.settings.boldBeginning ? applyBionicToText(t) : t;
+    if (deduped.length === 0) return bionic(s);
+    let result = "";
+    let pos = 0;
+    for (const { start, end, h } of deduped) {
+      if (pos < start) result += bionic(s.slice(pos, start));
+      const inner = bionic(s.slice(start, end));
+      if (state.settings.transitionAnimation && h.category === "transition") {
+        result += `<span class="dra-transition-word">${inner}</span>`;
+      } else if (state.settings.emotionColor && h.category.startsWith("emotion")) {
+        result += `<span class="dra-${h.category}">${inner}</span>`;
+      } else {
+        result += inner;
+      }
+      pos = end;
+    }
+    if (pos < s.length) result += bionic(s.slice(pos));
+    return result;
+  }
+  function buildParagraphHTML(plainText) {
+    const sentences = splitSentences(plainText.trim());
+    const VALID_LABEL_TYPES = /* @__PURE__ */ new Set([
+      "core-fact",
+      "context",
+      "quote",
+      "concept",
+      "mechanism",
+      "constraint",
+      "thesis",
+      "evidence",
+      "explanation",
+      "dialogue",
+      "plot-turn",
+      "setting"
+    ]);
+    const sentenceLabelClass = (s) => {
+      if (!state.settings.sentenceLabels) return "";
+      const trimmed = s.trim();
+      const idx = state.allSentences.findIndex((as) => as.slice(0, 25) === trimmed.slice(0, 25));
+      const label = state.sentenceLabels.find((l) => l.index === idx);
+      return VALID_LABEL_TYPES.has(label?.type) ? ` dra-label-${label.type}` : "";
+    };
+    return sentences.map(
+      (s) => `<span class="dra-sentence${sentenceLabelClass(s)}">${renderSentence(s)}</span>`
+    ).join(" ");
+  }
+  var INLINE_TAGS = /* @__PURE__ */ new Set([
+    "a",
+    "abbr",
+    "b",
+    "bdi",
+    "cite",
+    "code",
+    "data",
+    "del",
+    "dfn",
+    "em",
+    "i",
+    "ins",
+    "kbd",
+    "mark",
+    "q",
+    "s",
+    "samp",
+    "small",
+    "span",
+    "strong",
+    "sub",
+    "sup",
+    "time",
+    "u",
+    "var"
+  ]);
+  function extractInlineAnnotations(innerHTML) {
+    const container = document.createElement("div");
+    container.innerHTML = innerHTML;
+    const annotations = [];
+    let textPos = 0;
+    function walk(node) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        textPos += node.textContent.replace(/[ \t\r\n]+/g, " ").length;
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      const name = node.tagName.toLowerCase();
+      if (name === "br") {
+        textPos++;
+        return;
+      }
+      if (INLINE_TAGS.has(name)) {
+        const openTag = node.outerHTML.match(/^<[^>]+>/)?.[0] ?? `<${name}>`;
+        annotations.push({ textPos, tag: openTag });
+        for (const child of node.childNodes) walk(child);
+        annotations.push({ textPos, tag: `</${name}>` });
+      } else {
+        for (const child of node.childNodes) walk(child);
+      }
+    }
+    for (const child of container.childNodes) walk(child);
+    return annotations;
+  }
+  function reInjectAnnotations(renderedHTML, annotations) {
+    if (!annotations.length) return renderedHTML;
+    const textToHtmlPos = [];
+    let inTag = false;
+    for (let i = 0; i < renderedHTML.length; i++) {
+      const c = renderedHTML[i];
+      if (c === "<") {
+        inTag = true;
+        continue;
+      }
+      if (c === ">") {
+        inTag = false;
+        continue;
+      }
+      if (!inTag) textToHtmlPos.push(i);
+    }
+    const sorted = annotations.map((a, idx) => ({ ...a, idx })).sort((a, b) => b.textPos - a.textPos || b.idx - a.idx);
+    let result = renderedHTML;
+    for (const { textPos, tag } of sorted) {
+      const htmlPos = textPos < textToHtmlPos.length ? textToHtmlPos[textPos] : result.length;
+      result = result.slice(0, htmlPos) + tag + result.slice(htmlPos);
+    }
+    return result;
+  }
+  function applyTransformations() {
+    if (!state.contentArea || !document.contains(state.contentArea)) {
+      state.contentArea = findContentArea();
+    }
+    document.documentElement.style.setProperty("--dra-positive", state.settings.emotionPositiveColor);
+    document.documentElement.style.setProperty("--dra-negative", state.settings.emotionNegativeColor);
+    document.documentElement.style.setProperty("--dra-complex", state.settings.emotionComplexColor);
+    document.documentElement.style.setProperty("--dra-row-shading", state.settings.rowShadingColor);
+    document.documentElement.style.setProperty("--dra-label-core-fact", state.settings.labelCoreFactColor);
+    document.documentElement.style.setProperty("--dra-label-context", state.settings.labelContextColor);
+    document.documentElement.style.setProperty("--dra-label-quote", state.settings.labelQuoteColor);
+    document.documentElement.style.setProperty("--dra-label-concept", state.settings.labelConceptColor);
+    document.documentElement.style.setProperty("--dra-label-mechanism", state.settings.labelMechanismColor);
+    document.documentElement.style.setProperty("--dra-label-constraint", state.settings.labelConstraintColor);
+    document.documentElement.style.setProperty("--dra-label-thesis", state.settings.labelThesisColor);
+    document.documentElement.style.setProperty("--dra-label-evidence", state.settings.labelEvidenceColor);
+    document.documentElement.style.setProperty("--dra-label-explanation", state.settings.labelExplanationColor);
+    document.documentElement.style.setProperty("--dra-label-dialogue", state.settings.labelDialogueColor);
+    document.documentElement.style.setProperty("--dra-label-plot-turn", state.settings.labelPlotTurnColor);
+    document.documentElement.style.setProperty("--dra-label-setting", state.settings.labelSettingColor);
+    state.contentArea.querySelectorAll("p, li, blockquote").forEach((para) => {
+      if (para.innerText.trim().length < 20) return;
+      if (state.settings.typographyEnabled) {
+        injectOpenDyslexicFont();
+        if (state.settings.fontSize) para.style.fontSize = state.settings.fontSize + "px";
+        if (state.settings.lineHeight) para.style.lineHeight = String(state.settings.lineHeight);
+        if (state.settings.fontFamily) para.style.fontFamily = state.settings.fontFamily;
+        if (state.settings.wordSpacing) para.style.wordSpacing = state.settings.wordSpacing + "em";
+        if (state.settings.letterSpacing) para.style.letterSpacing = state.settings.letterSpacing + "em";
+        if (state.settings.fontColor) para.style.color = state.settings.fontColor;
+      }
+      const needsSentenceWrap = state.settings.emotionColor || state.settings.transitionAnimation || state.settings.sentenceLabels;
+      const shouldWrap = state.settings.readingAidsEnabled && needsSentenceWrap || state.settings.typographyEnabled && state.settings.boldBeginning || state.topicFocusKeywords !== null || state.topicFocusAIPrefixes !== null;
+      if (shouldWrap && !hasEmbeddedContent(para)) {
+        const originalHTML = para.innerHTML;
+        if (!state.originalHTML.has(para)) state.originalHTML.set(para, originalHTML);
+        const annotations = extractInlineAnnotations(originalHTML);
+        const rendered = buildParagraphHTML(para.innerText);
+        para.innerHTML = reInjectAnnotations(rendered, annotations);
+      }
+      if (state.settings.readingAidsEnabled && state.settings.gradientRows) {
+        const lh = parseFloat(getComputedStyle(para).lineHeight);
+        para.style.backgroundImage = `repeating-linear-gradient(to bottom, color-mix(in srgb, var(--dra-row-shading) 18%, transparent) 0px, color-mix(in srgb, var(--dra-row-shading) 18%, transparent) ${lh}px, transparent ${lh}px, transparent ${lh * 2}px)`;
+      }
+    });
+    if (state.settings.typographyEnabled && state.settings.bgColor) {
+      state.contentArea.style.background = state.settings.bgColor;
+    }
+    if (state.settings.readingAidsEnabled && state.settings.rulerActive) setupRuler();
+    else teardownRuler();
+    if (state.settings.readingAidsEnabled && state.settings.autoScrollActive) {
+      setupAutoScroll(state.settings.autoScrollSpeed);
+    } else {
+      teardownAutoScroll();
+    }
+  }
+  function removeTransformations() {
+    if (!state.contentArea) return;
+    state.contentArea.querySelectorAll("p, li, blockquote").forEach((para) => {
+      if (state.originalHTML.has(para)) para.innerHTML = state.originalHTML.get(para);
+      ["fontSize", "lineHeight", "fontFamily", "wordSpacing", "letterSpacing", "color", "backgroundImage"].forEach((prop) => {
+        para.style[prop] = "";
+      });
+    });
+    state.contentArea.style.background = "";
+    teardownRuler();
+  }
+  function render() {
+    removeTransformations();
+    if (state.settings.readingAidsEnabled) {
+      const transitionHL = state.settings.transitionAnimation ? generateTransitionHighlights() : [];
+      const emotionHL = !state.settings.emotionColor ? [] : state.settings.emotionMode === "local" ? generateEmotionHighlights() : state.aiEmotionHighlights;
+      state.articleHighlights = [...emotionHL, ...transitionHL];
+      if (state.settings.sentenceLabels) {
+        state.allSentences = extractAllSentences();
+        if (state.settings.sentenceLabelsMode === "local") {
+          state.sentenceLabels = generateSentenceLabels();
+        } else {
+          state.sentenceLabels = state.aiSentenceLabels;
+        }
+      }
+      const needsEmotionAI = state.settings.emotionColor && state.settings.emotionMode === "ai";
+      const needsLabelsAI = state.settings.sentenceLabels && state.settings.sentenceLabelsMode === "ai";
+      if (needsEmotionAI) requestEmotionAnalysis();
+      if (needsLabelsAI) requestSentenceLabels();
+    }
+    if (state.settings.typographyEnabled || state.settings.readingAidsEnabled || state.topicFocusKeywords || state.topicFocusAIPrefixes) {
+      applyTransformations();
+    } else {
+      teardownAutoScroll();
+    }
+    if (state.topicFocusKeywords) {
+      applyFocusMask(state.topicFocusKeywords);
+    } else if (state.topicFocusAIPrefixes) {
+      applyFocusMaskByPrefixes(state.topicFocusAIPrefixes);
+    }
+    const needsSelectionMenu = state.settings.readingAidsEnabled && (state.settings.emotionColor || state.settings.transitionAnimation);
+    if (needsSelectionMenu) setupSelectionMenu(render);
+    else teardownSelectionMenu();
   }
 
   // content/index.js

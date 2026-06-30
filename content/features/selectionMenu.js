@@ -5,6 +5,7 @@ import {
   DEFAULT_EMOTION_COMPLEX,
 } from './emotions.js';
 import { DEFAULT_TRANSITION_WORDS } from './transitions.js';
+import { refreshImmersiveReader } from './immersiveReader.js';
 
 const MENU_ID = 'dra-word-menu';
 let listening = false;
@@ -98,6 +99,7 @@ function toggleWord(word, key, currentlyInList) {
   chrome.storage.sync.set({ draWordLists: state.wordLists });
   chrome.runtime.sendMessage({ type: 'WORDLISTS_CHANGED', wordLists: state.wordLists });
   if (_render) _render();
+  refreshImmersiveReader();
 }
 
 function onMouseUp() {
