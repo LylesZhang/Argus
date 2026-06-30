@@ -36,4 +36,6 @@ export const DEFAULT_SETTINGS = {
   rulerWindowLines:     1.5,
   autoScrollActive:     false,
   autoScrollSpeed:      2,
+  typewriterActive:     false,
+  typewriterSpeed:      5,
 };

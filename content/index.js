@@ -8,7 +8,7 @@ import { findContentArea } from './detect.js';
 import { clearFocusMask } from './features/topicFocus.js';
 import { DEFAULT_EMOTION_POSITIVE, DEFAULT_EMOTION_NEGATIVE, DEFAULT_EMOTION_COMPLEX } from './features/emotions.js';
 import { DEFAULT_TRANSITION_WORDS } from './features/transitions.js';
-import { openImmersiveReader, closeImmersiveReader, refreshImmersiveReader } from './features/immersiveReader.js';
+import { openImmersiveReader, closeImmersiveReader, refreshImmersiveReader, setTypewriterActive, setTypewriterSpeed } from './features/immersiveReader.js';
 
 const DEFAULT_WORD_LISTS = {
   emotionPositive: [...DEFAULT_EMOTION_POSITIVE],
@@ -33,6 +33,7 @@ chrome.storage.sync.get(['draSettings', 'draWordLists'], (data) => {
     state.wordLists = { ...DEFAULT_WORD_LISTS };
     chrome.storage.sync.set({ draWordLists: state.wordLists });
   }
+  setTypewriterSpeed(state.settings.typewriterSpeed);
   render();
 
   // SPA navigation: reset cached contentArea and stale AI results on URL change
@@ -62,6 +63,8 @@ chrome.runtime.onMessage.addListener((msg) => {
       state.sentenceLabels           = [];
       state.sentenceLabelsInProgress = false;
     }
+    if ('typewriterSpeed' in msg.payload)  setTypewriterSpeed(msg.payload.typewriterSpeed);
+    if ('typewriterActive' in msg.payload) setTypewriterActive(msg.payload.typewriterActive);
     render();
     refreshImmersiveReader();
   }

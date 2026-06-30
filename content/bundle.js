@@ -41,7 +41,9 @@
     rulerActive: false,
     rulerWindowLines: 1.5,
     autoScrollActive: false,
-    autoScrollSpeed: 2
+    autoScrollSpeed: 2,
+    typewriterActive: false,
+    typewriterSpeed: 5
   };
 
   // content/state.js
@@ -896,6 +898,12 @@
   var scrollFrameId = null;
   var scrollLastTime = null;
   var suppressStatusMessage = false;
+  var tw = null;
+  var typeIntervalMs = speedLevelToTypeInterval(5);
+  function speedLevelToTypeInterval(level) {
+    const safeLevel = Math.min(10, Math.max(1, Math.round(Number(level) || 5)));
+    return 70 - (safeLevel - 1) * (60 / 9);
+  }
   function escapeHTML(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
@@ -1027,6 +1035,157 @@
     }
     return true;
   }
+  function buildFlatSentences() {
+    const flat = [];
+    readerContent.blocks.forEach((block) => {
+      const sentences = splitSentences(block.trim()).filter(Boolean);
+      sentences.forEach((text, i) => flat.push({ text, isBlockStart: i === 0 }));
+    });
+    return flat;
+  }
+  function renderCompletedSentence(text) {
+    const cls = labelClassForSentence(text);
+    const muted = isFocusedSentence(text) ? "" : " dra-reader-muted";
+    return `<span class="dra-sentence${cls}${muted}">${renderInlineHighlights(text)}</span>`;
+  }
+  function renderPickStartArticle() {
+    let html = '<div class="dra-tw-banner">Click any sentence to start reading from there, or <button data-tw-action="start-beginning">Start from Beginning</button></div>';
+    let openP = false;
+    tw.flatSentences.forEach((s, i) => {
+      if (s.isBlockStart) {
+        if (openP) html += "</p>";
+        html += "<p>";
+        openP = true;
+      }
+      html += `<span class="dra-sentence dra-tw-pickable" data-tw-index="${i}">${escapeHTML(s.text)}</span> `;
+    });
+    if (openP) html += "</p>";
+    return html;
+  }
+  function renderTypewriterArticle() {
+    let html = "";
+    let openP = false;
+    for (let i = 0; i < tw.flatSentences.length && i <= tw.currentIndex; i++) {
+      const s = tw.flatSentences[i];
+      if (s.isBlockStart) {
+        if (openP) html += "</p>";
+        html += "<p>";
+        openP = true;
+      }
+      const isCurrent = i === tw.currentIndex;
+      if (!isCurrent) {
+        html += renderCompletedSentence(s.text) + " ";
+      } else if (tw.phase === "typing") {
+        const partial = escapeHTML(s.text.slice(0, tw.revealedChars));
+        html += `<span class="dra-sentence dra-tw-current dra-tw-typing">${partial}<span class="dra-typing-cursor"></span></span> `;
+      } else {
+        const cls = labelClassForSentence(s.text);
+        const muted = isFocusedSentence(s.text) ? "" : " dra-reader-muted";
+        const trailingCursor = tw.phase === "paused" ? '<span class="dra-typing-cursor"></span>' : "";
+        html += `<span class="dra-sentence dra-tw-current${cls}${muted}">${renderInlineHighlights(s.text)}</span>${trailingCursor} `;
+      }
+    }
+    if (openP) html += "</p>";
+    return html;
+  }
+  function renderTW() {
+    const root = document.getElementById(READER_ID);
+    if (!root || !tw) return;
+    const body = tw.phase === "picking-start" ? renderPickStartArticle() : renderTypewriterArticle();
+    root.querySelector(".dra-reader-article").innerHTML = `
+    <h1>${escapeHTML(readerContent.title)}</h1>
+    ${body}
+  `;
+  }
+  function centerCurrentLine() {
+    const root = document.getElementById(READER_ID);
+    if (!root) return;
+    const scrollEl = root.querySelector(".dra-reader-scroll");
+    const cur = root.querySelector(".dra-tw-current");
+    if (!scrollEl || !cur) return;
+    const containerRect = scrollEl.getBoundingClientRect();
+    const curRect = cur.getBoundingClientRect();
+    const delta = curRect.top + curRect.height / 2 - (containerRect.top + containerRect.height / 2);
+    scrollEl.scrollTop += delta;
+  }
+  function startTyping(index) {
+    clearInterval(tw.tickTimer);
+    tw.currentIndex = index;
+    tw.revealedChars = 0;
+    tw.phase = "typing";
+    const text = tw.flatSentences[index].text;
+    renderTW();
+    centerCurrentLine();
+    tw.tickTimer = setInterval(() => {
+      tw.revealedChars++;
+      if (tw.revealedChars >= text.length) {
+        clearInterval(tw.tickTimer);
+        tw.phase = "paused";
+      }
+      renderTW();
+      centerCurrentLine();
+    }, typeIntervalMs);
+  }
+  function chooseStart(index) {
+    tw.startIndex = index;
+    startTyping(index);
+  }
+  function skipToComplete() {
+    clearInterval(tw.tickTimer);
+    tw.revealedChars = tw.flatSentences[tw.currentIndex].text.length;
+    tw.phase = "paused";
+    renderTW();
+    centerCurrentLine();
+  }
+  function handleSpace() {
+    if (!tw) return;
+    if (tw.phase === "picking-start") {
+      chooseStart(0);
+      return;
+    }
+    if (tw.phase === "typing") {
+      skipToComplete();
+      return;
+    }
+    if (tw.phase === "paused") {
+      if (tw.currentIndex + 1 < tw.flatSentences.length) {
+        startTyping(tw.currentIndex + 1);
+      } else {
+        tw.phase = "finished";
+        renderTW();
+      }
+    }
+  }
+  function setTypewriterActive(active) {
+    const root = document.getElementById(READER_ID);
+    if (!root) return;
+    const scrollEl = root.querySelector(".dra-reader-scroll");
+    if (active && !tw) {
+      tw = {
+        phase: "picking-start",
+        flatSentences: buildFlatSentences(),
+        startIndex: null,
+        currentIndex: -1,
+        revealedChars: 0,
+        tickTimer: null
+      };
+      scrollEl.classList.add("dra-tw-scroll-pad");
+      renderTW();
+      updateReaderAutoScroll(root);
+    } else if (!active && tw) {
+      clearInterval(tw.tickTimer);
+      tw = null;
+      scrollEl.classList.remove("dra-tw-scroll-pad");
+      root.querySelector(".dra-reader-article").innerHTML = `
+      <h1>${escapeHTML(readerContent.title)}</h1>
+      ${renderArticleHTML()}
+    `;
+      updateReaderAutoScroll(root);
+    }
+  }
+  function setTypewriterSpeed(level) {
+    typeIntervalMs = speedLevelToTypeInterval(level);
+  }
   function renderArticleHTML() {
     if (!readerContent.blocks.length) {
       return "<p>Argus could not find enough readable text on this page.</p>";
@@ -1078,7 +1237,14 @@
     updateReaderAutoScroll(root);
   }
   function onKeydown(e) {
-    if (e.key === "Escape") closeImmersiveReader();
+    if (e.key === "Escape") {
+      closeImmersiveReader();
+      return;
+    }
+    if (e.key === " " && tw) {
+      e.preventDefault();
+      handleSpace();
+    }
   }
   function notifyReaderStatus(active) {
     chrome.runtime.sendMessage({ type: "IMMERSIVE_READER_STATUS", active });
@@ -1094,6 +1260,7 @@
   }
   function updateReaderAutoScroll(root) {
     stopReaderAutoScroll();
+    if (tw) return;
     if (!state.settings.readingAidsEnabled || !state.settings.autoScrollActive) return;
     const scrollEl = root.querySelector(".dra-reader-scroll");
     const speed = speedLevelToPixelsPerSecond2(state.settings.autoScrollSpeed);
@@ -1132,12 +1299,28 @@
         applyReaderStyle(root);
       });
     });
+    root.querySelector(".dra-reader-article").addEventListener("click", (e) => {
+      if (!tw) return;
+      if (e.target.closest('[data-tw-action="start-beginning"]')) {
+        chooseStart(0);
+        return;
+      }
+      if (tw.phase === "picking-start") {
+        const el = e.target.closest("[data-tw-index]");
+        if (el) chooseStart(Number(el.dataset.twIndex));
+      }
+    });
     scrollEl.addEventListener("scroll", () => updateProgress(root));
     root.addEventListener("mousemove", updateReaderRuler);
   }
   function refreshImmersiveReader() {
     const root = document.getElementById(READER_ID);
     if (!root) return;
+    if (tw) {
+      renderTW();
+      applyReaderStyle(root);
+      return;
+    }
     root.querySelector(".dra-reader-article").innerHTML = `
     <h1>${escapeHTML(readerContent.title)}</h1>
     ${renderArticleHTML()}
@@ -1150,6 +1333,7 @@
     suppressStatusMessage = false;
     readerContent = extractReaderContent();
     readerState = { theme: "warm" };
+    tw = null;
     const root = document.createElement("div");
     root.id = READER_ID;
     root.innerHTML = `
@@ -1187,6 +1371,10 @@
     notifyReaderStatus(true);
   }
   function closeImmersiveReader() {
+    if (tw) {
+      clearInterval(tw.tickTimer);
+      tw = null;
+    }
     stopReaderAutoScroll();
     const hadReader = Boolean(document.getElementById(READER_ID));
     document.getElementById(READER_ID)?.remove();
@@ -1582,6 +1770,7 @@
       state.wordLists = { ...DEFAULT_WORD_LISTS };
       chrome.storage.sync.set({ draWordLists: state.wordLists });
     }
+    setTypewriterSpeed(state.settings.typewriterSpeed);
     render();
     let _lastUrl = location.href;
     let _renderTimer;
@@ -1606,6 +1795,8 @@
         state.sentenceLabels = [];
         state.sentenceLabelsInProgress = false;
       }
+      if ("typewriterSpeed" in msg.payload) setTypewriterSpeed(msg.payload.typewriterSpeed);
+      if ("typewriterActive" in msg.payload) setTypewriterActive(msg.payload.typewriterActive);
       render();
       refreshImmersiveReader();
     }

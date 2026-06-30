@@ -362,6 +362,61 @@ html.dra-reader-open body {
   font-weight: 400;
 }
 
+/* ── Typewriter mode ─────────────────────────────────────────────────── */
+
+.dra-tw-banner {
+  margin: 0 0 24px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  background: rgba(90, 174, 169, 0.12);
+  border: 1px dashed rgba(90, 174, 169, 0.4);
+  font-size: 14px;
+  color: inherit;
+}
+
+.dra-tw-banner button {
+  margin-left: 6px;
+  border: 1px solid rgba(30, 27, 75, 0.14);
+  background: #ffffff;
+  color: #363643;
+  border-radius: 7px;
+  padding: 4px 9px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.dra-tw-pickable {
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background 0.15s;
+}
+
+.dra-tw-pickable:hover {
+  background: rgba(90, 174, 169, 0.22);
+}
+
+.dra-typing-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  background: currentColor;
+  animation: dra-tw-blink 0.9s steps(1) infinite;
+}
+
+@keyframes dra-tw-blink {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.dra-reader-scroll.dra-tw-scroll-pad {
+  padding-top: 48vh;
+  padding-bottom: 48vh;
+}
+
 .dra-reader-ruler-top,
 .dra-reader-ruler-bottom,
 .dra-reader-ruler-window {
