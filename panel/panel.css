@@ -1,6 +1,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 [hidden] { display: none !important; }
+.hidden { display: none !important; }
 .section-content-collapsed { display: none !important; }
 
 :root {
@@ -123,10 +124,10 @@ body {
 }
 
 .section-reset-btn {
-  border: 1px solid rgba(231, 76, 60, 0.28);
+  border: 1px solid rgba(60, 231, 217, 0.28);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.85);
-  color: #c0392b;
+  color: #5aaea9;
   cursor: pointer;
   flex-shrink: 0;
   font-size: var(--small-font-size);
@@ -138,8 +139,8 @@ body {
 }
 
 .section-reset-btn:hover {
-  background: #fff0f0;
-  border-color: rgba(231, 76, 60, 0.45);
+  background: #edf5f4dc;
+  border-color: #43d6cc5c;
 }
 
 .collapse-btn:hover {
@@ -808,3 +809,75 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   cursor: pointer;
 }
 .wordlist-add button:hover { background: #2d2a63; }
+
+/* ── Effects warning modal ──────────────────────────────────────────── */
+
+.effects-warning-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(30, 27, 75, 0.22);
+}
+
+.effects-warning-card {
+  width: min(100%, 312px);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 14px 34px rgba(30, 27, 75, 0.18);
+  padding: 16px;
+}
+
+.effects-warning-card h2 {
+  color: var(--navy);
+  font-size: var(--section-font-size);
+  line-height: 1.25;
+  margin-bottom: 8px;
+}
+
+.effects-warning-card p {
+  color: #555566;
+  font-size: var(--control-font-size);
+  line-height: 1.45;
+}
+
+.effects-warning-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 14px;
+}
+
+.effects-warning-actions button {
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: var(--small-font-size);
+  font-weight: 700;
+  min-height: 30px;
+  padding: 6px 10px;
+}
+
+#effects-warning-keep {
+  border: 1px solid var(--navy);
+  background: var(--navy);
+  color: #fff;
+}
+
+#effects-warning-keep:hover { background: #2d2a63; }
+
+#effects-warning-disable {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+#effects-warning-disable:hover {
+  background: transparent;
+  color: #666;
+}

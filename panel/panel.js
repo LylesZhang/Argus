@@ -49,6 +49,22 @@ const DEFAULT_SETTINGS = {
 
 let settings = { ...DEFAULT_SETTINGS };
 let sectionCollapseState = {};
+let effectsWarningDisabled = false;
+
+const EFFECT_WARNING_THRESHOLD = 7;
+const EFFECT_WARNING_KEYS = new Set([
+  'typographyEnabled',
+  'boldBeginning',
+  'readingAidsEnabled',
+  'gradientRows',
+  'transitionAnimation',
+  'emotionColor',
+  'emotionMode',
+  'sentenceLabels',
+  'sentenceLabelsMode',
+  'rulerActive',
+  'autoScrollActive',
+]);
 
 function clampAutoScrollSpeed(value) {
   const raw = Number(value);
@@ -81,6 +97,46 @@ function savePanelSize(size) {
   settings = { ...settings, panelSize: nextSize };
   applyPanelSize(nextSize);
   chrome.storage.sync.set({ draSettings: settings });
+}
+
+function calculateActiveEffectScore(nextSettings = settings) {
+  let score = 0;
+  if (nextSettings.typographyEnabled) score += 1;
+  if (nextSettings.boldBeginning) score += 1;
+  if (nextSettings.readingAidsEnabled && nextSettings.gradientRows) score += 2;
+  if (nextSettings.readingAidsEnabled && nextSettings.transitionAnimation) score += 1;
+  if (nextSettings.readingAidsEnabled && nextSettings.emotionColor) {
+    score += 3;
+  }
+  if (nextSettings.readingAidsEnabled && nextSettings.sentenceLabels) {
+    score += 3;
+  }
+  if (nextSettings.readingAidsEnabled && nextSettings.rulerActive) score += 2;
+  if (nextSettings.readingAidsEnabled && nextSettings.autoScrollActive) score += 2;
+  return score;
+}
+
+function shouldCheckEffectsWarning(changed) {
+  return Object.entries(changed).some(([key, value]) => {
+    if (!EFFECT_WARNING_KEYS.has(key)) return false;
+    if (key.endsWith('Mode')) return value === 'ai';
+    return value === true;
+  });
+}
+
+function showEffectsWarning() {
+  document.getElementById('effects-warning-modal')?.classList.remove('hidden');
+}
+
+function hideEffectsWarning() {
+  document.getElementById('effects-warning-modal')?.classList.add('hidden');
+}
+
+function maybeShowEffectsWarning(changed) {
+  if (!shouldCheckEffectsWarning(changed)) return;
+  if (effectsWarningDisabled) return;
+  if (calculateActiveEffectScore(settings) < EFFECT_WARNING_THRESHOLD) return;
+  showEffectsWarning();
 }
 
 function getSectionTitle(label) {
@@ -181,6 +237,7 @@ function broadcast(changed) {
   settings = { ...settings, ...changed };
   chrome.storage.sync.set({ draSettings: settings });
   chrome.runtime.sendMessage({ type: 'SETTINGS_CHANGED', payload: changed });
+  maybeShowEffectsWarning(changed);
 }
 
 // ── Sync all UI controls to match current settings ─────────────────────
@@ -256,6 +313,13 @@ function syncUI() {
 
 function init() {
   initSectionCollapse();
+
+  document.getElementById('effects-warning-keep')?.addEventListener('click', hideEffectsWarning);
+  document.getElementById('effects-warning-disable')?.addEventListener('click', () => {
+    effectsWarningDisabled = true;
+    chrome.storage.local.set({ effectsWarningDisabled: true });
+    hideEffectsWarning();
+  });
 
   document.querySelectorAll('.panel-size-btn').forEach(btn => {
     btn.addEventListener('click', () => savePanelSize(btn.dataset.panelSize));
@@ -782,7 +846,8 @@ chrome.storage.sync.get('draSettings', (data) => {
   initWordListEditor();
 });
 
-chrome.storage.local.get('activeTab', (data) => {
+chrome.storage.local.get(['activeTab', 'effectsWarningDisabled'], (data) => {
+  effectsWarningDisabled = Boolean(data.effectsWarningDisabled);
   const tab = data.activeTab || 'effects';
   document.querySelectorAll('.tab-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === tab)
