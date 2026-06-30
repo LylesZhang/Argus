@@ -6,16 +6,10 @@
 
 - **Auto Scroll**：页面自动向下滚动，速度可调（`content/features/autoScroll.js`）
 - **纯净阅读器（Reader Mode）**：提取正文，覆盖层中以干净排版重新渲染，支持 Light/Warm/Dark 主题（`content/features/immersiveReader.js`）
+- **打字机效果**：Reader Mode 内逐字呈现，galgame 式空格推进/补全交互，当前行保持视口竖直居中；开关与速度滑杆在 Panel 的 Reader Mode 子目录下（`content/features/immersiveReader.js`、`panel/panel.html`、`panel/panel.js`）
 - **Panel 文字大小调整**：compact / comfortable / large 三档可调，影响全局字号与控件尺寸
 - **自动刷新**：SPA 导航时通过 MutationObserver 检测 URL 变化，debounce 500ms 后重新抓取正文并 render
 - **权限缩减**：`host_permissions` 已收紧为 `https://argus-1ygn.onrender.com/*`，不再声明 `<all_urls>`
-
----
-
-## 阅读体验增强
-
-### 打字机效果
-纯净阅读器内文字逐字/逐句呈现，类似 Galgame 对话框风格，增强阅读沉浸感。（纯净模式本身已完成，打字机效果尚未实现）
 
 ---
 
@@ -38,6 +32,9 @@
 ---
 
 ## 用户体验优化
+
+### 浮窗工具栏
+在网页上提供一个可拖拽的悬浮小工具栏，收起时只是一个小图标，点击展开成精简控制面板，包含最常用功能（Typography、Reading Aids、Reader Mode 等）的快捷开关，不需要打开 Side Panel 即可快速调整阅读效果。位置/展开状态可记忆。
 
 ### 效果过多警告弹窗
 当用户同时启用的效果数量超过阈值时，弹出提示弹窗，告知用户同时开启过多效果可能会影响页面性能或阅读体验，建议适当精简。

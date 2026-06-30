@@ -1127,6 +1127,8 @@
     }, typeIntervalMs);
   }
   function chooseStart(index) {
+    const root = document.getElementById(READER_ID);
+    if (root) root.querySelector(".dra-reader-scroll").classList.add("dra-tw-scroll-pad");
     tw.startIndex = index;
     startTyping(index);
   }
@@ -1169,7 +1171,6 @@
         revealedChars: 0,
         tickTimer: null
       };
-      scrollEl.classList.add("dra-tw-scroll-pad");
       renderTW();
       updateReaderAutoScroll(root);
     } else if (!active && tw) {
