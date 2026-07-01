@@ -1037,9 +1037,9 @@
   }
   function buildFlatSentences() {
     const flat = [];
-    readerContent.blocks.forEach((block) => {
+    readerContent.blocks.forEach((block, blockIndex) => {
       const sentences = splitSentences(block.trim()).filter(Boolean);
-      sentences.forEach((text, i) => flat.push({ text, isBlockStart: i === 0 }));
+      sentences.forEach((text, i) => flat.push({ text, blockIndex, isBlockStart: i === 0 }));
     });
     return flat;
   }
@@ -1049,7 +1049,7 @@
     return `<span class="dra-sentence${cls}${muted}">${renderInlineHighlights(text)}</span>`;
   }
   function renderPickStartArticle() {
-    let html = '<div class="dra-tw-banner">Click any sentence to start reading from there, or <button data-tw-action="start-beginning">Start from Beginning</button></div>';
+    let html = '<div class="dra-tw-banner"><div class="dra-tw-banner-main">Click any sentence to start reading from there, or <button data-tw-action="start-beginning">Start from Beginning</button></div><div class="dra-tw-banner-hint">Typewriter reveals text step by step. Press Space to continue, or press Space while typing to reveal the full paragraph.</div></div>';
     let openP = false;
     tw.flatSentences.forEach((s, i) => {
       if (s.isBlockStart) {
@@ -1077,15 +1077,17 @@
         html += renderCompletedSentence(s.text) + " ";
       } else if (tw.phase === "typing") {
         const partial = escapeHTML(s.text.slice(0, tw.revealedChars));
-        html += `<span class="dra-sentence dra-tw-current dra-tw-typing">${partial}<span class="dra-typing-cursor"></span></span> `;
+        html += `<span class="dra-sentence dra-tw-current dra-tw-typing">${partial}</span> `;
       } else {
         const cls = labelClassForSentence(s.text);
         const muted = isFocusedSentence(s.text) ? "" : " dra-reader-muted";
-        const trailingCursor = tw.phase === "paused" ? '<span class="dra-typing-cursor"></span>' : "";
-        html += `<span class="dra-sentence dra-tw-current${cls}${muted}">${renderInlineHighlights(s.text)}</span>${trailingCursor} `;
+        html += `<span class="dra-sentence dra-tw-current${cls}${muted}">${renderInlineHighlights(s.text)}</span> `;
       }
     }
     if (openP) html += "</p>";
+    if (tw.phase === "paused" && tw.showContinueHint) {
+      html += '<div class="dra-tw-continue-hint">Space to continue</div>';
+    }
     return html;
   }
   function renderTW() {
@@ -1096,6 +1098,7 @@
     <h1>${escapeHTML(readerContent.title)}</h1>
     ${body}
   `;
+    updateProgress(root);
   }
   function centerCurrentLine() {
     const root = document.getElementById(READER_ID);
@@ -1109,10 +1112,12 @@
     scrollEl.scrollTop += delta;
   }
   function startTyping(index) {
+    clearContinueHintTimer();
     clearInterval(tw.tickTimer);
     tw.currentIndex = index;
     tw.revealedChars = 0;
     tw.phase = "typing";
+    tw.showContinueHint = false;
     const text = tw.flatSentences[index].text;
     renderTW();
     centerCurrentLine();
@@ -1121,6 +1126,7 @@
       if (tw.revealedChars >= text.length) {
         clearInterval(tw.tickTimer);
         tw.phase = "paused";
+        scheduleContinueHint();
       }
       renderTW();
       centerCurrentLine();
@@ -1132,12 +1138,32 @@
     tw.startIndex = index;
     startTyping(index);
   }
-  function skipToComplete() {
+  function revealCurrentParagraph() {
+    clearContinueHintTimer();
     clearInterval(tw.tickTimer);
+    const current = tw.flatSentences[tw.currentIndex];
+    while (tw.currentIndex + 1 < tw.flatSentences.length && tw.flatSentences[tw.currentIndex + 1].blockIndex === current.blockIndex) {
+      tw.currentIndex++;
+    }
     tw.revealedChars = tw.flatSentences[tw.currentIndex].text.length;
     tw.phase = "paused";
+    tw.showContinueHint = false;
+    scheduleContinueHint();
     renderTW();
     centerCurrentLine();
+  }
+  function clearContinueHintTimer() {
+    if (tw?.continueHintTimer) clearTimeout(tw.continueHintTimer);
+    if (tw) tw.continueHintTimer = null;
+  }
+  function scheduleContinueHint() {
+    clearContinueHintTimer();
+    if (!tw || tw.currentIndex + 1 >= tw.flatSentences.length) return;
+    tw.continueHintTimer = setTimeout(() => {
+      if (!tw || tw.phase !== "paused") return;
+      tw.showContinueHint = true;
+      renderTW();
+    }, 2e3);
   }
   function handleSpace() {
     if (!tw) return;
@@ -1146,10 +1172,12 @@
       return;
     }
     if (tw.phase === "typing") {
-      skipToComplete();
+      revealCurrentParagraph();
       return;
     }
     if (tw.phase === "paused") {
+      clearContinueHintTimer();
+      tw.showContinueHint = false;
       if (tw.currentIndex + 1 < tw.flatSentences.length) {
         startTyping(tw.currentIndex + 1);
       } else {
@@ -1169,18 +1197,22 @@
         startIndex: null,
         currentIndex: -1,
         revealedChars: 0,
-        tickTimer: null
+        tickTimer: null,
+        continueHintTimer: null,
+        showContinueHint: false
       };
       renderTW();
       updateReaderAutoScroll(root);
     } else if (!active && tw) {
       clearInterval(tw.tickTimer);
+      clearContinueHintTimer();
       tw = null;
       scrollEl.classList.remove("dra-tw-scroll-pad");
       root.querySelector(".dra-reader-article").innerHTML = `
       <h1>${escapeHTML(readerContent.title)}</h1>
       ${renderArticleHTML()}
     `;
+      updateProgress(root);
       updateReaderAutoScroll(root);
     }
   }
@@ -1276,7 +1308,19 @@
   }
   function updateProgress(root = document.getElementById(READER_ID)) {
     if (!root) return;
+    if (tw) {
+      const total = tw.flatSentences.length;
+      let progress2 = 0;
+      if (tw.phase === "finished") {
+        progress2 = 1;
+      } else if (total > 0 && tw.currentIndex >= 0) {
+        progress2 = (tw.currentIndex + 1) / total;
+      }
+      root.style.setProperty("--dra-reader-progress", `${Math.min(1, Math.max(0, progress2)) * 100}%`);
+      return;
+    }
     const scrollEl = root.querySelector(".dra-reader-scroll");
+    if (!scrollEl) return;
     const max = scrollEl.scrollHeight - scrollEl.clientHeight;
     const progress = max <= 0 ? 1 : scrollEl.scrollTop / max;
     root.style.setProperty("--dra-reader-progress", `${Math.min(1, Math.max(0, progress)) * 100}%`);
@@ -1374,6 +1418,7 @@
   function closeImmersiveReader() {
     if (tw) {
       clearInterval(tw.tickTimer);
+      clearContinueHintTimer();
       tw = null;
     }
     stopReaderAutoScroll();
