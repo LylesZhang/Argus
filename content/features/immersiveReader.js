@@ -391,6 +391,26 @@ export function setTypewriterSpeed(level) {
   typeIntervalMs = speedLevelToTypeInterval(level);
 }
 
+export function startTypewriterFromBeginning() {
+  const root = document.getElementById(READER_ID);
+  if (!root) return;
+  const scrollEl = root.querySelector('.dra-reader-scroll');
+  if (!tw) {
+    tw = {
+      phase: 'picking-start',
+      flatSentences: buildFlatSentences(),
+      startIndex: null,
+      currentIndex: -1,
+      revealedChars: 0,
+      tickTimer: null,
+    };
+    scrollEl?.classList.add('dra-tw-scroll-pad');
+  }
+  root.querySelector('[data-reader-action="typewriter"]')?.classList.add('active');
+  updateReaderAutoScroll(root);
+  chooseStart(0);
+}
+
 function renderArticleHTML() {
   if (!readerContent.blocks.length) {
     return '<p>Argus could not find enough readable text on this page.</p>';

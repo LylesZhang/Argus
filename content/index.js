@@ -8,7 +8,8 @@ import { findContentArea } from './detect.js';
 import { clearFocusMask } from './features/topicFocus.js';
 import { DEFAULT_EMOTION_POSITIVE, DEFAULT_EMOTION_NEGATIVE, DEFAULT_EMOTION_COMPLEX } from './features/emotions.js';
 import { DEFAULT_TRANSITION_WORDS } from './features/transitions.js';
-import { openImmersiveReader, closeImmersiveReader, refreshImmersiveReader, setTypewriterActive, setTypewriterSpeed } from './features/immersiveReader.js';
+import { openImmersiveReader, closeImmersiveReader, refreshImmersiveReader, setTypewriterActive, setTypewriterSpeed, startTypewriterFromBeginning } from './features/immersiveReader.js';
+import { openPresetEditor, maybeShowOnboarding } from './features/presetEditor.js';
 
 const DEFAULT_WORD_LISTS = {
   emotionPositive: [...DEFAULT_EMOTION_POSITIVE],
@@ -35,6 +36,7 @@ chrome.storage.sync.get(['draSettings', 'draWordLists'], (data) => {
   }
   setTypewriterSpeed(state.settings.typewriterSpeed);
   render();
+  maybeShowOnboarding();
 
   // SPA navigation: reset cached contentArea and stale AI results on URL change
   let _lastUrl = location.href;
@@ -53,20 +55,24 @@ chrome.storage.sync.get(['draSettings', 'draWordLists'], (data) => {
 
 // ── Message router ─────────────────────────────────────────────────────
 
+function applySettingsPayload(payload) {
+  if (payload.rulerActive === false) state.lastRulerY = null;
+  const prevLens = state.settings.sentenceLabelsLens;
+  state.settings = { ...state.settings, ...payload };
+  if (payload.sentenceLabelsLens && payload.sentenceLabelsLens !== prevLens) {
+    state.aiSentenceLabels         = [];
+    state.sentenceLabels           = [];
+    state.sentenceLabelsInProgress = false;
+  }
+  if ('typewriterSpeed'  in payload) setTypewriterSpeed(payload.typewriterSpeed);
+  if ('typewriterActive' in payload) setTypewriterActive(payload.typewriterActive);
+  render();
+  refreshImmersiveReader();
+}
+
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'SETTINGS_CHANGED') {
-    if (msg.payload.rulerActive === false) state.lastRulerY = null;
-    const prevLens = state.settings.sentenceLabelsLens;
-    state.settings = { ...state.settings, ...msg.payload };
-    if (msg.payload.sentenceLabelsLens && msg.payload.sentenceLabelsLens !== prevLens) {
-      state.aiSentenceLabels         = [];
-      state.sentenceLabels           = [];
-      state.sentenceLabelsInProgress = false;
-    }
-    if ('typewriterSpeed' in msg.payload)  setTypewriterSpeed(msg.payload.typewriterSpeed);
-    if ('typewriterActive' in msg.payload) setTypewriterActive(msg.payload.typewriterActive);
-    render();
-    refreshImmersiveReader();
+    applySettingsPayload(msg.payload);
   }
 
   if (msg.type === 'FOCUS_APPLY' && msg.keywords?.length) {
@@ -170,5 +176,19 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'CLOSE_IMMERSIVE_READER') {
     closeImmersiveReader();
+  }
+
+  if (msg.type === 'OPEN_PRESET_EDITOR') {
+    openPresetEditor({ mode: msg.mode, preset: msg.preset, currentSettings: msg.currentSettings });
+  }
+
+  if (msg.type === 'APPLY_PRESET') {
+    applySettingsPayload(msg.settings);
+    if (msg.actions?.autoOpenReaderMode) {
+      openImmersiveReader();
+      if (msg.actions?.autoStartTypewriterFromBeginning) {
+        startTypewriterFromBeginning();
+      }
+    }
   }
 });

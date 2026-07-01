@@ -132,6 +132,10 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
       chrome.runtime.sendMessage(msg).catch(() => {});
     }
 
+    if (msg.type === 'PRESETS_CHANGED') {
+      chrome.runtime.sendMessage(msg).catch(() => {});
+    }
+
     return;
   }
 
@@ -162,9 +166,12 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
       chrome.tabs.sendMessage(tabs[0].id, msg);
     });
   }
-  if (msg.type === 'OPEN_IMMERSIVE_READER') forwardToActiveTab();
+  if (msg.type === 'OPEN_IMMERSIVE_READER')  forwardToActiveTab();
   if (msg.type === 'CLOSE_IMMERSIVE_READER') forwardToActiveTab();
+  if (msg.type === 'OPEN_PRESET_EDITOR')     forwardToActiveTab();
+  if (msg.type === 'APPLY_PRESET')           forwardToActiveTab();
 });
+
 
 // ── Side Panel opener ──────────────────────────────────────────────────
 

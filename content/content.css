@@ -485,3 +485,356 @@ html.dra-reader-open body {
     padding: 20px 18px;
   }
 }
+
+/* ── Preset Editor overlay ───────────────────────────────────────────── */
+
+#dra-preset-editor .dra-pe-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 27, 75, 0.38);
+  z-index: 2147483640;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#dra-preset-editor .dra-pe-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(30, 27, 75, 0.22);
+  width: min(88vw, 1060px);
+  max-height: 82vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#dra-preset-editor .dra-pe-card--onboarding {
+  width: min(88vw, 480px);
+  padding: 40px 36px;
+  text-align: center;
+  align-items: center;
+  gap: 16px;
+  flex-direction: column;
+}
+
+#dra-preset-editor .dra-pe-ob-logo {
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #1e1b4b;
+}
+
+#dra-preset-editor .dra-pe-ob-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin: 0;
+}
+
+#dra-preset-editor .dra-pe-ob-body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #555;
+  margin: 0;
+  max-width: 360px;
+}
+
+#dra-preset-editor .dra-pe-ob-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 280px;
+  margin-top: 8px;
+}
+
+#dra-preset-editor .dra-pe-btn-yes {
+  padding: 12px;
+  background: #1e1b4b;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#dra-preset-editor .dra-pe-btn-yes:hover { background: #2d2a63; }
+
+#dra-preset-editor .dra-pe-btn-no {
+  padding: 10px;
+  background: transparent;
+  color: #888;
+  border: none;
+  font-size: 13px;
+  cursor: pointer;
+}
+#dra-preset-editor .dra-pe-btn-no:hover { color: #333; }
+
+/* Editor layout */
+#dra-preset-editor .dra-pe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e0e0ea;
+  flex-shrink: 0;
+}
+
+#dra-preset-editor .dra-pe-header-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e1b4b;
+}
+
+#dra-preset-editor .dra-pe-close {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
+  color: #888;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+#dra-preset-editor .dra-pe-close:hover { background: #f4f4f9; }
+
+#dra-preset-editor .dra-pe-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#dra-preset-editor .dra-pe-left {
+  overflow-y: auto;
+  border-right: 1px solid #e0e0ea;
+  padding: 16px 0;
+}
+
+#dra-preset-editor .dra-pe-right {
+  overflow-y: auto;
+  background: #f8f7fb;
+  display: flex;
+  flex-direction: column;
+}
+
+#dra-preset-editor .dra-pe-preview-label {
+  padding: 10px 18px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9899ab;
+  flex-shrink: 0;
+}
+
+#dra-preset-editor .dra-pe-preview-body {
+  flex: 1;
+  padding: 8px 20px 20px;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #2c2c2c;
+  overflow-y: auto;
+}
+
+#dra-preset-editor .dra-pe-preview-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 14px;
+  line-height: 1.3;
+}
+
+#dra-preset-editor .dra-pe-preview-body p {
+  margin: 0 0 1em;
+}
+
+/* Form controls */
+#dra-preset-editor .dra-pe-section {
+  margin-bottom: 4px;
+}
+
+#dra-preset-editor .dra-pe-section-title {
+  padding: 8px 18px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #1e1b4b;
+  border-top: 1px solid #e0e0ea;
+}
+
+#dra-preset-editor .dra-pe-section:first-child .dra-pe-section-title {
+  border-top: none;
+}
+
+#dra-preset-editor .dra-pe-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 18px;
+}
+
+#dra-preset-editor .dra-pe-ai-row { flex-wrap: wrap; }
+
+#dra-preset-editor .dra-pe-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 18px;
+  cursor: pointer;
+}
+
+#dra-preset-editor .dra-pe-toggle-label,
+#dra-preset-editor .dra-pe-label {
+  font-size: 12px;
+  color: #333;
+  flex: 1;
+}
+
+#dra-preset-editor .dra-pe-slider-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+}
+
+#dra-preset-editor .dra-pe-slider-group .slider {
+  flex: 1;
+  accent-color: #5aaea9;
+  height: 4px;
+}
+
+#dra-preset-editor .slider-value {
+  font-size: 11px;
+  color: #9899ab;
+  width: 48px;
+  text-align: right;
+}
+
+#dra-preset-editor .dra-pe-color {
+  width: 36px;
+  height: 28px;
+  border: 1px solid #e0e0ea;
+  border-radius: 6px;
+  padding: 2px 3px;
+  background: #fff;
+  cursor: pointer;
+}
+
+#dra-preset-editor .dra-pe-color-row .dra-pe-label { flex: 1; }
+
+#dra-preset-editor .dra-pe-select {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #e0e0ea;
+  border-radius: 6px;
+  font: inherit;
+  font-size: 12px;
+  background: #fff;
+}
+
+#dra-preset-editor .dra-pe-mode-pill {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+#dra-preset-editor .dra-pe-label-colors { padding-left: 8px; }
+
+#dra-preset-editor .dra-pe-panel-size {
+  display: flex;
+  border: 1px solid #e0e0ea;
+  border-radius: 7px;
+  overflow: hidden;
+}
+#dra-preset-editor .dra-pe-panel-size .panel-size-btn {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  border: none;
+  border-right: 1px solid #e0e0ea;
+  background: transparent;
+  color: #9899ab;
+  cursor: pointer;
+}
+#dra-preset-editor .dra-pe-panel-size .panel-size-btn:last-child { border-right: none; }
+#dra-preset-editor .dra-pe-panel-size .panel-size-btn.active { background: #5aaea9; color: #fff; }
+
+/* Footer */
+#dra-preset-editor .dra-pe-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-top: 1px solid #e0e0ea;
+  flex-shrink: 0;
+}
+
+#dra-preset-editor .dra-pe-name-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+#dra-preset-editor .dra-pe-name-label {
+  font-size: 12px;
+  color: #9899ab;
+  white-space: nowrap;
+}
+
+#dra-preset-editor .dra-pe-name-input {
+  flex: 1;
+  border: 1px solid #e0e0ea;
+  border-radius: 7px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 13px;
+}
+#dra-preset-editor .dra-pe-name-input.dra-pe-error { border-color: #ef4444; }
+
+#dra-preset-editor .dra-pe-footer-btns {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+#dra-preset-editor .dra-pe-btn-cancel,
+#dra-preset-editor .dra-pe-btn-save {
+  padding: 7px 18px;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+#dra-preset-editor .dra-pe-btn-cancel {
+  border: 1px solid #e0e0ea;
+  background: transparent;
+  color: #555;
+}
+#dra-preset-editor .dra-pe-btn-cancel:hover { background: #f4f4f9; }
+
+#dra-preset-editor .dra-pe-btn-save {
+  border: none;
+  background: #1e1b4b;
+  color: #fff;
+}
+#dra-preset-editor .dra-pe-btn-save:hover { background: #2d2a63; }
+
+/* Reuse existing emotion/label highlight colors from main content.css via CSS vars */
+#dra-preset-editor .dra-pe-emotion-positive { color: var(--dra-positive); font-weight: 500; }
+#dra-preset-editor .dra-pe-emotion-negative { color: var(--dra-negative); font-weight: 500; }
+#dra-preset-editor .dra-pe-emotion-complex  { color: var(--dra-complex);  font-weight: 500; }
+#dra-preset-editor .dra-pe-transition-word  { color: #5aaea9; font-weight: 600; }
+
+#dra-preset-editor .dra-sentence[class*="dra-label-"] {
+  border-bottom: 2px solid currentColor;
+  padding-bottom: 1px;
+}

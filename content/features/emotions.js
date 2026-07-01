@@ -48,15 +48,13 @@ export const DEFAULT_EMOTION_COMPLEX = [
   'disturbing','troubling','perplexing','unsettling','disconcerting','harrowing','sobering','chilling',
 ];
 
-export function generateEmotionHighlights() {
-  const pos = state.wordLists.emotionPositive ?? DEFAULT_EMOTION_POSITIVE;
-  const neg = state.wordLists.emotionNegative ?? DEFAULT_EMOTION_NEGATIVE;
-  const cmp = state.wordLists.emotionComplex  ?? DEFAULT_EMOTION_COMPLEX;
+export function matchEmotionWords(text, wordLists) {
+  const pos = wordLists.emotionPositive ?? DEFAULT_EMOTION_POSITIVE;
+  const neg = wordLists.emotionNegative ?? DEFAULT_EMOTION_NEGATIVE;
+  const cmp = wordLists.emotionComplex  ?? DEFAULT_EMOTION_COMPLEX;
 
-  const area = findContentArea();
-  const text = area.innerText.toLowerCase();
+  const lower = text.toLowerCase();
   const highlights = [];
-
   for (const [words, category] of [
     [pos, 'emotion-positive'],
     [neg, 'emotion-negative'],
@@ -65,10 +63,15 @@ export function generateEmotionHighlights() {
     for (const word of words) {
       const esc = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const rx  = new RegExp(`(?<![a-zA-Z-])${esc}(?![a-zA-Z-])`);
-      if (rx.test(text)) highlights.push({ word, category });
+      if (rx.test(lower)) highlights.push({ word, category });
     }
   }
   return highlights;
+}
+
+export function generateEmotionHighlights() {
+  const area = findContentArea();
+  return matchEmotionWords(area.innerText, state.wordLists);
 }
 
 export function requestEmotionAnalysis() {

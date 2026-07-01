@@ -416,12 +416,11 @@
     "sobering",
     "chilling"
   ];
-  function generateEmotionHighlights() {
-    const pos = state.wordLists.emotionPositive ?? DEFAULT_EMOTION_POSITIVE;
-    const neg = state.wordLists.emotionNegative ?? DEFAULT_EMOTION_NEGATIVE;
-    const cmp = state.wordLists.emotionComplex ?? DEFAULT_EMOTION_COMPLEX;
-    const area = findContentArea();
-    const text = area.innerText.toLowerCase();
+  function matchEmotionWords(text, wordLists) {
+    const pos = wordLists.emotionPositive ?? DEFAULT_EMOTION_POSITIVE;
+    const neg = wordLists.emotionNegative ?? DEFAULT_EMOTION_NEGATIVE;
+    const cmp = wordLists.emotionComplex ?? DEFAULT_EMOTION_COMPLEX;
+    const lower = text.toLowerCase();
     const highlights = [];
     for (const [words, category] of [
       [pos, "emotion-positive"],
@@ -431,10 +430,14 @@
       for (const word of words) {
         const esc = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const rx = new RegExp(`(?<![a-zA-Z-])${esc}(?![a-zA-Z-])`);
-        if (rx.test(text)) highlights.push({ word, category });
+        if (rx.test(lower)) highlights.push({ word, category });
       }
     }
     return highlights;
+  }
+  function generateEmotionHighlights() {
+    const area = findContentArea();
+    return matchEmotionWords(area.innerText, state.wordLists);
   }
   function requestEmotionAnalysis() {
     if (state.emotionAIInProgress) {
@@ -1219,6 +1222,25 @@
   function setTypewriterSpeed(level) {
     typeIntervalMs = speedLevelToTypeInterval(level);
   }
+  function startTypewriterFromBeginning() {
+    const root = document.getElementById(READER_ID);
+    if (!root) return;
+    const scrollEl = root.querySelector(".dra-reader-scroll");
+    if (!tw) {
+      tw = {
+        phase: "picking-start",
+        flatSentences: buildFlatSentences(),
+        startIndex: null,
+        currentIndex: -1,
+        revealedChars: 0,
+        tickTimer: null
+      };
+      scrollEl?.classList.add("dra-tw-scroll-pad");
+    }
+    root.querySelector('[data-reader-action="typewriter"]')?.classList.add("active");
+    updateReaderAutoScroll(root);
+    chooseStart(0);
+  }
   function renderArticleHTML() {
     if (!readerContent.blocks.length) {
       return "<p>Argus could not find enough readable text on this page.</p>";
@@ -1796,6 +1818,644 @@
     else teardownSelectionMenu();
   }
 
+  // content/features/sampleArticles.js
+  var SAMPLE_ARTICLES = {
+    news: {
+      title: "City Council Approves New Climate Action Plan",
+      blocks: [
+        "The city council unanimously approved a landmark climate action plan on Tuesday, declaring a full transition to renewable energy by 2035. Officials confirmed the measure passed after months of tense deliberation, marking a triumph for environmental advocates who celebrated the victory outside city hall.",
+        'However, critics argue the timeline is too ambitious and may devastate local industries. "This decision will destroy thousands of jobs," warned opposition leader Sarah Kim. "We admire the hope behind it, but fear the grief it could bring to working families."',
+        "In contrast, supporters expressed joy and optimism. The mayor announced that federal funding will help ease the transition, and community leaders praised the plan as a brilliant breakthrough for a more sustainable future.",
+        "Nevertheless, the road ahead remains uncertain. Analysts confirmed that similar policies in other cities have faced fierce resistance. Despite this, advocates remain confident and united in their pursuit of progress."
+      ]
+    },
+    stem: {
+      title: "Neural Networks Learn to Predict Protein Folding",
+      blocks: [
+        "Protein folding is defined as the process by which a polypeptide chain assumes its functional three-dimensional structure. Understanding this mechanism has been a central challenge in structural biology for decades.",
+        "The algorithm then applies a multi-layer attention mechanism to iteratively refine spatial coordinates. Subsequently, predicted distances between amino acid residues are used to constrain the final structure. This mechanism explains why the model outperforms classical approaches.",
+        "However, the model struggles with intrinsically disordered proteins, which lack a stable fold. Unless the training dataset is expanded, performance on novel protein families may remain limited. Despite this constraint, the results represent a significant breakthrough.",
+        "In conclusion, neural network-based protein structure prediction is defined as a transformative approach that subsequently enables rapid drug discovery pipelines. This concept opens new avenues for treating diseases that were previously considered untreatable."
+      ]
+    },
+    humanities: {
+      title: "The Role of Silence in Modernist Literature",
+      blocks: [
+        "This paper argues that modernist writers strategically deployed silence as a rhetorical device to challenge the expressive limits of language itself. Rather than treating silence as absence, authors such as Woolf and Beckett reimagined it as a form of meaning-making.",
+        "Historical records show that the modernist movement emerged in direct response to the trauma of World War I, as cited in several contemporary literary journals. The unprecedented scale of destruction left writers searching for new forms of expression.",
+        "This means that the fragmented syntax characteristic of modernist prose is not merely an aesthetic choice but a deliberate enactment of linguistic crisis. In other words, the breakdown of narrative coherence mirrors the breakdown of social and moral certainty.",
+        "The evidence gathered from close readings of three canonical texts suggests a consistent pattern of strategic omission. In sum, silence in modernist literature functions as a powerful counter-discourse, resisting the totalizing claims of both realism and romanticism."
+      ]
+    },
+    fiction: {
+      title: "The Last Garden",
+      blocks: [
+        `"You shouldn't have come back," she said quietly, her voice barely audible above the rain. He stood in the doorway, water dripping from his coat, saying nothing for a long moment.`,
+        "The room smelled of old books and dried lavender. A single candle flickered on the windowsill, casting long shadows across the faded wallpaper. Outside, the storm had settled into a steady, mournful rhythm.",
+        `Suddenly he realized she was trembling \u2014 not from cold, but from something deeper, something he had carried into the room with him like a ghost. "I'm sorry," he said at last. "I didn't know where else to go."`,
+        "She turned slowly toward the window. The garden beyond was dark and overgrown, but she could still see the outline of the old oak tree where they had carved their names as children. It felt like another life, another world entirely."
+      ]
+    }
+  };
+
+  // content/features/presetPreviewRender.js
+  function escapeHTML2(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  }
+  function getSentenceLabels(blocks, lens) {
+    const rules = LENS_RULES[lens] ?? LENS_RULES.news;
+    const allSentences = blocks.flatMap((b) => splitSentences(b.trim()).filter(Boolean));
+    const labels = [];
+    allSentences.forEach((s, i) => {
+      for (const [type, patterns] of Object.entries(rules)) {
+        if (patterns.some((rx) => rx.test(s))) {
+          labels.push({ index: i, type });
+          break;
+        }
+      }
+    });
+    return { allSentences, labels };
+  }
+  function renderSentenceText(sentence, settings, emotionHighlights, transitionWords) {
+    const text = settings.boldBeginning ? applyBionicToText(sentence) : escapeHTML2(sentence);
+    if (!settings.readingAidsEnabled) return text;
+    const lower = sentence.toLowerCase();
+    const spans = [];
+    if (settings.emotionColor) {
+      for (const { word, category } of emotionHighlights) {
+        const esc = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const rx = new RegExp(`(?<![a-zA-Z-])${esc}(?![a-zA-Z-])`, "gi");
+        for (const m of lower.matchAll(rx)) {
+          spans.push({ start: m.index, end: m.index + m[0].length, cls: `dra-pe-${category}` });
+        }
+      }
+    }
+    if (settings.transitionAnimation) {
+      for (const word of transitionWords) {
+        const esc = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const rx = new RegExp(`(?<![a-zA-Z-])${esc}(?![a-zA-Z-])`, "gi");
+        for (const m of lower.matchAll(rx)) {
+          spans.push({ start: m.index, end: m.index + m[0].length, cls: "dra-pe-transition-word" });
+        }
+      }
+    }
+    if (!spans.length) return settings.boldBeginning ? applyBionicToText(sentence) : escapeHTML2(sentence);
+    spans.sort((a, b) => a.start - b.start || b.end - a.end);
+    const deduped = [];
+    let last = 0;
+    for (const sp of spans) {
+      if (sp.start >= last) {
+        deduped.push(sp);
+        last = sp.end;
+      }
+    }
+    const inline = (s) => settings.boldBeginning ? applyBionicToText(s) : escapeHTML2(s);
+    let result = "";
+    let pos = 0;
+    for (const { start, end, cls } of deduped) {
+      if (pos < start) result += inline(sentence.slice(pos, start));
+      result += `<span class="${cls}">${inline(sentence.slice(start, end))}</span>`;
+      pos = end;
+    }
+    if (pos < sentence.length) result += inline(sentence.slice(pos));
+    return result;
+  }
+  function renderPreviewArticle(article, settings, wordLists) {
+    const { blocks } = article;
+    const lens = settings.sentenceLabelsLens ?? "news";
+    const { allSentences, labels } = settings.readingAidsEnabled && settings.sentenceLabels ? getSentenceLabels(blocks, lens) : { allSentences: [], labels: [] };
+    const emotionHighlights = settings.readingAidsEnabled && settings.emotionColor ? matchEmotionWords(blocks.join(" "), wordLists) : [];
+    const transitionWords = settings.readingAidsEnabled && settings.transitionAnimation ? wordLists.transition ?? DEFAULT_TRANSITION_WORDS : [];
+    const LABEL_TYPES2 = /* @__PURE__ */ new Set([
+      "core-fact",
+      "context",
+      "quote",
+      "concept",
+      "mechanism",
+      "constraint",
+      "thesis",
+      "evidence",
+      "explanation",
+      "dialogue",
+      "plot-turn",
+      "setting"
+    ]);
+    let sIdx = 0;
+    const paragraphs = blocks.map((block) => {
+      const sentences = splitSentences(block.trim()).filter(Boolean);
+      const html = sentences.map((sentence) => {
+        const labelEntry = labels.find((l) => l.index === sIdx);
+        const labelCls = labelEntry && LABEL_TYPES2.has(labelEntry.type) ? ` dra-label-${labelEntry.type}` : "";
+        sIdx++;
+        const inner = renderSentenceText(sentence, settings, emotionHighlights, transitionWords);
+        return `<span class="dra-sentence${labelCls}">${inner}</span>`;
+      }).join(" ");
+      return `<p>${html}</p>`;
+    });
+    return paragraphs.join("");
+  }
+  function applyPreviewStyles(container, settings) {
+    const s = settings;
+    container.style.setProperty("--dra-positive", s.emotionPositiveColor ?? "#27ae60");
+    container.style.setProperty("--dra-negative", s.emotionNegativeColor ?? "#e74c3c");
+    container.style.setProperty("--dra-complex", s.emotionComplexColor ?? "#8e44ad");
+    container.style.setProperty("--dra-row-shading", s.rowShadingColor ?? "#bfb3d0");
+    const labelColors = {
+      "core-fact": s.labelCoreFactColor ?? "#eab308",
+      "context": s.labelContextColor ?? "#3b82f6",
+      "quote": s.labelQuoteColor ?? "#ea580c",
+      "concept": s.labelConceptColor ?? "#9333ea",
+      "mechanism": s.labelMechanismColor ?? "#f97316",
+      "constraint": s.labelConstraintColor ?? "#ef4444",
+      "thesis": s.labelThesisColor ?? "#ca8a04",
+      "evidence": s.labelEvidenceColor ?? "#22c55e",
+      "explanation": s.labelExplanationColor ?? "#6b7280",
+      "dialogue": s.labelDialogueColor ?? "#ec4899",
+      "plot-turn": s.labelPlotTurnColor ?? "#eab308",
+      "setting": s.labelSettingColor ?? "#9ca3af"
+    };
+    for (const [key, val] of Object.entries(labelColors)) {
+      container.style.setProperty(`--dra-label-${key}`, val);
+    }
+    const article = container.querySelector(".dra-pe-article");
+    if (!article) return;
+    article.style.fontFamily = s.typographyEnabled && s.fontFamily ? s.fontFamily : "";
+    article.style.fontSize = s.typographyEnabled && s.fontSize ? `${s.fontSize}px` : "";
+    article.style.lineHeight = s.typographyEnabled && s.lineHeight ? String(s.lineHeight) : "";
+    article.style.wordSpacing = s.typographyEnabled && s.wordSpacing ? `${s.wordSpacing}em` : "";
+    article.style.letterSpacing = s.typographyEnabled && s.letterSpacing ? `${s.letterSpacing}em` : "";
+    article.style.color = "";
+    article.style.background = "";
+  }
+
+  // content/features/presetEditor.js
+  var EDITOR_ID = "dra-preset-editor";
+  function genPresetId() {
+    return "preset_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+  }
+  async function loadPresets() {
+    return new Promise((resolve) => {
+      chrome.storage.sync.get("draPresets", (d) => resolve(d.draPresets ?? { byId: {}, order: [], activeId: null }));
+    });
+  }
+  async function savePresets(presets) {
+    return new Promise((resolve) => chrome.storage.sync.set({ draPresets: presets }, resolve));
+  }
+  function applySettingsLocally(settings, actions) {
+    state.settings = { ...state.settings, ...settings };
+    chrome.storage.sync.set({ draSettings: state.settings });
+    render();
+    refreshImmersiveReader();
+    if (actions?.autoOpenReaderMode) {
+      openImmersiveReader();
+      if (actions?.autoStartTypewriterFromBeginning) {
+        startTypewriterFromBeginning();
+      }
+    }
+  }
+  var draft = null;
+  function initDraft(mode, { currentSettings, preset } = {}) {
+    const baseSettings = mode === "modify" ? { ...preset.settings } : { ...DEFAULT_SETTINGS, ...state.settings, ...currentSettings ?? {} };
+    const s = {};
+    for (const k of PRESET_KEYS) s[k] = baseSettings[k] ?? DEFAULT_SETTINGS[k];
+    draft = {
+      mode,
+      presetId: mode === "modify" ? preset.id : null,
+      name: mode === "modify" ? preset.name : "",
+      settings: s,
+      actions: mode === "modify" ? { ...preset.actions } : { autoOpenReaderMode: false, autoStartTypewriterFromBeginning: false }
+    };
+  }
+  var PRESET_KEYS = [
+    "typographyEnabled",
+    "fontFamily",
+    "boldBeginning",
+    "fontSize",
+    "lineHeight",
+    "wordSpacing",
+    "letterSpacing",
+    "fontColor",
+    "bgColor",
+    "typewriterSpeed",
+    "readingAidsEnabled",
+    "gradientRows",
+    "rowShadingColor",
+    "transitionAnimation",
+    "rulerActive",
+    "rulerWindowLines",
+    "autoScrollActive",
+    "autoScrollSpeed",
+    "emotionColor",
+    "emotionMode",
+    "emotionPositiveColor",
+    "emotionNegativeColor",
+    "emotionComplexColor",
+    "sentenceLabels",
+    "sentenceLabelsMode",
+    "sentenceLabelsLens",
+    "labelCoreFactColor",
+    "labelContextColor",
+    "labelQuoteColor",
+    "labelConceptColor",
+    "labelMechanismColor",
+    "labelConstraintColor",
+    "labelThesisColor",
+    "labelEvidenceColor",
+    "labelExplanationColor",
+    "labelDialogueColor",
+    "labelPlotTurnColor",
+    "labelSettingColor",
+    "panelSize"
+  ];
+  function refreshPreview() {
+    const root = document.getElementById(EDITOR_ID);
+    if (!root || !draft) return;
+    const lens = draft.settings.sentenceLabelsLens ?? "news";
+    const article = SAMPLE_ARTICLES[lens] ?? SAMPLE_ARTICLES.news;
+    const previewBody = root.querySelector(".dra-pe-preview-body");
+    if (!previewBody) return;
+    previewBody.innerHTML = `<h3 class="dra-pe-preview-title">${escHTML(article.title)}</h3>
+    <div class="dra-pe-article">${renderPreviewArticle(article, draft.settings, state.wordLists)}</div>`;
+    applyPreviewStyles(previewBody, draft.settings);
+  }
+  function escHTML(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function toggle(id, key, label) {
+    const checked = draft.settings[key] ? "checked" : "";
+    return `<label class="dra-pe-toggle-row">
+    <label class="toggle-switch"><input type="checkbox" id="${id}" ${checked}><span class="track"></span></label>
+    <span class="dra-pe-toggle-label">${label}</span>
+  </label>`;
+  }
+  function slider(id, key, label, min, max, step, unit = "") {
+    const val = draft.settings[key] ?? DEFAULT_SETTINGS[key] ?? min;
+    return `<div class="dra-pe-row">
+    <span class="dra-pe-label">${label}</span>
+    <div class="dra-pe-slider-group">
+      <input type="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}" class="slider">
+      <span id="${id}-val" class="slider-value">${Number(val).toFixed(step < 1 ? step < 0.05 ? 2 : 1 : 0)}${unit}</span>
+    </div>
+  </div>`;
+  }
+  function colorInput(id, key, label) {
+    const val = draft.settings[key] ?? DEFAULT_SETTINGS[key];
+    return `<div class="dra-pe-row dra-pe-color-row">
+    <span class="dra-pe-label">${label}</span>
+    <input type="color" id="${id}" value="${val}" class="dra-pe-color">
+  </div>`;
+  }
+  function selectInput(id, key, label, options) {
+    const val = draft.settings[key] ?? DEFAULT_SETTINGS[key];
+    const opts = options.map(([v, l]) => `<option value="${v}"${val === v ? " selected" : ""}>${l}</option>`).join("");
+    return `<div class="dra-pe-row">
+    <span class="dra-pe-label">${label}</span>
+    <select id="${id}" class="dra-pe-select">${opts}</select>
+  </div>`;
+  }
+  function modePill(id, feature, key) {
+    const cur = draft.settings[key] ?? "local";
+    return `<div class="mode-pill dra-pe-mode-pill" id="${id}">
+    <button class="mode-btn${cur === "local" ? " active" : ""}" data-pe-feature="${feature}" data-pe-mode="local">Local</button>
+    <button class="mode-btn${cur === "ai" ? " active" : ""}" data-pe-feature="${feature}" data-pe-mode="ai">AI</button>
+  </div>`;
+  }
+  function section(title, content) {
+    return `<div class="dra-pe-section">
+    <div class="dra-pe-section-title">${title}</div>
+    <div class="dra-pe-section-body">${content}</div>
+  </div>`;
+  }
+  function buildFormHTML() {
+    const s = draft.settings;
+    const a = draft.actions;
+    const typography = [
+      toggle("pe-toggle-typography", "typographyEnabled", "Enable Typography"),
+      selectInput("pe-font-family", "fontFamily", "Font Family", [
+        ["", "System Default"],
+        ["Georgia", "Georgia"],
+        ["Arial", "Arial"],
+        ["Verdana", "Verdana"],
+        ["OpenDyslexic, sans-serif", "OpenDyslexic"]
+      ]),
+      toggle("pe-toggle-bold", "boldBeginning", "Bionic Effect"),
+      slider("pe-font-size", "fontSize", "Font Size", 14, 28, 1, "px"),
+      slider("pe-line-height", "lineHeight", "Line Height", 1.4, 2.4, 0.1),
+      slider("pe-word-spacing", "wordSpacing", "Word Space", 0, 0.5, 0.05, "em"),
+      slider("pe-letter-spacing", "letterSpacing", "Letter Space", 0, 0.1, 0.01, "em"),
+      colorInput("pe-font-color", "fontColor", "Text Color"),
+      colorInput("pe-bg-color", "bgColor", "Background")
+    ].join("");
+    const actionChecked = (k) => a[k] ? "checked" : "";
+    const readerMode = [
+      `<label class="dra-pe-toggle-row">
+      <input type="checkbox" id="pe-action-open-reader" ${actionChecked("autoOpenReaderMode")}>
+      <span class="dra-pe-toggle-label">Auto-open Reader Mode when applied</span>
+    </label>`,
+      `<label class="dra-pe-toggle-row">
+      <input type="checkbox" id="pe-action-typewriter" ${actionChecked("autoStartTypewriterFromBeginning")}>
+      <span class="dra-pe-toggle-label">Start Typewriter from beginning</span>
+    </label>`,
+      slider("pe-typewriter-speed", "typewriterSpeed", "Typewriter Speed", 1, 10, 1)
+    ].join("");
+    const aids = [
+      toggle("pe-toggle-reading-aids", "readingAidsEnabled", "Enable Reading Aids"),
+      toggle("pe-toggle-gradient", "gradientRows", "Row Shading"),
+      colorInput("pe-row-shading-color", "rowShadingColor", "Row Shading Color"),
+      toggle("pe-toggle-transition", "transitionAnimation", "Transition Words"),
+      toggle("pe-toggle-ruler", "rulerActive", "Reading Ruler"),
+      slider("pe-ruler-size", "rulerWindowLines", "Ruler Width", 1, 10, 0.5, " lines"),
+      toggle("pe-toggle-auto-scroll", "autoScrollActive", "Auto Scroll"),
+      slider("pe-auto-scroll-speed", "autoScrollSpeed", "Auto Scroll Speed", 1, 10, 1),
+      // Emotion Colors
+      `<div class="dra-pe-row dra-pe-ai-row">
+      ${toggle("pe-toggle-emotion", "emotionColor", "Emotion Colors")}
+      ${modePill("pe-emotion-mode-pill", "emotion", "emotionMode")}
+    </div>`,
+      colorInput("pe-emotion-positive", "emotionPositiveColor", "Positive Color"),
+      colorInput("pe-emotion-negative", "emotionNegativeColor", "Negative Color"),
+      colorInput("pe-emotion-complex", "emotionComplexColor", "Complex Color"),
+      // Sentence Labels
+      `<div class="dra-pe-row dra-pe-ai-row">
+      ${toggle("pe-toggle-labels", "sentenceLabels", "Sentence Labels")}
+      ${modePill("pe-labels-mode-pill", "sentenceLabels", "sentenceLabelsMode")}
+    </div>`,
+      selectInput("pe-label-lens", "sentenceLabelsLens", "Analysis Type", [
+        ["news", "News"],
+        ["stem", "Academic \u2013 STEM"],
+        ["humanities", "Academic \u2013 Humanities"],
+        ["fiction", "Fiction"]
+      ]),
+      // Label colors for active lens shown dynamically; show all for completeness
+      `<div id="pe-label-colors" class="dra-pe-label-colors">
+      ${colorInput("pe-lc-core-fact", "labelCoreFactColor", "Core Fact")}
+      ${colorInput("pe-lc-context", "labelContextColor", "Context")}
+      ${colorInput("pe-lc-quote", "labelQuoteColor", "Quote")}
+      ${colorInput("pe-lc-concept", "labelConceptColor", "Concept")}
+      ${colorInput("pe-lc-mechanism", "labelMechanismColor", "Mechanism")}
+      ${colorInput("pe-lc-constraint", "labelConstraintColor", "Constraint")}
+      ${colorInput("pe-lc-thesis", "labelThesisColor", "Thesis")}
+      ${colorInput("pe-lc-evidence", "labelEvidenceColor", "Evidence")}
+      ${colorInput("pe-lc-explanation", "labelExplanationColor", "Explanation")}
+      ${colorInput("pe-lc-dialogue", "labelDialogueColor", "Dialogue")}
+      ${colorInput("pe-lc-plot-turn", "labelPlotTurnColor", "Plot Turn")}
+      ${colorInput("pe-lc-setting", "labelSettingColor", "Setting")}
+    </div>`
+    ].join("");
+    const panelSz = draft.settings.panelSize ?? "comfortable";
+    const panelDisplay = `<div class="dra-pe-row">
+    <span class="dra-pe-label">Panel Size</span>
+    <div class="panel-size-pill dra-pe-panel-size">
+      ${["compact", "comfortable", "large"].map(
+      (sz) => `<button class="panel-size-btn${panelSz === sz ? " active" : ""}" data-pe-panel-size="${sz}">${sz[0].toUpperCase()}</button>`
+    ).join("")}
+    </div>
+  </div>`;
+    return [
+      section("Typography", typography),
+      section("Reader Mode", readerMode),
+      section("Reading Aids", aids),
+      section("Panel Display", panelDisplay)
+    ].join("");
+  }
+  function wireForm(root) {
+    const container = root.querySelector(".dra-pe-form");
+    const update = (key, val) => {
+      draft.settings[key] = val;
+      refreshPreview();
+    };
+    const updateAction = (key, val) => {
+      draft.actions[key] = val;
+    };
+    container.addEventListener("change", (e) => {
+      const el = e.target;
+      if (!el.id?.startsWith("pe-")) return;
+      switch (el.id) {
+        case "pe-toggle-typography":
+          update("typographyEnabled", el.checked);
+          break;
+        case "pe-toggle-bold":
+          update("boldBeginning", el.checked);
+          break;
+        case "pe-font-family":
+          update("fontFamily", el.value);
+          break;
+        case "pe-toggle-reading-aids":
+          update("readingAidsEnabled", el.checked);
+          break;
+        case "pe-toggle-gradient":
+          update("gradientRows", el.checked);
+          break;
+        case "pe-toggle-transition":
+          update("transitionAnimation", el.checked);
+          break;
+        case "pe-toggle-ruler":
+          update("rulerActive", el.checked);
+          break;
+        case "pe-toggle-auto-scroll":
+          update("autoScrollActive", el.checked);
+          break;
+        case "pe-toggle-emotion":
+          update("emotionColor", el.checked);
+          break;
+        case "pe-toggle-labels":
+          update("sentenceLabels", el.checked);
+          break;
+        case "pe-label-lens":
+          update("sentenceLabelsLens", el.value);
+          break;
+        case "pe-action-open-reader":
+          updateAction("autoOpenReaderMode", el.checked);
+          break;
+        case "pe-action-typewriter":
+          updateAction("autoStartTypewriterFromBeginning", el.checked);
+          break;
+      }
+    });
+    container.addEventListener("input", (e) => {
+      const el = e.target;
+      if (!el.id?.startsWith("pe-")) return;
+      const numKeys = {
+        "pe-font-size": "fontSize",
+        "pe-line-height": "lineHeight",
+        "pe-word-spacing": "wordSpacing",
+        "pe-letter-spacing": "letterSpacing",
+        "pe-ruler-size": "rulerWindowLines",
+        "pe-auto-scroll-speed": "autoScrollSpeed",
+        "pe-typewriter-speed": "typewriterSpeed"
+      };
+      const colorKeys = {
+        "pe-font-color": "fontColor",
+        "pe-bg-color": "bgColor",
+        "pe-row-shading-color": "rowShadingColor",
+        "pe-emotion-positive": "emotionPositiveColor",
+        "pe-emotion-negative": "emotionNegativeColor",
+        "pe-emotion-complex": "emotionComplexColor",
+        "pe-lc-core-fact": "labelCoreFactColor",
+        "pe-lc-context": "labelContextColor",
+        "pe-lc-quote": "labelQuoteColor",
+        "pe-lc-concept": "labelConceptColor",
+        "pe-lc-mechanism": "labelMechanismColor",
+        "pe-lc-constraint": "labelConstraintColor",
+        "pe-lc-thesis": "labelThesisColor",
+        "pe-lc-evidence": "labelEvidenceColor",
+        "pe-lc-explanation": "labelExplanationColor",
+        "pe-lc-dialogue": "labelDialogueColor",
+        "pe-lc-plot-turn": "labelPlotTurnColor",
+        "pe-lc-setting": "labelSettingColor"
+      };
+      if (numKeys[el.id]) {
+        const v = parseFloat(el.value);
+        update(numKeys[el.id], v);
+        const display = root.querySelector(`#${el.id}-val`);
+        if (display) display.textContent = el.value;
+      } else if (colorKeys[el.id]) {
+        update(colorKeys[el.id], el.value);
+      }
+    });
+    container.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-pe-mode]");
+      if (btn) {
+        const feature = btn.dataset.peFeature;
+        const mode = btn.dataset.peMode;
+        const keyMap = { emotion: "emotionMode", sentenceLabels: "sentenceLabelsMode" };
+        const key = keyMap[feature];
+        if (key) {
+          update(key, mode);
+          btn.closest(".dra-pe-mode-pill").querySelectorAll(".mode-btn").forEach((b) => b.classList.toggle("active", b.dataset.peMode === mode));
+        }
+      }
+      const szBtn = e.target.closest("[data-pe-panel-size]");
+      if (szBtn) {
+        const sz = szBtn.dataset.pePanelSize;
+        update("panelSize", sz);
+        szBtn.closest(".dra-pe-panel-size").querySelectorAll(".panel-size-btn").forEach((b) => b.classList.toggle("active", b.dataset.pePanelSize === sz));
+      }
+    });
+  }
+  async function handleSave(root) {
+    const nameEl = root.querySelector(".dra-pe-name-input");
+    const name = nameEl?.value.trim();
+    if (!name) {
+      nameEl?.classList.add("dra-pe-error");
+      nameEl?.focus();
+      return;
+    }
+    const presets = await loadPresets();
+    let id;
+    if (draft.mode === "modify" && draft.presetId) {
+      id = draft.presetId;
+      presets.byId[id] = { ...presets.byId[id], name, settings: draft.settings, actions: draft.actions, updatedAt: Date.now() };
+    } else {
+      id = genPresetId();
+      presets.byId[id] = { id, name, settings: draft.settings, actions: draft.actions, createdAt: Date.now(), updatedAt: Date.now() };
+      presets.order.push(id);
+    }
+    const wasActive = presets.activeId === id;
+    const shouldApply = draft.mode !== "modify" || wasActive;
+    if (shouldApply) {
+      presets.activeId = id;
+    }
+    await savePresets(presets);
+    if (shouldApply) {
+      applySettingsLocally(draft.settings, draft.actions);
+    }
+    chrome.runtime.sendMessage({ type: "PRESETS_CHANGED" }).catch(() => {
+    });
+    closePresetEditor();
+  }
+  function closePresetEditor() {
+    document.getElementById(EDITOR_ID)?.remove();
+    document.removeEventListener("keydown", onEditorKeydown);
+    draft = null;
+  }
+  function onEditorKeydown(e) {
+    if (e.key === "Escape") closePresetEditor();
+  }
+  function buildEditorHTML(title) {
+    return `
+  <div class="dra-pe-overlay">
+    <div class="dra-pe-card">
+      <header class="dra-pe-header">
+        <span class="dra-pe-header-title">${title}</span>
+        <button class="dra-pe-close" aria-label="Close">\xD7</button>
+      </header>
+      <div class="dra-pe-body">
+        <div class="dra-pe-form dra-pe-left"></div>
+        <div class="dra-pe-right">
+          <div class="dra-pe-preview-label">Live Preview</div>
+          <div class="dra-pe-preview-body"></div>
+        </div>
+      </div>
+      <footer class="dra-pe-footer">
+        <div class="dra-pe-name-group">
+          <label class="dra-pe-name-label" for="dra-pe-name">Preset name</label>
+          <input id="dra-pe-name" class="dra-pe-name-input" type="text" placeholder="My Preset" maxlength="60">
+        </div>
+        <div class="dra-pe-footer-btns">
+          <button class="dra-pe-btn-cancel">Cancel</button>
+          <button class="dra-pe-btn-save">Save</button>
+        </div>
+      </footer>
+    </div>
+  </div>`;
+  }
+  function mountEditor(root, title) {
+    root.innerHTML = buildEditorHTML(title);
+    root.querySelector(".dra-pe-form").innerHTML = buildFormHTML();
+    wireForm(root);
+    refreshPreview();
+    root.querySelector(".dra-pe-close").addEventListener("click", closePresetEditor);
+    root.querySelector(".dra-pe-btn-cancel").addEventListener("click", closePresetEditor);
+    root.querySelector(".dra-pe-btn-save").addEventListener("click", () => handleSave(root));
+    if (draft.name) root.querySelector(".dra-pe-name-input").value = draft.name;
+    root.querySelector(".dra-pe-overlay").addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) closePresetEditor();
+    });
+  }
+  function openPresetEditor({ mode, preset, currentSettings } = {}) {
+    closePresetEditor();
+    initDraft(mode, { currentSettings, preset });
+    const root = document.createElement("div");
+    root.id = EDITOR_ID;
+    document.body.appendChild(root);
+    document.addEventListener("keydown", onEditorKeydown);
+    if (mode === "onboarding") {
+      root.innerHTML = `
+      <div class="dra-pe-overlay">
+        <div class="dra-pe-card dra-pe-card--onboarding">
+          <div class="dra-pe-ob-logo">Argus</div>
+          <h2 class="dra-pe-ob-title">Welcome to Argus</h2>
+          <p class="dra-pe-ob-body">Would you like to set up your reading preferences now? You can create a custom preset that controls typography, highlights, and more.</p>
+          <div class="dra-pe-ob-btns">
+            <button class="dra-pe-btn-yes">Set Up Preferences</button>
+            <button class="dra-pe-btn-no">Skip for Now</button>
+          </div>
+        </div>
+      </div>`;
+      root.querySelector(".dra-pe-btn-yes").addEventListener("click", () => {
+        mountEditor(root, "Create Your First Preset");
+      });
+      root.querySelector(".dra-pe-btn-no").addEventListener("click", () => {
+        chrome.storage.sync.set({ draPresets: { byId: {}, order: [], activeId: null } });
+        closePresetEditor();
+      });
+      root.querySelector(".dra-pe-overlay").addEventListener("click", (e) => {
+        if (e.target === e.currentTarget) closePresetEditor();
+      });
+      return;
+    }
+    const titles = { create: "Create New Preset", modify: "Edit Preset" };
+    mountEditor(root, titles[mode] ?? "Edit Preset");
+  }
+  function maybeShowOnboarding() {
+    chrome.storage.sync.get("draPresets", (d) => {
+      if (!d.draPresets) {
+        openPresetEditor({ mode: "onboarding" });
+      }
+    });
+  }
+
   // content/index.js
   var DEFAULT_WORD_LISTS = {
     emotionPositive: [...DEFAULT_EMOTION_POSITIVE],
@@ -1818,6 +2478,7 @@
     }
     setTypewriterSpeed(state.settings.typewriterSpeed);
     render();
+    maybeShowOnboarding();
     let _lastUrl = location.href;
     let _renderTimer;
     new MutationObserver(() => {
@@ -1831,20 +2492,23 @@
       _renderTimer = setTimeout(() => render(), 500);
     }).observe(document.body, { childList: true, subtree: true });
   });
+  function applySettingsPayload(payload) {
+    if (payload.rulerActive === false) state.lastRulerY = null;
+    const prevLens = state.settings.sentenceLabelsLens;
+    state.settings = { ...state.settings, ...payload };
+    if (payload.sentenceLabelsLens && payload.sentenceLabelsLens !== prevLens) {
+      state.aiSentenceLabels = [];
+      state.sentenceLabels = [];
+      state.sentenceLabelsInProgress = false;
+    }
+    if ("typewriterSpeed" in payload) setTypewriterSpeed(payload.typewriterSpeed);
+    if ("typewriterActive" in payload) setTypewriterActive(payload.typewriterActive);
+    render();
+    refreshImmersiveReader();
+  }
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === "SETTINGS_CHANGED") {
-      if (msg.payload.rulerActive === false) state.lastRulerY = null;
-      const prevLens = state.settings.sentenceLabelsLens;
-      state.settings = { ...state.settings, ...msg.payload };
-      if (msg.payload.sentenceLabelsLens && msg.payload.sentenceLabelsLens !== prevLens) {
-        state.aiSentenceLabels = [];
-        state.sentenceLabels = [];
-        state.sentenceLabelsInProgress = false;
-      }
-      if ("typewriterSpeed" in msg.payload) setTypewriterSpeed(msg.payload.typewriterSpeed);
-      if ("typewriterActive" in msg.payload) setTypewriterActive(msg.payload.typewriterActive);
-      render();
-      refreshImmersiveReader();
+      applySettingsPayload(msg.payload);
     }
     if (msg.type === "FOCUS_APPLY" && msg.keywords?.length) {
       state.topicFocusAIPrefixes = null;
@@ -1937,6 +2601,18 @@
     }
     if (msg.type === "CLOSE_IMMERSIVE_READER") {
       closeImmersiveReader();
+    }
+    if (msg.type === "OPEN_PRESET_EDITOR") {
+      openPresetEditor({ mode: msg.mode, preset: msg.preset, currentSettings: msg.currentSettings });
+    }
+    if (msg.type === "APPLY_PRESET") {
+      applySettingsPayload(msg.settings);
+      if (msg.actions?.autoOpenReaderMode) {
+        openImmersiveReader();
+        if (msg.actions?.autoStartTypewriterFromBeginning) {
+          startTypewriterFromBeginning();
+        }
+      }
     }
   });
 })();

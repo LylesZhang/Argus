@@ -862,6 +862,133 @@ function initWordListEditor() {
   });
 }
 
+// ── Preset management ──────────────────────────────────────────────────
+
+let localPresets = { byId: {}, order: [], activeId: null };
+
+function renderPresetList() {
+  const list = document.getElementById('preset-list');
+  if (!list) return;
+  const { byId, order, activeId } = localPresets;
+  if (!order.length) {
+    list.innerHTML = '<div class="preset-list-empty">No presets yet.</div>';
+    return;
+  }
+  list.innerHTML = order.map(id => {
+    const p = byId[id];
+    if (!p) return '';
+    const isActive = id === activeId;
+    return `<div class="preset-row" data-preset-id="${id}">
+      <input type="checkbox" class="preset-active-check" ${isActive ? 'checked' : ''} title="Apply preset">
+      <span class="preset-row-name" title="${p.name}">${p.name}</span>
+      <button class="preset-row-btn modify-btn">Modify</button>
+      <button class="preset-row-btn delete delete-btn">Delete</button>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.preset-row').forEach(row => {
+    const id = row.dataset.presetId;
+    row.querySelector('.preset-active-check').addEventListener('click', (e) => {
+      e.preventDefault();
+      if (id === localPresets.activeId) return; // radio: can't uncheck active
+      applyPreset(id);
+    });
+    row.querySelector('.modify-btn').addEventListener('click', () => {
+      const preset = localPresets.byId[id];
+      chrome.runtime.sendMessage({ type: 'OPEN_PRESET_EDITOR', mode: 'modify', preset });
+    });
+    row.querySelector('.delete-btn').addEventListener('click', () => deletePreset(id));
+  });
+}
+
+function applyPreset(id) {
+  const preset = localPresets.byId[id];
+  if (!preset) return;
+  localPresets.activeId = id;
+  chrome.storage.sync.set({ draPresets: localPresets });
+  renderPresetList();
+  settings = { ...settings, ...preset.settings };
+  syncUI();
+  chrome.storage.sync.set({ draSettings: settings });
+  chrome.runtime.sendMessage({
+    type: 'APPLY_PRESET',
+    settings: preset.settings,
+    actions: preset.actions ?? {},
+  });
+}
+
+function deletePreset(id) {
+  delete localPresets.byId[id];
+  localPresets.order = localPresets.order.filter(o => o !== id);
+  if (localPresets.activeId === id) localPresets.activeId = null;
+  chrome.storage.sync.set({ draPresets: localPresets });
+  renderPresetList();
+}
+
+function initPresetManager() {
+  chrome.storage.sync.get('draPresets', d => {
+    localPresets = d.draPresets ?? { byId: {}, order: [], activeId: null };
+    renderPresetList();
+  });
+
+  const addBtn   = document.getElementById('preset-add-btn');
+  const addMenu  = document.getElementById('preset-add-menu');
+  const saveBar  = document.getElementById('preset-save-now-bar');
+  const saveNow  = document.getElementById('preset-save-now');
+  const createNew= document.getElementById('preset-create-new');
+  const nameInput= document.getElementById('preset-save-now-name');
+  const confirm  = document.getElementById('preset-save-now-confirm');
+  const cancel   = document.getElementById('preset-save-now-cancel');
+
+  addBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    addMenu?.classList.toggle('hidden');
+  });
+
+  document.addEventListener('click', () => addMenu?.classList.add('hidden'));
+
+  saveNow?.addEventListener('click', () => {
+    addMenu?.classList.add('hidden');
+    saveBar?.classList.remove('hidden');
+    nameInput?.focus();
+  });
+
+  cancel?.addEventListener('click', () => {
+    saveBar?.classList.add('hidden');
+    if (nameInput) nameInput.value = '';
+  });
+
+  confirm?.addEventListener('click', () => {
+    const name = nameInput?.value.trim();
+    if (!name) { nameInput?.focus(); return; }
+    const id = 'preset_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+    const preset = {
+      id, name,
+      settings: Object.fromEntries(
+        Object.keys(DEFAULT_SETTINGS).filter(k => k !== 'panelSize').concat(['panelSize']).map(k => [k, settings[k]])
+      ),
+      actions: { autoOpenReaderMode: false, autoStartTypewriterFromBeginning: false },
+      createdAt: Date.now(), updatedAt: Date.now(),
+    };
+    localPresets.byId[id] = preset;
+    localPresets.order.push(id);
+    localPresets.activeId = id;
+    chrome.storage.sync.set({ draPresets: localPresets });
+    renderPresetList();
+    saveBar?.classList.add('hidden');
+    if (nameInput) nameInput.value = '';
+  });
+
+  createNew?.addEventListener('click', () => {
+    addMenu?.classList.add('hidden');
+    chrome.runtime.sendMessage({
+      type: 'OPEN_PRESET_EDITOR',
+      mode: 'create',
+      currentSettings: { ...settings },
+    });
+  });
+}
+
 // ── Runtime messages ───────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg) => {
@@ -872,6 +999,13 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'AI_STATUS') {
     updateAIStatus(msg.feature, msg.status);
   }
+  if (msg.type === 'PRESETS_CHANGED') {
+    chrome.storage.sync.get(['draPresets', 'draSettings'], d => {
+      localPresets = d.draPresets ?? { byId: {}, order: [], activeId: null };
+      if (d.draSettings) { settings = { ...DEFAULT_SETTINGS, ...d.draSettings }; syncUI(); }
+      renderPresetList();
+    });
+  }
 });
 
 // ── Boot ───────────────────────────────────────────────────────────────
@@ -881,6 +1015,7 @@ chrome.storage.sync.get('draSettings', (data) => {
   syncUI();
   init();
   initWordListEditor();
+  initPresetManager();
 });
 
 chrome.storage.local.get(['activeTab', 'effectsWarningDisabled'], (data) => {
