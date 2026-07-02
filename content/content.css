@@ -182,10 +182,15 @@ html.dra-reader-open body {
   overflow: hidden !important;
 }
 
+html.dra-preset-editor-open,
+html.dra-preset-editor-open body {
+  overflow: hidden !important;
+}
+
 #dra-immersive-reader {
   position: fixed;
   inset: 0;
-  z-index: 2147483647;
+  z-index: 2147483646;
   --dra-reader-progress: 0%;
   --dra-reader-light-bg: #f7f7fb;
   --dra-reader-light-text: #2d2d34;
@@ -492,10 +497,11 @@ html.dra-reader-open body {
   position: fixed;
   inset: 0;
   background: rgba(30, 27, 75, 0.38);
-  z-index: 2147483640;
+  z-index: 2147483647;
   display: flex;
   align-items: center;
   justify-content: center;
+  overscroll-behavior: contain;
 }
 
 #dra-preset-editor .dra-pe-card {
@@ -612,12 +618,14 @@ html.dra-reader-open body {
 
 #dra-preset-editor .dra-pe-left {
   overflow-y: auto;
+  overscroll-behavior: contain;
   border-right: 1px solid #e0e0ea;
   padding: 16px 0;
 }
 
 #dra-preset-editor .dra-pe-right {
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: #f8f7fb;
   display: flex;
   flex-direction: column;
@@ -658,6 +666,7 @@ html.dra-reader-open body {
   line-height: 1.7;
   color: #2c2c2c;
   overflow-y: auto;
+  overscroll-behavior: contain;
   position: relative;
 }
 
@@ -931,5 +940,3 @@ html.dra-reader-open body {
 #dra-preset-editor .dra-pe-emotion-positive { color: var(--dra-positive); font-weight: 500; }
 #dra-preset-editor .dra-pe-emotion-negative { color: var(--dra-negative); font-weight: 500; }
 #dra-preset-editor .dra-pe-emotion-complex  { color: var(--dra-complex);  font-weight: 500; }
-#dra-preset-editor .dra-pe-transition-word  { color: #5aaea9; font-weight: 600; }
-

@@ -1,7 +1,7 @@
 import { DEFAULT_SETTINGS } from '../settings.js';
 import { state } from '../state.js';
 import { render } from '../render.js';
-import { refreshImmersiveReader, openImmersiveReader } from './immersiveReader.js';
+import { refreshImmersiveReader, openImmersiveReader, closeImmersiveReader } from './immersiveReader.js';
 import { SAMPLE_ARTICLES } from './sampleArticles.js';
 import { renderPreviewArticle, applyPreviewStyles, updateRulerPosition } from './presetPreviewRender.js';
 
@@ -30,7 +30,8 @@ function applySettingsLocally(settings, actions) {
   chrome.storage.sync.set({ draSettings: state.settings });
   render();
   refreshImmersiveReader();
-  if (actions?.autoOpenReaderMode) openImmersiveReader();
+  if (actions?.autoOpenReaderMode === true) openImmersiveReader();
+  if (actions?.autoOpenReaderMode === false) closeImmersiveReader();
 }
 
 // ── AI preview cache ───────────────────────────────────────────────────
@@ -501,6 +502,7 @@ function setupRulerTracking(root) {
 export function closePresetEditor() {
   if (_rulerTrackingCleanup) { _rulerTrackingCleanup(); _rulerTrackingCleanup = null; }
   document.getElementById(EDITOR_ID)?.remove();
+  document.documentElement.classList.remove('dra-preset-editor-open');
   document.removeEventListener('keydown', onEditorKeydown);
   if (aiPreviewListener) {
     chrome.runtime.onMessage.removeListener(aiPreviewListener);
@@ -572,6 +574,7 @@ export function openPresetEditor({ mode, preset, currentSettings } = {}) {
   const root = document.createElement('div');
   root.id = EDITOR_ID;
   document.body.appendChild(root);
+  document.documentElement.classList.add('dra-preset-editor-open');
   document.addEventListener('keydown', onEditorKeydown);
 
   if (mode === 'onboarding') {

@@ -1899,7 +1899,7 @@
         const esc = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const rx = new RegExp(`(?<![a-zA-Z-])${esc}(?![a-zA-Z-])`, "gi");
         for (const m of lower.matchAll(rx)) {
-          spans.push({ start: m.index, end: m.index + m[0].length, cls: "dra-pe-transition-word" });
+          spans.push({ start: m.index, end: m.index + m[0].length, cls: "dra-transition-word" });
         }
       }
     }
@@ -2054,7 +2054,8 @@
     chrome.storage.sync.set({ draSettings: state.settings });
     render();
     refreshImmersiveReader();
-    if (actions?.autoOpenReaderMode) openImmersiveReader();
+    if (actions?.autoOpenReaderMode === true) openImmersiveReader();
+    if (actions?.autoOpenReaderMode === false) closeImmersiveReader();
   }
   var previewAICache = { emotion: null, labels: null };
   var aiPreviewListener = null;
@@ -2525,6 +2526,7 @@
       _rulerTrackingCleanup = null;
     }
     document.getElementById(EDITOR_ID)?.remove();
+    document.documentElement.classList.remove("dra-preset-editor-open");
     document.removeEventListener("keydown", onEditorKeydown);
     if (aiPreviewListener) {
       chrome.runtime.onMessage.removeListener(aiPreviewListener);
@@ -2587,6 +2589,7 @@
     const root = document.createElement("div");
     root.id = EDITOR_ID;
     document.body.appendChild(root);
+    document.documentElement.classList.add("dra-preset-editor-open");
     document.addEventListener("keydown", onEditorKeydown);
     if (mode === "onboarding") {
       root.innerHTML = `
@@ -2631,12 +2634,27 @@
     emotionComplex: [...DEFAULT_EMOTION_COMPLEX],
     transition: [...DEFAULT_TRANSITION_WORDS]
   };
-  chrome.storage.sync.get(["draSettings", "draWordLists"], (data) => {
+  function applyPresetActions(actions) {
+    if (actions?.autoOpenReaderMode === true) {
+      openImmersiveReader();
+    }
+    if (actions?.autoOpenReaderMode === false) {
+      closeImmersiveReader();
+    }
+    if (actions?.autoOpenReaderMode === true && actions?.autoStartTypewriterFromBeginning) {
+      startTypewriterFromBeginning();
+    }
+  }
+  chrome.storage.sync.get(["draSettings", "draWordLists", "draPresets"], (data) => {
     if (data.draSettings) {
       state.settings = { ...DEFAULT_SETTINGS, ...data.draSettings };
       if (state.settings.transitionAnimation === void 0 && data.draSettings.logicAnimation !== void 0) {
         state.settings.transitionAnimation = data.draSettings.logicAnimation;
       }
+    }
+    const activePreset = data.draPresets?.byId?.[data.draPresets.activeId];
+    if (activePreset?.settings) {
+      state.settings = { ...state.settings, ...activePreset.settings };
     }
     if (data.draWordLists) {
       state.wordLists = { ...state.wordLists, ...data.draWordLists };
@@ -2646,6 +2664,7 @@
     }
     setTypewriterSpeed(state.settings.typewriterSpeed);
     render();
+    applyPresetActions(activePreset?.actions);
     maybeShowOnboarding();
     let _lastUrl = location.href;
     let _renderTimer;
@@ -2775,12 +2794,7 @@
     }
     if (msg.type === "APPLY_PRESET") {
       applySettingsPayload(msg.settings);
-      if (msg.actions?.autoOpenReaderMode) {
-        openImmersiveReader();
-        if (msg.actions?.autoStartTypewriterFromBeginning) {
-          startTypewriterFromBeginning();
-        }
-      }
+      applyPresetActions(msg.actions);
     }
   });
 })();

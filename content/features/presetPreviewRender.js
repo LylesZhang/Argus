@@ -46,7 +46,7 @@ function renderSentenceText(sentence, settings, emotionHighlights, transitionWor
       const esc = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const rx = new RegExp(`(?<![a-zA-Z-])${esc}(?![a-zA-Z-])`, 'gi');
       for (const m of lower.matchAll(rx)) {
-        spans.push({ start: m.index, end: m.index + m[0].length, cls: 'dra-pe-transition-word' });
+        spans.push({ start: m.index, end: m.index + m[0].length, cls: 'dra-transition-word' });
       }
     }
   }

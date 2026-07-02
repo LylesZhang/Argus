@@ -20,13 +20,29 @@ const DEFAULT_WORD_LISTS = {
 
 // ── Bootstrap ──────────────────────────────────────────────────────────
 
-chrome.storage.sync.get(['draSettings', 'draWordLists'], (data) => {
+function applyPresetActions(actions) {
+  if (actions?.autoOpenReaderMode === true) {
+    openImmersiveReader();
+  }
+  if (actions?.autoOpenReaderMode === false) {
+    closeImmersiveReader();
+  }
+  if (actions?.autoOpenReaderMode === true && actions?.autoStartTypewriterFromBeginning) {
+    startTypewriterFromBeginning();
+  }
+}
+
+chrome.storage.sync.get(['draSettings', 'draWordLists', 'draPresets'], (data) => {
   if (data.draSettings) {
     state.settings = { ...DEFAULT_SETTINGS, ...data.draSettings };
     // Migrate legacy setting name
     if (state.settings.transitionAnimation === undefined && data.draSettings.logicAnimation !== undefined) {
       state.settings.transitionAnimation = data.draSettings.logicAnimation;
     }
+  }
+  const activePreset = data.draPresets?.byId?.[data.draPresets.activeId];
+  if (activePreset?.settings) {
+    state.settings = { ...state.settings, ...activePreset.settings };
   }
   if (data.draWordLists) {
     state.wordLists = { ...state.wordLists, ...data.draWordLists };
@@ -36,6 +52,7 @@ chrome.storage.sync.get(['draSettings', 'draWordLists'], (data) => {
   }
   setTypewriterSpeed(state.settings.typewriterSpeed);
   render();
+  applyPresetActions(activePreset?.actions);
   maybeShowOnboarding();
 
   // SPA navigation: reset cached contentArea and stale AI results on URL change
@@ -184,11 +201,6 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'APPLY_PRESET') {
     applySettingsPayload(msg.settings);
-    if (msg.actions?.autoOpenReaderMode) {
-      openImmersiveReader();
-      if (msg.actions?.autoStartTypewriterFromBeginning) {
-        startTypewriterFromBeginning();
-      }
-    }
+    applyPresetActions(msg.actions);
   }
 });

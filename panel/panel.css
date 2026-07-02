@@ -922,7 +922,7 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(30,27,75,0.12);
   z-index: 10;
-  min-width: 130px;
+  min-width: max-content;
   overflow: hidden;
 }
 
@@ -935,8 +935,12 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   border: none;
   font: inherit;
   font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
   color: #333;
   cursor: pointer;
+  white-space: nowrap;
 }
 .preset-add-menu-item:hover { background: #f4f4f9; }
 
@@ -947,6 +951,9 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   padding: 3px 7px;
   font: inherit;
   font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .preset-save-now-confirm {
@@ -957,6 +964,9 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   border-radius: 6px;
   font: inherit;
   font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   cursor: pointer;
 }
 
@@ -976,24 +986,44 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   align-items: center;
   gap: 8px;
   padding: 6px 16px;
+  cursor: pointer;
 }
-.preset-row:hover { background: rgba(90,174,169,0.06); }
+.preset-row:hover { background: #f9fffe8b; }
+.preset-row.active { background: rgba(90,174,169,0.1); }
 
 .preset-row-name {
   flex: 1;
   font-size: 12px;
+  font-weight: 400;
   color: #333;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.preset-row.active .preset-row-name { color: var(--navy); }
 
-.preset-active-check {
+.preset-active-toggle {
   width: 16px;
   height: 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  background: #fff;
   flex-shrink: 0;
   cursor: pointer;
-  accent-color: var(--teal);
+  position: relative;
+}
+.preset-active-toggle[aria-pressed="true"] {
+  border-color: var(--teal);
+}
+.preset-active-toggle[aria-pressed="true"]::after {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+.preset-active-toggle:hover {
+  border-color: var(--teal);
 }
 
 .preset-row-btn {

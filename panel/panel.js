@@ -878,8 +878,8 @@ function renderPresetList() {
     const p = byId[id];
     if (!p) return '';
     const isActive = id === activeId;
-    return `<div class="preset-row" data-preset-id="${id}">
-      <input type="checkbox" class="preset-active-check" ${isActive ? 'checked' : ''} title="Apply preset">
+    return `<div class="preset-row ${isActive ? 'active' : ''}" data-preset-id="${id}">
+      <button class="preset-active-toggle" type="button" aria-label="Apply preset" aria-pressed="${isActive ? 'true' : 'false'}" title="Apply preset"></button>
       <span class="preset-row-name" title="${p.name}">${p.name}</span>
       <button class="preset-row-btn modify-btn">Modify</button>
       <button class="preset-row-btn delete delete-btn">Delete</button>
@@ -888,10 +888,16 @@ function renderPresetList() {
 
   list.querySelectorAll('.preset-row').forEach(row => {
     const id = row.dataset.presetId;
-    row.querySelector('.preset-active-check').addEventListener('click', (e) => {
-      e.preventDefault();
+    const selectPreset = () => {
       if (id === localPresets.activeId) return; // radio: can't uncheck active
       applyPreset(id);
+    };
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('.preset-row-btn')) return;
+      selectPreset();
+    });
+    row.querySelector('.preset-active-toggle').addEventListener('click', () => {
+      selectPreset();
     });
     row.querySelector('.modify-btn').addEventListener('click', () => {
       const preset = localPresets.byId[id];
