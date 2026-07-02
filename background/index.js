@@ -92,26 +92,15 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (sender.tab) {
     if (msg.type === 'EMOTION_REQUEST') {
       fetchEmotionAnalysis(msg.text, msg.url).then(result => {
-        if (msg.previewMode) {
-          const type = result ? 'PREVIEW_EMOTION_RESULT' : 'PREVIEW_EMOTION_ERROR';
-          chrome.tabs.sendMessage(sender.tab.id, result ? { type, ...result } : { type });
-        } else {
-          const type = result ? 'EMOTION_RESULT' : 'EMOTION_ERROR';
-          chrome.tabs.sendMessage(sender.tab.id, result ? { type, ...result } : { type });
-        }
+        const type = result ? 'EMOTION_RESULT' : 'EMOTION_ERROR';
+        chrome.tabs.sendMessage(sender.tab.id, result ? { type, ...result } : { type });
       });
     }
 
     if (msg.type === 'LABEL_REQUEST') {
-      const url = msg.previewMode ? (msg.url ?? sender.tab.url) : sender.tab.url;
-      fetchSentenceLabels(msg.sentences, url, msg.articleLens).then(labels => {
-        if (msg.previewMode) {
-          const type = labels ? 'PREVIEW_LABEL_RESULT' : 'PREVIEW_LABEL_ERROR';
-          chrome.tabs.sendMessage(sender.tab.id, labels ? { type, labels } : { type });
-        } else {
-          const type = labels ? 'LABEL_RESULT' : 'LABEL_ERROR';
-          chrome.tabs.sendMessage(sender.tab.id, labels ? { type, labels } : { type });
-        }
+      fetchSentenceLabels(msg.sentences, sender.tab.url, msg.articleLens).then(labels => {
+        const type = labels ? 'LABEL_RESULT' : 'LABEL_ERROR';
+        chrome.tabs.sendMessage(sender.tab.id, labels ? { type, labels } : { type });
       });
     }
 
