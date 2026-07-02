@@ -209,8 +209,10 @@ export function applyPreviewStyles(container, settings, actions = {}) {
   article.style.lineHeight   = (s.typographyEnabled && s.lineHeight)    ? String(s.lineHeight) : '';
   article.style.wordSpacing  = (s.typographyEnabled && s.wordSpacing)   ? `${s.wordSpacing}em` : '';
   article.style.letterSpacing= (s.typographyEnabled && s.letterSpacing) ? `${s.letterSpacing}em` : '';
-  article.style.color        = (s.typographyEnabled && s.fontColor) ? s.fontColor : '';
-  article.style.background   = (s.typographyEnabled && s.bgColor)   ? s.bgColor   : '';
+  // Reader Mode overrides typography color and background
+  const isReaderMode = Boolean(actions?.autoOpenReaderMode);
+  article.style.color        = (s.typographyEnabled && s.fontColor && !isReaderMode) ? s.fontColor : '';
+  article.style.background   = (s.typographyEnabled && s.bgColor   && !isReaderMode) ? s.bgColor   : '';
 
   // Row shading
   container.classList.toggle('dra-pe-row-shading', Boolean(s.readingAidsEnabled && s.gradientRows));
@@ -219,7 +221,6 @@ export function applyPreviewStyles(container, settings, actions = {}) {
   updateRulerOverlay(container, Boolean(s.readingAidsEnabled && s.rulerActive));
 
   // Reader Mode preview: hide image placeholders, change background
-  const isReaderMode = Boolean(actions?.autoOpenReaderMode);
   container.classList.toggle('dra-pe-reader-mode-on', isReaderMode);
   container.style.background = isReaderMode ? '#f4f0e7' : '';
 }

@@ -2116,11 +2116,11 @@
     article.style.lineHeight = s.typographyEnabled && s.lineHeight ? String(s.lineHeight) : "";
     article.style.wordSpacing = s.typographyEnabled && s.wordSpacing ? `${s.wordSpacing}em` : "";
     article.style.letterSpacing = s.typographyEnabled && s.letterSpacing ? `${s.letterSpacing}em` : "";
-    article.style.color = s.typographyEnabled && s.fontColor ? s.fontColor : "";
-    article.style.background = s.typographyEnabled && s.bgColor ? s.bgColor : "";
+    const isReaderMode = Boolean(actions?.autoOpenReaderMode);
+    article.style.color = s.typographyEnabled && s.fontColor && !isReaderMode ? s.fontColor : "";
+    article.style.background = s.typographyEnabled && s.bgColor && !isReaderMode ? s.bgColor : "";
     container.classList.toggle("dra-pe-row-shading", Boolean(s.readingAidsEnabled && s.gradientRows));
     updateRulerOverlay(container, Boolean(s.readingAidsEnabled && s.rulerActive));
-    const isReaderMode = Boolean(actions?.autoOpenReaderMode);
     container.classList.toggle("dra-pe-reader-mode-on", isReaderMode);
     container.style.background = isReaderMode ? "#f4f0e7" : "";
   }
@@ -2381,6 +2381,14 @@
       el.style.display = el.dataset.peLens === lens ? "" : "none";
     });
   }
+  function syncColorInputsDisabled(root, disabled) {
+    ["#pe-font-color", "#pe-bg-color"].forEach((sel) => {
+      const el = root.querySelector(sel);
+      if (!el) return;
+      el.disabled = disabled;
+      el.closest(".dra-pe-color-row")?.classList.toggle("pe-disabled", disabled);
+    });
+  }
   function wireForm(root) {
     const container = root.querySelector(".dra-pe-form");
     const update = (key, val) => {
@@ -2428,6 +2436,7 @@
         case "pe-action-open-reader":
           if (!draft.actions) draft.actions = {};
           draft.actions.autoOpenReaderMode = el.checked;
+          syncColorInputsDisabled(root, el.checked);
           refreshPreview();
           break;
       }
@@ -2619,6 +2628,7 @@
     wireForm(root);
     root.querySelector("#pe-typo-sub").style.display = draft.settings.typographyEnabled ? "" : "none";
     root.querySelector("#pe-aids-sub").style.display = draft.settings.readingAidsEnabled ? "" : "none";
+    syncColorInputsDisabled(root, draft.actions?.autoOpenReaderMode ?? false);
     refreshPreview();
     setupRulerTracking(root);
     root.querySelector(".dra-pe-close").addEventListener("click", closePresetEditor);
