@@ -1834,6 +1834,7 @@
     },
     stem: {
       title: "Neural Networks Learn to Predict Protein Folding",
+      imagePlaceholders: [{ caption: "Protein Structure Diagram", position: 1 }],
       blocks: [
         "Protein folding is defined as the process by which a polypeptide chain assumes its functional three-dimensional structure. Understanding this mechanism has been a central challenge in structural biology for decades.",
         "The algorithm then applies a multi-layer attention mechanism to iteratively refine spatial coordinates. Subsequently, predicted distances between amino acid residues are used to constrain the final structure. This mechanism explains why the model outperforms classical approaches.",
@@ -1843,6 +1844,7 @@
     },
     humanities: {
       title: "The Role of Silence in Modernist Literature",
+      imagePlaceholders: [{ caption: "Annotated Manuscript Scan", position: 1 }],
       blocks: [
         "This paper argues that modernist writers strategically deployed silence as a rhetorical device to challenge the expressive limits of language itself. Rather than treating silence as absence, authors such as Woolf and Beckett reimagined it as a form of meaning-making.",
         "Historical records show that the modernist movement emerged in direct response to the trauma of World War I, as cited in several contemporary literary journals. The unprecedented scale of destruction left writers searching for new forms of expression.",
@@ -1852,6 +1854,7 @@
     },
     fiction: {
       title: "The Last Garden",
+      imagePlaceholders: [{ caption: "Garden Illustration", position: 1 }],
       blocks: [
         `"You shouldn't have come back," she said quietly, her voice barely audible above the rain. He stood in the doorway, water dripping from his coat, saying nothing for a long moment.`,
         "The room smelled of old books and dried lavender. A single candle flickered on the windowsill, casting long shadows across the faded wallpaper. Outside, the storm had settled into a steady, mournful rhythm.",
