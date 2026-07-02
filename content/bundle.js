@@ -2138,6 +2138,15 @@
   async function savePresets(presets) {
     return new Promise((resolve) => chrome.storage.sync.set({ draPresets: presets }, resolve));
   }
+  function normalizePresetName(name) {
+    return name.trim().toLowerCase();
+  }
+  function hasPresetName(presets, name, exceptId = null) {
+    const normalized = normalizePresetName(name);
+    return Object.values(presets.byId ?? {}).some(
+      (p) => p?.id !== exceptId && normalizePresetName(p?.name ?? "") === normalized
+    );
+  }
   function applySettingsLocally(settings, actions) {
     state.settings = { ...state.settings, ...settings };
     chrome.storage.sync.set({ draSettings: state.settings });
@@ -2486,13 +2495,23 @@
   }
   async function handleSave(root) {
     const nameEl = root.querySelector(".dra-pe-name-input");
+    const errorEl = root.querySelector(".dra-pe-name-error");
     const name = nameEl?.value.trim();
+    nameEl?.classList.remove("dra-pe-error");
+    errorEl?.classList.add("hidden");
     if (!name) {
       nameEl?.classList.add("dra-pe-error");
       nameEl?.focus();
       return;
     }
     const presets = await loadPresets();
+    const currentId = draft.mode === "modify" ? draft.presetId : null;
+    if (hasPresetName(presets, name, currentId)) {
+      nameEl?.classList.add("dra-pe-error");
+      errorEl?.classList.remove("hidden");
+      nameEl?.focus();
+      return;
+    }
     let id;
     if (draft.mode === "modify" && draft.presetId) {
       id = draft.presetId;
@@ -2584,6 +2603,7 @@
         <div class="dra-pe-name-group">
           <label class="dra-pe-name-label" for="dra-pe-name">Preset name</label>
           <input id="dra-pe-name" class="dra-pe-name-input" type="text" placeholder="My Preset" maxlength="60">
+          <span class="dra-pe-name-error hidden">Preset name already exists</span>
         </div>
         <div class="dra-pe-footer-btns">
           <button class="dra-pe-btn-cancel">Cancel</button>
@@ -2604,6 +2624,10 @@
     root.querySelector(".dra-pe-close").addEventListener("click", closePresetEditor);
     root.querySelector(".dra-pe-btn-cancel").addEventListener("click", closePresetEditor);
     root.querySelector(".dra-pe-btn-save").addEventListener("click", () => handleSave(root));
+    root.querySelector(".dra-pe-name-input").addEventListener("input", (e) => {
+      e.currentTarget.classList.remove("dra-pe-error");
+      root.querySelector(".dra-pe-name-error")?.classList.add("hidden");
+    });
     if (draft.name) root.querySelector(".dra-pe-name-input").value = draft.name;
     root.querySelector(".dra-pe-overlay").addEventListener("click", (e) => {
       if (e.target === e.currentTarget) closePresetEditor();

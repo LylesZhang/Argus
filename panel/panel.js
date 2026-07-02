@@ -49,6 +49,22 @@ const DEFAULT_SETTINGS = {
   typewriterSpeed:      5,
 };
 
+const PRESET_SETTING_KEYS = [
+  'typographyEnabled', 'fontFamily', 'boldBeginning', 'fontSize', 'lineHeight',
+  'wordSpacing', 'letterSpacing', 'fontColor', 'bgColor',
+  'typewriterSpeed',
+  'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation',
+  'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
+  'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
+  'sentenceLabels', 'sentenceLabelsMode', 'sentenceLabelsLens',
+  'labelCoreFactColor', 'labelContextColor', 'labelQuoteColor',
+  'labelConceptColor', 'labelMechanismColor', 'labelConstraintColor',
+  'labelThesisColor', 'labelEvidenceColor', 'labelExplanationColor',
+  'labelDialogueColor', 'labelPlotTurnColor', 'labelSettingColor',
+  'panelSize',
+];
+const PRESET_SETTING_KEY_SET = new Set(PRESET_SETTING_KEYS);
+
 let settings = { ...DEFAULT_SETTINGS };
 let sectionCollapseState = {};
 let effectsWarningDisabled = false;
@@ -109,7 +125,7 @@ function savePanelSize(size) {
   settings = { ...settings, panelSize: nextSize };
   applyPanelSize(nextSize);
   chrome.storage.sync.set({ draSettings: settings });
-  clearActivePreset();
+  clearActivePresetForSettings({ panelSize: nextSize });
 }
 
 function calculateActiveEffectScore(nextSettings = settings) {
@@ -250,7 +266,7 @@ function broadcast(changed) {
   settings = { ...settings, ...changed };
   chrome.storage.sync.set({ draSettings: settings });
   chrome.runtime.sendMessage({ type: 'SETTINGS_CHANGED', payload: changed });
-  clearActivePreset();
+  clearActivePresetForSettings(changed);
   maybeShowEffectsWarning(changed);
 }
 
@@ -694,6 +710,7 @@ function init() {
   });
 
   document.getElementById('toggle-immersive-reader').addEventListener('change', e => {
+    clearActivePreset();
     chrome.runtime.sendMessage({
       type: e.target.checked ? 'OPEN_IMMERSIVE_READER' : 'CLOSE_IMMERSIVE_READER',
     });
@@ -705,6 +722,11 @@ chrome.runtime.onMessage.addListener((msg) => {
   const toggle = document.getElementById('toggle-immersive-reader');
   if (toggle) toggle.checked = Boolean(msg.active);
   const inReader = Boolean(msg.active);
+  if (localPresets.activeId) {
+    const activePreset = localPresets.byId[localPresets.activeId];
+    const presetWantsReader = Boolean(activePreset?.actions?.autoOpenReaderMode);
+    if (presetWantsReader !== inReader) clearActivePreset();
+  }
   document.getElementById('font-color').disabled = inReader;
   document.getElementById('bg-color').disabled   = inReader;
   document.getElementById('font-color').closest('.control-block').classList.toggle('disabled', inReader);
@@ -875,6 +897,22 @@ function clearActivePreset() {
   renderPresetList();
 }
 
+function clearActivePresetForSettings(changed) {
+  if (!Object.keys(changed).some(key => PRESET_SETTING_KEY_SET.has(key))) return;
+  clearActivePreset();
+}
+
+function normalizePresetName(name) {
+  return name.trim().toLowerCase();
+}
+
+function hasPresetName(name, exceptId = null) {
+  const normalized = normalizePresetName(name);
+  return Object.values(localPresets.byId).some(p =>
+    p?.id !== exceptId && normalizePresetName(p?.name ?? '') === normalized
+  );
+}
+
 function renderPresetList() {
   const list = document.getElementById('preset-list');
   if (!list) return;
@@ -922,12 +960,16 @@ function applyPreset(id) {
   localPresets.activeId = id;
   chrome.storage.sync.set({ draPresets: localPresets });
   renderPresetList();
-  settings = { ...settings, ...preset.settings };
+  const presetSettings = Object.fromEntries(
+    PRESET_SETTING_KEYS.map(key => [key, preset.settings?.[key]]).filter(([, value]) => value !== undefined)
+  );
+  const runtimeReset = { typewriterActive: false, autoScrollActive: false };
+  settings = { ...settings, ...presetSettings, ...runtimeReset };
   syncUI();
   chrome.storage.sync.set({ draSettings: settings });
   chrome.runtime.sendMessage({
     type: 'APPLY_PRESET',
-    settings: preset.settings,
+    settings: { ...presetSettings, ...runtimeReset },
     actions: preset.actions ?? {},
   });
 }
@@ -951,6 +993,7 @@ function initPresetManager() {
   const saveNow  = document.getElementById('preset-save-now');
   const createNew= document.getElementById('preset-create-new');
   const nameInput= document.getElementById('preset-save-now-name');
+  const nameError= document.getElementById('preset-save-now-error');
   const confirm  = document.getElementById('preset-save-now-confirm');
   const cancel   = document.getElementById('preset-save-now-cancel');
 
@@ -965,10 +1008,14 @@ function initPresetManager() {
     nameInput?.classList.remove('hidden');
     confirm?.classList.remove('hidden');
     cancel?.classList.remove('hidden');
+    nameError?.classList.add('hidden');
+    nameInput?.classList.remove('error');
     nameInput?.focus();
   };
   const hideSaveNowInput = () => {
     nameInput?.classList.add('hidden');
+    nameError?.classList.add('hidden');
+    nameInput?.classList.remove('error');
     confirm?.classList.add('hidden');
     cancel?.classList.add('hidden');
     if (nameInput) nameInput.value = '';
@@ -980,15 +1027,25 @@ function initPresetManager() {
   });
 
   cancel?.addEventListener('click', hideSaveNowInput);
+  nameInput?.addEventListener('input', () => {
+    nameInput.classList.remove('error');
+    nameError?.classList.add('hidden');
+  });
 
   confirm?.addEventListener('click', () => {
     const name = nameInput?.value.trim();
     if (!name) { nameInput?.focus(); return; }
+    if (hasPresetName(name)) {
+      nameInput?.classList.add('error');
+      nameError?.classList.remove('hidden');
+      nameInput?.focus();
+      return;
+    }
     const id = 'preset_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
     const preset = {
       id, name,
       settings: Object.fromEntries(
-        Object.keys(DEFAULT_SETTINGS).filter(k => k !== 'panelSize').concat(['panelSize']).map(k => [k, settings[k]])
+        PRESET_SETTING_KEYS.map(k => [k, settings[k]])
       ),
       createdAt: Date.now(), updatedAt: Date.now(),
     };

@@ -955,6 +955,28 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   letter-spacing: 0;
   text-transform: none;
 }
+.preset-name-input.error {
+  border-color: #ef4444;
+}
+
+.preset-name-error {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  width: max-content;
+  max-width: 220px;
+  padding: 4px 8px;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  background: #fff;
+  color: #dc2626;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: 0 4px 12px rgba(30,27,75,0.1);
+  z-index: 11;
+}
 
 .preset-save-now-confirm {
   padding: 4px 10px;
