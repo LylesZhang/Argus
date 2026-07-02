@@ -403,6 +403,8 @@ export function startTypewriterFromBeginning() {
       currentIndex: -1,
       revealedChars: 0,
       tickTimer: null,
+      continueHintTimer: null,
+      showContinueHint: false,
     };
     scrollEl?.classList.add('dra-tw-scroll-pad');
   }

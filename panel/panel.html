@@ -328,17 +328,16 @@
       <div class="section-label">
         <span>Presets</span>
         <div class="preset-add-wrap">
+          <!-- inline Save Now input (hidden until triggered) -->
+          <input type="text" class="preset-name-input hidden" id="preset-save-now-name" placeholder="Preset name" maxlength="60">
+          <button class="preset-save-now-confirm hidden" id="preset-save-now-confirm">Save</button>
+          <button class="preset-save-now-cancel  hidden" id="preset-save-now-cancel">✕</button>
           <button class="preset-add-btn" id="preset-add-btn" aria-label="Add preset">＋</button>
           <div class="preset-add-menu hidden" id="preset-add-menu">
             <button class="preset-add-menu-item" id="preset-save-now">Save Now</button>
             <button class="preset-add-menu-item" id="preset-create-new">Create New</button>
           </div>
         </div>
-      </div>
-      <div class="preset-save-now-bar hidden" id="preset-save-now-bar">
-        <input type="text" class="preset-name-input" id="preset-save-now-name" placeholder="Preset name" maxlength="60">
-        <button class="preset-save-now-confirm" id="preset-save-now-confirm">Save</button>
-        <button class="preset-save-now-cancel"  id="preset-save-now-cancel">✕</button>
       </div>
       <div class="preset-list" id="preset-list">
         <!-- populated by panel.js -->

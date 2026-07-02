@@ -3,6 +3,7 @@ import { LENS_RULES } from './labels.js';
 import { matchEmotionWords } from './emotions.js';
 import { DEFAULT_TRANSITION_WORDS } from './transitions.js';
 import { applyBionicToText } from './bionic.js';
+import { injectOpenDyslexicFont } from './typography.js';
 
 function escapeHTML(text) {
   return text
@@ -11,7 +12,7 @@ function escapeHTML(text) {
     .replace(/'/g, '&#039;');
 }
 
-function getSentenceLabels(blocks, lens) {
+export function getSentenceLabels(blocks, lens) {
   const rules = LENS_RULES[lens] ?? LENS_RULES.news;
   const allSentences = blocks.flatMap(b => splitSentences(b.trim()).filter(Boolean));
   const labels = [];
@@ -24,10 +25,10 @@ function getSentenceLabels(blocks, lens) {
 }
 
 function renderSentenceText(sentence, settings, emotionHighlights, transitionWords) {
-  const text = settings.boldBeginning ? applyBionicToText(sentence) : escapeHTML(sentence);
-  if (!settings.readingAidsEnabled) return text;
+  if (!settings.readingAidsEnabled) {
+    return settings.boldBeginning ? applyBionicToText(sentence) : escapeHTML(sentence);
+  }
 
-  // Apply emotion word highlighting using character-position approach
   const lower = sentence.toLowerCase();
   const spans = [];
 
@@ -50,7 +51,9 @@ function renderSentenceText(sentence, settings, emotionHighlights, transitionWor
     }
   }
 
-  if (!spans.length) return settings.boldBeginning ? applyBionicToText(sentence) : escapeHTML(sentence);
+  if (!spans.length) {
+    return settings.boldBeginning ? applyBionicToText(sentence) : escapeHTML(sentence);
+  }
 
   spans.sort((a, b) => a.start - b.start || b.end - a.end);
   const deduped = [];
@@ -72,17 +75,29 @@ function renderSentenceText(sentence, settings, emotionHighlights, transitionWor
 }
 
 // Render all blocks of a sample article into HTML, applying draft settings.
-// Returns an HTML string to inject into the preview pane.
-export function renderPreviewArticle(article, settings, wordLists) {
+// externalLabels/externalEmotions: pass AI-generated results to override local matching.
+export function renderPreviewArticle(article, settings, wordLists, { externalEmotions, externalLabels } = {}) {
   const { blocks } = article;
   const lens = settings.sentenceLabelsLens ?? 'news';
-  const { allSentences, labels } = (settings.readingAidsEnabled && settings.sentenceLabels)
+
+  const useAILabels = settings.readingAidsEnabled && settings.sentenceLabels
+    && settings.sentenceLabelsMode === 'ai' && externalLabels;
+  const useLocalLabels = settings.readingAidsEnabled && settings.sentenceLabels
+    && settings.sentenceLabelsMode !== 'ai';
+
+  const { allSentences, labels } = (useAILabels || useLocalLabels)
     ? getSentenceLabels(blocks, lens)
     : { allSentences: [], labels: [] };
 
-  const emotionHighlights = (settings.readingAidsEnabled && settings.emotionColor)
-    ? matchEmotionWords(blocks.join(' '), wordLists)
-    : [];
+  const finalLabels = useAILabels ? externalLabels : labels;
+
+  const useAIEmotion = settings.readingAidsEnabled && settings.emotionColor
+    && settings.emotionMode === 'ai' && externalEmotions;
+  const emotionHighlights = useAIEmotion
+    ? externalEmotions
+    : (settings.readingAidsEnabled && settings.emotionColor)
+      ? matchEmotionWords(blocks.join(' '), wordLists)
+      : [];
 
   const transitionWords = (settings.readingAidsEnabled && settings.transitionAnimation)
     ? (wordLists.transition ?? DEFAULT_TRANSITION_WORDS)
@@ -94,10 +109,10 @@ export function renderPreviewArticle(article, settings, wordLists) {
   ]);
 
   let sIdx = 0;
-  const paragraphs = blocks.map(block => {
+  const paragraphs = blocks.map((block, blockIdx) => {
     const sentences = splitSentences(block.trim()).filter(Boolean);
     const html = sentences.map(sentence => {
-      const labelEntry = labels.find(l => l.index === sIdx);
+      const labelEntry = finalLabels.find(l => l.index === sIdx);
       const labelCls = (labelEntry && LABEL_TYPES.has(labelEntry.type))
         ? ` dra-label-${labelEntry.type}`
         : '';
@@ -105,15 +120,60 @@ export function renderPreviewArticle(article, settings, wordLists) {
       const inner = renderSentenceText(sentence, settings, emotionHighlights, transitionWords);
       return `<span class="dra-sentence${labelCls}">${inner}</span>`;
     }).join(' ');
-    return `<p>${html}</p>`;
+
+    // Insert image placeholder after first paragraph for Reader Mode demo
+    const imgPlaceholder = (article.imagePlaceholders ?? []).find(p => p.position === blockIdx);
+    const imgHtml = imgPlaceholder
+      ? `<div class="dra-pe-img-placeholder">📷 <em>${escapeHTML(imgPlaceholder.caption)}</em></div>`
+      : '';
+    return `<p>${html}</p>${imgHtml}`;
   });
 
   return paragraphs.join('');
 }
 
-// Apply CSS custom-property variables for colors to the given container element.
-export function applyPreviewStyles(container, settings) {
+// Manage ruler wrap visibility only — position is set separately via updateRulerPosition.
+function updateRulerOverlay(container, show) {
+  let wrap = container.querySelector('.dra-pe-ruler-wrap');
+  if (!show) { wrap?.remove(); return; }
+  if (wrap) return;
+  wrap = document.createElement('div');
+  wrap.className = 'dra-pe-ruler-wrap';
+  wrap.innerHTML = `
+    <div class="dra-pe-ruler-top"></div>
+    <div class="dra-pe-ruler-window"></div>
+    <div class="dra-pe-ruler-bottom"></div>`;
+  container.appendChild(wrap);
+}
+
+// Update ruler position — called both from mousemove and for initial center placement.
+// Uses absolute pixel heights from wrap.clientHeight to avoid any CSS class conflicts.
+export function updateRulerPosition(container, localY, halfWin) {
+  const wrap = container.querySelector('.dra-pe-ruler-wrap');
+  if (!wrap) return;
+  // translateY keeps the ruler anchored to the visible viewport even when content scrolls
+  wrap.style.transform = `translateY(${container.scrollTop || 0}px)`;
+  const totalH  = container.clientHeight || 400;
+  const topH    = Math.max(0, Math.min(localY - halfWin, totalH));
+  const winH    = Math.min(halfWin * 2, totalH - topH);
+  const botT    = topH + winH;
+  const botH    = Math.max(0, totalH - botT);
+
+  wrap.querySelector('.dra-pe-ruler-top').style.cssText =
+    `position:absolute;left:0;right:0;top:0;height:${topH}px;background:rgba(0,0,0,0.38)`;
+  wrap.querySelector('.dra-pe-ruler-window').style.cssText =
+    `position:absolute;left:0;right:0;top:${topH}px;height:${winH}px;`
+    + `background:rgba(255,243,180,0.18);`
+    + `border-top:1px solid rgba(200,170,0,0.3);border-bottom:1px solid rgba(200,170,0,0.3)`;
+  wrap.querySelector('.dra-pe-ruler-bottom').style.cssText =
+    `position:absolute;left:0;right:0;top:${botT}px;height:${botH}px;background:rgba(0,0,0,0.38)`;
+}
+
+// Apply CSS custom-property variables and visual state to the preview container.
+export function applyPreviewStyles(container, settings, actions = {}) {
   const s = settings;
+
+  // Emotion/transition/label colors as CSS custom properties
   container.style.setProperty('--dra-positive',   s.emotionPositiveColor ?? '#27ae60');
   container.style.setProperty('--dra-negative',   s.emotionNegativeColor ?? '#e74c3c');
   container.style.setProperty('--dra-complex',    s.emotionComplexColor  ?? '#8e44ad');
@@ -139,11 +199,27 @@ export function applyPreviewStyles(container, settings) {
 
   const article = container.querySelector('.dra-pe-article');
   if (!article) return;
-  article.style.fontFamily   = (s.typographyEnabled && s.fontFamily)    ? s.fontFamily            : '';
-  article.style.fontSize     = (s.typographyEnabled && s.fontSize)      ? `${s.fontSize}px`       : '';
-  article.style.lineHeight   = (s.typographyEnabled && s.lineHeight)    ? String(s.lineHeight)    : '';
-  article.style.wordSpacing  = (s.typographyEnabled && s.wordSpacing)   ? `${s.wordSpacing}em`    : '';
-  article.style.letterSpacing= (s.typographyEnabled && s.letterSpacing) ? `${s.letterSpacing}em`  : '';
-  article.style.color        = '';
-  article.style.background   = '';
+
+  // Typography
+  if (s.typographyEnabled && s.fontFamily?.includes('OpenDyslexic')) {
+    injectOpenDyslexicFont();
+  }
+  article.style.fontFamily   = (s.typographyEnabled && s.fontFamily)    ? s.fontFamily         : '';
+  article.style.fontSize     = (s.typographyEnabled && s.fontSize)      ? `${s.fontSize}px`    : '';
+  article.style.lineHeight   = (s.typographyEnabled && s.lineHeight)    ? String(s.lineHeight) : '';
+  article.style.wordSpacing  = (s.typographyEnabled && s.wordSpacing)   ? `${s.wordSpacing}em` : '';
+  article.style.letterSpacing= (s.typographyEnabled && s.letterSpacing) ? `${s.letterSpacing}em` : '';
+  article.style.color        = (s.typographyEnabled && s.fontColor) ? s.fontColor : '';
+  article.style.background   = (s.typographyEnabled && s.bgColor)   ? s.bgColor   : '';
+
+  // Row shading
+  container.classList.toggle('dra-pe-row-shading', Boolean(s.readingAidsEnabled && s.gradientRows));
+
+  // Reading ruler: only manage visibility here; position is handled by presetEditor
+  updateRulerOverlay(container, Boolean(s.readingAidsEnabled && s.rulerActive));
+
+  // Reader Mode preview: hide image placeholders, change background
+  const isReaderMode = Boolean(actions?.autoOpenReaderMode);
+  container.classList.toggle('dra-pe-reader-mode-on', isReaderMode);
+  container.style.background = isReaderMode ? '#f4f0e7' : '';
 }

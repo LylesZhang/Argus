@@ -892,6 +892,9 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 .preset-add-wrap {
   margin-left: auto;
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 5px;
 }
 
 .preset-add-btn {
@@ -937,18 +940,11 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 }
 .preset-add-menu-item:hover { background: #f4f4f9; }
 
-.preset-save-now-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px 4px;
-}
-
 .preset-name-input {
-  flex: 1;
+  width: 110px;
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 4px 8px;
+  padding: 3px 7px;
   font: inherit;
   font-size: 12px;
 }

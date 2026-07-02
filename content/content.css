@@ -623,6 +623,23 @@ html.dra-reader-open body {
   flex-direction: column;
 }
 
+#dra-preset-editor .dra-pe-preview-meta {
+  padding: 8px 0 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #9899ab;
+  letter-spacing: 0.04em;
+}
+
+#dra-preset-editor .dra-pe-analyzing {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(90,174,169,0.1);
+  border-radius: 6px;
+  font-size: 12px;
+  color: #5aaea9;
+}
+
 #dra-preset-editor .dra-pe-preview-label {
   padding: 10px 18px 4px;
   font-size: 10px;
@@ -641,6 +658,7 @@ html.dra-reader-open body {
   line-height: 1.7;
   color: #2c2c2c;
   overflow-y: auto;
+  position: relative;
 }
 
 #dra-preset-editor .dra-pe-preview-title {
@@ -653,6 +671,81 @@ html.dra-reader-open body {
 #dra-preset-editor .dra-pe-preview-body p {
   margin: 0 0 1em;
 }
+
+/* Row shading in preview */
+#dra-preset-editor .dra-pe-row-shading .dra-pe-article p {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--dra-row-shading, #bfb3d0) 18%, transparent) 0,
+    color-mix(in srgb, var(--dra-row-shading, #bfb3d0) 18%, transparent) 1lh,
+    transparent 1lh,
+    transparent 2lh
+  );
+}
+
+/* Image placeholder for Reader Mode demo */
+#dra-preset-editor .dra-pe-img-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 14px 16px;
+  background: #f0f0f5;
+  border-radius: 6px;
+  color: #888;
+  font-size: 13px;
+  font-style: normal;
+}
+#dra-preset-editor .dra-pe-row-shading-on .dra-pe-img-placeholder,
+#dra-preset-editor .dra-pe-reader-mode-on .dra-pe-img-placeholder {
+  display: none;
+}
+
+/* Static reading ruler simulation */
+#dra-preset-editor .dra-pe-ruler-wrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+#dra-preset-editor .dra-pe-ruler-top,
+#dra-preset-editor .dra-pe-ruler-bottom {
+  position: absolute;
+  left: 0; right: 0;
+  background: rgba(0, 0, 0, 0.28);
+}
+#dra-preset-editor .dra-pe-ruler-top    { top: 0; height: 42%; }
+#dra-preset-editor .dra-pe-ruler-bottom { bottom: 0; height: 42%; }
+#dra-preset-editor .dra-pe-ruler-window {
+  position: absolute;
+  left: 0; right: 0;
+  top: 42%; height: 16%;
+  background: rgba(255, 243, 180, 0.14);
+  border-top: 1px solid rgba(200, 170, 0, 0.2);
+  border-bottom: 1px solid rgba(200, 170, 0, 0.2);
+}
+
+/* mode-btn styling scoped to preset editor */
+#dra-preset-editor .mode-pill {
+  display: flex;
+  border: 1px solid #e0e0ea;
+  border-radius: 7px;
+  overflow: hidden;
+  background: #fff;
+  flex-shrink: 0;
+}
+#dra-preset-editor .mode-btn {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #9899ab;
+  transition: background 0.15s, color 0.15s;
+}
+#dra-preset-editor .mode-btn:hover:not(.active) { background: #f4f4f9; }
+#dra-preset-editor .mode-btn.active { background: #5aaea9; color: #fff; }
 
 /* Form controls */
 #dra-preset-editor .dra-pe-section {
@@ -667,6 +760,12 @@ html.dra-reader-open body {
   letter-spacing: 0.08em;
   color: #1e1b4b;
   border-top: 1px solid #e0e0ea;
+}
+
+#dra-preset-editor .pe-sub-items {
+  border-left: 2px solid #e0e0ea;
+  margin: 2px 18px 4px 26px;
+  padding-left: 6px;
 }
 
 #dra-preset-editor .dra-pe-section:first-child .dra-pe-section-title {
@@ -834,7 +933,3 @@ html.dra-reader-open body {
 #dra-preset-editor .dra-pe-emotion-complex  { color: var(--dra-complex);  font-weight: 500; }
 #dra-preset-editor .dra-pe-transition-word  { color: #5aaea9; font-weight: 600; }
 
-#dra-preset-editor .dra-sentence[class*="dra-label-"] {
-  border-bottom: 2px solid currentColor;
-  padding-bottom: 1px;
-}

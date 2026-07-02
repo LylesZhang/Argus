@@ -5,6 +5,7 @@
 export const SAMPLE_ARTICLES = {
   news: {
     title: 'City Council Approves New Climate Action Plan',
+    imagePlaceholders: [{ caption: 'City Council Meeting', position: 1 }],
     blocks: [
       'The city council unanimously approved a landmark climate action plan on Tuesday, declaring a full transition to renewable energy by 2035. Officials confirmed the measure passed after months of tense deliberation, marking a triumph for environmental advocates who celebrated the victory outside city hall.',
       'However, critics argue the timeline is too ambitious and may devastate local industries. "This decision will destroy thousands of jobs," warned opposition leader Sarah Kim. "We admire the hope behind it, but fear the grief it could bring to working families."',

@@ -933,7 +933,6 @@ function initPresetManager() {
 
   const addBtn   = document.getElementById('preset-add-btn');
   const addMenu  = document.getElementById('preset-add-menu');
-  const saveBar  = document.getElementById('preset-save-now-bar');
   const saveNow  = document.getElementById('preset-save-now');
   const createNew= document.getElementById('preset-create-new');
   const nameInput= document.getElementById('preset-save-now-name');
@@ -947,16 +946,25 @@ function initPresetManager() {
 
   document.addEventListener('click', () => addMenu?.classList.add('hidden'));
 
+  const showSaveNowInput = () => {
+    nameInput?.classList.remove('hidden');
+    confirm?.classList.remove('hidden');
+    cancel?.classList.remove('hidden');
+    nameInput?.focus();
+  };
+  const hideSaveNowInput = () => {
+    nameInput?.classList.add('hidden');
+    confirm?.classList.add('hidden');
+    cancel?.classList.add('hidden');
+    if (nameInput) nameInput.value = '';
+  };
+
   saveNow?.addEventListener('click', () => {
     addMenu?.classList.add('hidden');
-    saveBar?.classList.remove('hidden');
-    nameInput?.focus();
+    showSaveNowInput();
   });
 
-  cancel?.addEventListener('click', () => {
-    saveBar?.classList.add('hidden');
-    if (nameInput) nameInput.value = '';
-  });
+  cancel?.addEventListener('click', hideSaveNowInput);
 
   confirm?.addEventListener('click', () => {
     const name = nameInput?.value.trim();
@@ -967,7 +975,6 @@ function initPresetManager() {
       settings: Object.fromEntries(
         Object.keys(DEFAULT_SETTINGS).filter(k => k !== 'panelSize').concat(['panelSize']).map(k => [k, settings[k]])
       ),
-      actions: { autoOpenReaderMode: false, autoStartTypewriterFromBeginning: false },
       createdAt: Date.now(), updatedAt: Date.now(),
     };
     localPresets.byId[id] = preset;
@@ -975,8 +982,7 @@ function initPresetManager() {
     localPresets.activeId = id;
     chrome.storage.sync.set({ draPresets: localPresets });
     renderPresetList();
-    saveBar?.classList.add('hidden');
-    if (nameInput) nameInput.value = '';
+    hideSaveNowInput();
   });
 
   createNew?.addEventListener('click', () => {

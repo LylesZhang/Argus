@@ -1,9 +1,9 @@
 import { DEFAULT_SETTINGS } from '../settings.js';
 import { state } from '../state.js';
 import { render } from '../render.js';
-import { refreshImmersiveReader, openImmersiveReader, startTypewriterFromBeginning } from './immersiveReader.js';
+import { refreshImmersiveReader, openImmersiveReader } from './immersiveReader.js';
 import { SAMPLE_ARTICLES } from './sampleArticles.js';
-import { renderPreviewArticle, applyPreviewStyles } from './presetPreviewRender.js';
+import { renderPreviewArticle, applyPreviewStyles, updateRulerPosition } from './presetPreviewRender.js';
 
 const EDITOR_ID = 'dra-preset-editor';
 
@@ -30,12 +30,47 @@ function applySettingsLocally(settings, actions) {
   chrome.storage.sync.set({ draSettings: state.settings });
   render();
   refreshImmersiveReader();
-  if (actions?.autoOpenReaderMode) {
-    openImmersiveReader();
-    if (actions?.autoStartTypewriterFromBeginning) {
-      startTypewriterFromBeginning();
-    }
+  if (actions?.autoOpenReaderMode) openImmersiveReader();
+}
+
+// ── AI preview cache ───────────────────────────────────────────────────
+
+let previewAICache = { emotion: null, labels: null };
+let aiPreviewListener = null;
+
+function requestPreviewAI(type) {
+  const lens   = draft?.settings?.sentenceLabelsLens ?? 'news';
+  const article = SAMPLE_ARTICLES[lens] ?? SAMPLE_ARTICLES.news;
+  const text   = article.blocks.join(' ');
+  if (type === 'emotion') {
+    chrome.runtime.sendMessage({
+      type: 'EMOTION_REQUEST', previewMode: true,
+      url: `preview://${lens}`, text,
+    });
+  } else {
+    const sentences = article.blocks.flatMap(b =>
+      b.trim().split(/(?<=[.!?])\s+(?=[A-Z])/).filter(Boolean)
+    );
+    chrome.runtime.sendMessage({
+      type: 'LABEL_REQUEST', previewMode: true,
+      sentences, articleLens: lens,
+    });
   }
+}
+
+function ensureAIPreviewListener() {
+  if (aiPreviewListener) return;
+  aiPreviewListener = (msg) => {
+    if (msg.type === 'PREVIEW_EMOTION_RESULT') {
+      previewAICache.emotion = msg.highlights ?? [];
+      refreshPreview();
+    }
+    if (msg.type === 'PREVIEW_LABEL_RESULT') {
+      previewAICache.labels = msg.labels ?? [];
+      refreshPreview();
+    }
+  };
+  chrome.runtime.onMessage.addListener(aiPreviewListener);
 }
 
 // ── Draft state ────────────────────────────────────────────────────────
@@ -55,8 +90,8 @@ function initDraft(mode, { currentSettings, preset } = {}) {
     name: mode === 'modify' ? preset.name : '',
     settings: s,
     actions: mode === 'modify'
-      ? { ...preset.actions }
-      : { autoOpenReaderMode: false, autoStartTypewriterFromBeginning: false },
+      ? { autoOpenReaderMode: preset.actions?.autoOpenReaderMode ?? false }
+      : { autoOpenReaderMode: false },
   };
 }
 
@@ -65,7 +100,7 @@ const PRESET_KEYS = [
   'wordSpacing', 'letterSpacing', 'fontColor', 'bgColor',
   'typewriterSpeed',
   'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation',
-  'rulerActive', 'rulerWindowLines', 'autoScrollActive', 'autoScrollSpeed',
+  'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
   'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
   'sentenceLabels', 'sentenceLabelsMode', 'sentenceLabelsLens',
   'labelCoreFactColor', 'labelContextColor', 'labelQuoteColor',
@@ -80,13 +115,51 @@ const PRESET_KEYS = [
 function refreshPreview() {
   const root = document.getElementById(EDITOR_ID);
   if (!root || !draft) return;
-  const lens = draft.settings.sentenceLabelsLens ?? 'news';
+  const s = draft.settings;
+  const lens    = s.sentenceLabelsLens ?? 'news';
   const article = SAMPLE_ARTICLES[lens] ?? SAMPLE_ARTICLES.news;
   const previewBody = root.querySelector('.dra-pe-preview-body');
   if (!previewBody) return;
-  previewBody.innerHTML = `<h3 class="dra-pe-preview-title">${escHTML(article.title)}</h3>
-    <div class="dra-pe-article">${renderPreviewArticle(article, draft.settings, state.wordLists)}</div>`;
-  applyPreviewStyles(previewBody, draft.settings);
+
+  // Trigger AI requests when needed and cache not yet available
+  if (s.readingAidsEnabled && s.emotionColor && s.emotionMode === 'ai' && !previewAICache.emotion) {
+    ensureAIPreviewListener();
+    requestPreviewAI('emotion');
+  }
+  if (s.readingAidsEnabled && s.sentenceLabels && s.sentenceLabelsMode === 'ai' && !previewAICache.labels) {
+    ensureAIPreviewListener();
+    requestPreviewAI('labels');
+  }
+
+  const html = renderPreviewArticle(article, s, state.wordLists, {
+    externalEmotions: (s.emotionMode === 'ai') ? previewAICache.emotion : null,
+    externalLabels:   (s.sentenceLabelsMode === 'ai') ? previewAICache.labels : null,
+  });
+
+  previewBody.innerHTML = `
+    <div class="dra-pe-preview-meta">Previewing: ${lens.charAt(0).toUpperCase() + lens.slice(1)} article</div>
+    <h3 class="dra-pe-preview-title">${escHTML(article.title)}</h3>
+    <div class="dra-pe-article" style="position:relative">${html}</div>`;
+
+  // Show "Analyzing..." indicator while waiting for AI
+  const needsAIEmotion = s.emotionColor && s.emotionMode === 'ai' && !previewAICache.emotion;
+  const needsAILabels  = s.sentenceLabels && s.sentenceLabelsMode === 'ai' && !previewAICache.labels;
+  if (needsAIEmotion || needsAILabels) {
+    previewBody.insertAdjacentHTML('beforeend',
+      '<div class="dra-pe-analyzing">Analyzing with AI…</div>');
+  }
+
+  applyPreviewStyles(previewBody, s, draft.actions);
+  filterLabelColors(root, lens);
+
+  // Position ruler: use last mouse position, fall back to center on first render
+  if (s.readingAidsEnabled && s.rulerActive) {
+    const fontPx  = Number(s.fontSize) || 15;
+    const lineH   = Number(s.lineHeight) || 1.7;
+    const halfWin = Math.round(fontPx * lineH * (s.rulerWindowLines ?? 1.5) / 2);
+    const localY  = _lastRulerLocalY ?? previewBody.clientHeight / 2;
+    updateRulerPosition(previewBody, localY, halfWin);
+  }
 }
 
 function escHTML(s) {
@@ -150,10 +223,8 @@ function section(title, content) {
 
 function buildFormHTML() {
   const s = draft.settings;
-  const a = draft.actions;
 
-  const typography = [
-    toggle('pe-toggle-typography', 'typographyEnabled', 'Enable Typography'),
+  const typographySub = [
     selectInput('pe-font-family', 'fontFamily', 'Font Family', [
       ['','System Default'],['Georgia','Georgia'],['Arial','Arial'],
       ['Verdana','Verdana'],['OpenDyslexic, sans-serif','OpenDyslexic'],
@@ -166,28 +237,24 @@ function buildFormHTML() {
     colorInput('pe-font-color', 'fontColor', 'Text Color'),
     colorInput('pe-bg-color', 'bgColor', 'Background'),
   ].join('');
+  const typography = toggle('pe-toggle-typography', 'typographyEnabled', 'Enable Typography')
+    + `<div class="pe-sub-items" id="pe-typo-sub">${typographySub}</div>`;
 
-  const actionChecked = (k) => a[k] ? 'checked' : '';
+  const openReaderChecked = draft.actions?.autoOpenReaderMode ? 'checked' : '';
   const readerMode = [
     `<label class="dra-pe-toggle-row">
-      <input type="checkbox" id="pe-action-open-reader" ${actionChecked('autoOpenReaderMode')}>
+      <label class="toggle-switch"><input type="checkbox" id="pe-action-open-reader" ${openReaderChecked}><span class="track"></span></label>
       <span class="dra-pe-toggle-label">Auto-open Reader Mode when applied</span>
-    </label>`,
-    `<label class="dra-pe-toggle-row">
-      <input type="checkbox" id="pe-action-typewriter" ${actionChecked('autoStartTypewriterFromBeginning')}>
-      <span class="dra-pe-toggle-label">Start Typewriter from beginning</span>
     </label>`,
     slider('pe-typewriter-speed', 'typewriterSpeed', 'Typewriter Speed', 1, 10, 1),
   ].join('');
 
-  const aids = [
-    toggle('pe-toggle-reading-aids', 'readingAidsEnabled', 'Enable Reading Aids'),
+  const aidsSub = [
     toggle('pe-toggle-gradient', 'gradientRows', 'Row Shading'),
     colorInput('pe-row-shading-color', 'rowShadingColor', 'Row Shading Color'),
     toggle('pe-toggle-transition', 'transitionAnimation', 'Transition Words'),
     toggle('pe-toggle-ruler', 'rulerActive', 'Reading Ruler'),
     slider('pe-ruler-size', 'rulerWindowLines', 'Ruler Width', 1, 10, 0.5, ' lines'),
-    toggle('pe-toggle-auto-scroll', 'autoScrollActive', 'Auto Scroll'),
     slider('pe-auto-scroll-speed', 'autoScrollSpeed', 'Auto Scroll Speed', 1, 10, 1),
     // Emotion Colors
     `<div class="dra-pe-row dra-pe-ai-row">
@@ -202,33 +269,43 @@ function buildFormHTML() {
       ${toggle('pe-toggle-labels', 'sentenceLabels', 'Sentence Labels')}
       ${modePill('pe-labels-mode-pill', 'sentenceLabels', 'sentenceLabelsMode')}
     </div>`,
-    selectInput('pe-label-lens', 'sentenceLabelsLens', 'Analysis Type', [
+    selectInput('pe-label-lens', 'sentenceLabelsLens', 'Article Type (sets preview article)', [
       ['news','News'],['stem','Academic – STEM'],
       ['humanities','Academic – Humanities'],['fiction','Fiction'],
     ]),
-    // Label colors for active lens shown dynamically; show all for completeness
+    // Label colors grouped by lens; only the active lens group is shown
     `<div id="pe-label-colors" class="dra-pe-label-colors">
-      ${colorInput('pe-lc-core-fact',   'labelCoreFactColor',   'Core Fact')}
-      ${colorInput('pe-lc-context',     'labelContextColor',    'Context')}
-      ${colorInput('pe-lc-quote',       'labelQuoteColor',      'Quote')}
-      ${colorInput('pe-lc-concept',     'labelConceptColor',    'Concept')}
-      ${colorInput('pe-lc-mechanism',   'labelMechanismColor',  'Mechanism')}
-      ${colorInput('pe-lc-constraint',  'labelConstraintColor', 'Constraint')}
-      ${colorInput('pe-lc-thesis',      'labelThesisColor',     'Thesis')}
-      ${colorInput('pe-lc-evidence',    'labelEvidenceColor',   'Evidence')}
-      ${colorInput('pe-lc-explanation', 'labelExplanationColor','Explanation')}
-      ${colorInput('pe-lc-dialogue',    'labelDialogueColor',   'Dialogue')}
-      ${colorInput('pe-lc-plot-turn',   'labelPlotTurnColor',   'Plot Turn')}
-      ${colorInput('pe-lc-setting',     'labelSettingColor',    'Setting')}
+      <div data-pe-lens="news">
+        ${colorInput('pe-lc-core-fact', 'labelCoreFactColor', 'Core Fact')}
+        ${colorInput('pe-lc-context',   'labelContextColor',  'Context')}
+        ${colorInput('pe-lc-quote',     'labelQuoteColor',    'Quote')}
+      </div>
+      <div data-pe-lens="stem">
+        ${colorInput('pe-lc-concept',   'labelConceptColor',   'Concept')}
+        ${colorInput('pe-lc-mechanism', 'labelMechanismColor', 'Mechanism')}
+        ${colorInput('pe-lc-constraint','labelConstraintColor','Constraint')}
+      </div>
+      <div data-pe-lens="humanities">
+        ${colorInput('pe-lc-thesis',      'labelThesisColor',     'Thesis')}
+        ${colorInput('pe-lc-evidence',    'labelEvidenceColor',   'Evidence')}
+        ${colorInput('pe-lc-explanation', 'labelExplanationColor','Explanation')}
+      </div>
+      <div data-pe-lens="fiction">
+        ${colorInput('pe-lc-dialogue',  'labelDialogueColor', 'Dialogue')}
+        ${colorInput('pe-lc-plot-turn', 'labelPlotTurnColor', 'Plot Turn')}
+        ${colorInput('pe-lc-setting',   'labelSettingColor',  'Setting')}
+      </div>
     </div>`,
   ].join('');
+  const aids = toggle('pe-toggle-reading-aids', 'readingAidsEnabled', 'Enable Reading Aids')
+    + `<div class="pe-sub-items" id="pe-aids-sub">${aidsSub}</div>`;
 
   const panelSz = draft.settings.panelSize ?? 'comfortable';
   const panelDisplay = `<div class="dra-pe-row">
     <span class="dra-pe-label">Panel Size</span>
     <div class="panel-size-pill dra-pe-panel-size">
       ${['compact','comfortable','large'].map(sz =>
-        `<button class="panel-size-btn${panelSz===sz?' active':''}" data-pe-panel-size="${sz}">${sz[0].toUpperCase()}</button>`
+        `<button class="panel-size-btn${panelSz===sz?' active':''}" data-pe-panel-size="${sz}">${({compact:'S',comfortable:'M',large:'L'})[sz]}</button>`
       ).join('')}
     </div>
   </div>`;
@@ -243,29 +320,51 @@ function buildFormHTML() {
 
 // ── Wire form events ───────────────────────────────────────────────────
 
+function filterLabelColors(root, lens) {
+  root.querySelectorAll('[data-pe-lens]').forEach(el => {
+    el.style.display = el.dataset.peLens === lens ? '' : 'none';
+  });
+}
+
 function wireForm(root) {
   const container = root.querySelector('.dra-pe-form');
 
-  const update = (key, val) => { draft.settings[key] = val; refreshPreview(); };
-  const updateAction = (key, val) => { draft.actions[key] = val; };
+  const update = (key, val) => {
+    draft.settings[key] = val;
+    // Invalidate AI cache when mode or lens changes
+    if (key === 'emotionMode')       previewAICache.emotion = null;
+    if (key === 'sentenceLabelsMode') previewAICache.labels  = null;
+    if (key === 'sentenceLabelsLens') previewAICache.labels  = null;
+    refreshPreview();
+  };
 
   container.addEventListener('change', e => {
     const el = e.target;
     if (!el.id?.startsWith('pe-')) return;
     switch (el.id) {
-      case 'pe-toggle-typography':   update('typographyEnabled', el.checked); break;
+      case 'pe-toggle-typography': {
+        update('typographyEnabled', el.checked);
+        root.querySelector('#pe-typo-sub').style.display = el.checked ? '' : 'none';
+        break;
+      }
       case 'pe-toggle-bold':         update('boldBeginning',     el.checked); break;
       case 'pe-font-family':         update('fontFamily',        el.value);   break;
-      case 'pe-toggle-reading-aids': update('readingAidsEnabled', el.checked); break;
+      case 'pe-toggle-reading-aids': {
+        update('readingAidsEnabled', el.checked);
+        root.querySelector('#pe-aids-sub').style.display = el.checked ? '' : 'none';
+        break;
+      }
       case 'pe-toggle-gradient':     update('gradientRows',      el.checked); break;
       case 'pe-toggle-transition':   update('transitionAnimation', el.checked); break;
       case 'pe-toggle-ruler':        update('rulerActive',       el.checked); break;
-      case 'pe-toggle-auto-scroll':  update('autoScrollActive',  el.checked); break;
       case 'pe-toggle-emotion':      update('emotionColor',      el.checked); break;
       case 'pe-toggle-labels':       update('sentenceLabels',    el.checked); break;
       case 'pe-label-lens':          update('sentenceLabelsLens', el.value);  break;
-      case 'pe-action-open-reader':  updateAction('autoOpenReaderMode', el.checked); break;
-      case 'pe-action-typewriter':   updateAction('autoStartTypewriterFromBeginning', el.checked); break;
+      case 'pe-action-open-reader':
+        if (!draft.actions) draft.actions = {};
+        draft.actions.autoOpenReaderMode = el.checked;
+        refreshPreview();
+        break;
     }
   });
 
@@ -364,9 +463,51 @@ async function handleSave(root) {
 
 // ── Open / Close ───────────────────────────────────────────────────────
 
+let _rulerTrackingCleanup = null;
+let _lastRulerLocalY = null;
+
+function setupRulerTracking(root) {
+  if (_rulerTrackingCleanup) { _rulerTrackingCleanup(); _rulerTrackingCleanup = null; }
+  const body = root.querySelector('.dra-pe-preview-body');
+  if (!body) return;
+  const isRulerActive = () => {
+    const s = draft?.settings;
+    return s?.readingAidsEnabled && s?.rulerActive;
+  };
+  const syncTransform = () => {
+    if (!isRulerActive()) return;
+    const wrap = body.querySelector('.dra-pe-ruler-wrap');
+    if (wrap) wrap.style.transform = `translateY(${body.scrollTop}px)`;
+  };
+  const onMouseMove = (e) => {
+    if (!isRulerActive()) return;
+    const s       = draft.settings;
+    const rect    = body.getBoundingClientRect();
+    const localY  = e.clientY - rect.top;
+    _lastRulerLocalY = localY;   // remember for refreshPreview
+    const fontPx  = Number(s.fontSize) || 15;
+    const lineH   = Number(s.lineHeight) || 1.7;
+    const halfWin = Math.round(fontPx * lineH * (s.rulerWindowLines ?? 1.5) / 2);
+    updateRulerPosition(body, localY, halfWin);
+  };
+  body.addEventListener('mousemove', onMouseMove);
+  body.addEventListener('scroll',    syncTransform);
+  _rulerTrackingCleanup = () => {
+    body.removeEventListener('mousemove', onMouseMove);
+    body.removeEventListener('scroll',    syncTransform);
+  };
+}
+
 export function closePresetEditor() {
+  if (_rulerTrackingCleanup) { _rulerTrackingCleanup(); _rulerTrackingCleanup = null; }
   document.getElementById(EDITOR_ID)?.remove();
   document.removeEventListener('keydown', onEditorKeydown);
+  if (aiPreviewListener) {
+    chrome.runtime.onMessage.removeListener(aiPreviewListener);
+    aiPreviewListener = null;
+  }
+  previewAICache = { emotion: null, labels: null };
+  _lastRulerLocalY = null;
   draft = null;
 }
 
@@ -407,7 +548,11 @@ function mountEditor(root, title) {
   root.innerHTML = buildEditorHTML(title);
   root.querySelector('.dra-pe-form').innerHTML = buildFormHTML();
   wireForm(root);
+  // Sync initial sub-item visibility based on draft settings
+  root.querySelector('#pe-typo-sub').style.display = draft.settings.typographyEnabled ? '' : 'none';
+  root.querySelector('#pe-aids-sub').style.display = draft.settings.readingAidsEnabled ? '' : 'none';
   refreshPreview();
+  setupRulerTracking(root);
 
   root.querySelector('.dra-pe-close').addEventListener('click', closePresetEditor);
   root.querySelector('.dra-pe-btn-cancel').addEventListener('click', closePresetEditor);
