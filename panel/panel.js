@@ -109,6 +109,7 @@ function savePanelSize(size) {
   settings = { ...settings, panelSize: nextSize };
   applyPanelSize(nextSize);
   chrome.storage.sync.set({ draSettings: settings });
+  clearActivePreset();
 }
 
 function calculateActiveEffectScore(nextSettings = settings) {
@@ -249,6 +250,7 @@ function broadcast(changed) {
   settings = { ...settings, ...changed };
   chrome.storage.sync.set({ draSettings: settings });
   chrome.runtime.sendMessage({ type: 'SETTINGS_CHANGED', payload: changed });
+  clearActivePreset();
   maybeShowEffectsWarning(changed);
 }
 
@@ -866,6 +868,13 @@ function initWordListEditor() {
 
 let localPresets = { byId: {}, order: [], activeId: null };
 
+function clearActivePreset() {
+  if (!localPresets.activeId) return;
+  localPresets = { ...localPresets, activeId: null };
+  chrome.storage.sync.set({ draPresets: localPresets });
+  renderPresetList();
+}
+
 function renderPresetList() {
   const list = document.getElementById('preset-list');
   if (!list) return;
@@ -888,16 +897,16 @@ function renderPresetList() {
 
   list.querySelectorAll('.preset-row').forEach(row => {
     const id = row.dataset.presetId;
-    const selectPreset = () => {
-      if (id === localPresets.activeId) return; // radio: can't uncheck active
+    const togglePreset = () => {
+      if (id === localPresets.activeId) {
+        clearActivePreset();
+        return;
+      }
       applyPreset(id);
     };
     row.addEventListener('click', (e) => {
       if (e.target.closest('.preset-row-btn')) return;
-      selectPreset();
-    });
-    row.querySelector('.preset-active-toggle').addEventListener('click', () => {
-      selectPreset();
+      togglePreset();
     });
     row.querySelector('.modify-btn').addEventListener('click', () => {
       const preset = localPresets.byId[id];
