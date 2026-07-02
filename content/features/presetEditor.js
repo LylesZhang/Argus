@@ -34,46 +34,6 @@ function applySettingsLocally(settings, actions) {
   if (actions?.autoOpenReaderMode === false) closeImmersiveReader();
 }
 
-// ── AI preview cache ───────────────────────────────────────────────────
-
-let previewAICache = { emotion: null, labels: null };
-let aiPreviewListener = null;
-
-function requestPreviewAI(type) {
-  const lens   = draft?.settings?.sentenceLabelsLens ?? 'news';
-  const article = SAMPLE_ARTICLES[lens] ?? SAMPLE_ARTICLES.news;
-  const text   = article.blocks.join(' ');
-  if (type === 'emotion') {
-    chrome.runtime.sendMessage({
-      type: 'EMOTION_REQUEST', previewMode: true,
-      url: `preview://${lens}`, text,
-    });
-  } else {
-    const sentences = article.blocks.flatMap(b =>
-      b.trim().split(/(?<=[.!?])\s+(?=[A-Z])/).filter(Boolean)
-    );
-    chrome.runtime.sendMessage({
-      type: 'LABEL_REQUEST', previewMode: true,
-      sentences, articleLens: lens,
-    });
-  }
-}
-
-function ensureAIPreviewListener() {
-  if (aiPreviewListener) return;
-  aiPreviewListener = (msg) => {
-    if (msg.type === 'PREVIEW_EMOTION_RESULT') {
-      previewAICache.emotion = msg.highlights ?? [];
-      refreshPreview();
-    }
-    if (msg.type === 'PREVIEW_LABEL_RESULT') {
-      previewAICache.labels = msg.labels ?? [];
-      refreshPreview();
-    }
-  };
-  chrome.runtime.onMessage.addListener(aiPreviewListener);
-}
-
 // ── Draft state ────────────────────────────────────────────────────────
 
 let draft = null;  // { settings: {...}, actions: {...}, name: '', mode, presetId? }
@@ -122,33 +82,16 @@ function refreshPreview() {
   const previewBody = root.querySelector('.dra-pe-preview-body');
   if (!previewBody) return;
 
-  // Trigger AI requests when needed and cache not yet available
-  if (s.readingAidsEnabled && s.emotionColor && s.emotionMode === 'ai' && !previewAICache.emotion) {
-    ensureAIPreviewListener();
-    requestPreviewAI('emotion');
-  }
-  if (s.readingAidsEnabled && s.sentenceLabels && s.sentenceLabelsMode === 'ai' && !previewAICache.labels) {
-    ensureAIPreviewListener();
-    requestPreviewAI('labels');
-  }
-
+  // AI results come from pre-computed static data in sampleArticles.js — no live API calls.
   const html = renderPreviewArticle(article, s, state.wordLists, {
-    externalEmotions: (s.emotionMode === 'ai') ? previewAICache.emotion : null,
-    externalLabels:   (s.sentenceLabelsMode === 'ai') ? previewAICache.labels : null,
+    externalEmotions: s.emotionMode === 'ai' ? (article.aiEmotionHighlights ?? null) : null,
+    externalLabels:   s.sentenceLabelsMode === 'ai' ? (article.aiSentenceLabels ?? null) : null,
   });
 
   previewBody.innerHTML = `
     <div class="dra-pe-preview-meta">Previewing: ${lens.charAt(0).toUpperCase() + lens.slice(1)} article</div>
     <h3 class="dra-pe-preview-title">${escHTML(article.title)}</h3>
     <div class="dra-pe-article" style="position:relative">${html}</div>`;
-
-  // Show "Analyzing..." indicator while waiting for AI
-  const needsAIEmotion = s.emotionColor && s.emotionMode === 'ai' && !previewAICache.emotion;
-  const needsAILabels  = s.sentenceLabels && s.sentenceLabelsMode === 'ai' && !previewAICache.labels;
-  if (needsAIEmotion || needsAILabels) {
-    previewBody.insertAdjacentHTML('beforeend',
-      '<div class="dra-pe-analyzing">Analyzing with AI…</div>');
-  }
 
   applyPreviewStyles(previewBody, s, draft.actions);
   filterLabelColors(root, lens);
@@ -332,10 +275,6 @@ function wireForm(root) {
 
   const update = (key, val) => {
     draft.settings[key] = val;
-    // Invalidate AI cache when mode or lens changes
-    if (key === 'emotionMode')       previewAICache.emotion = null;
-    if (key === 'sentenceLabelsMode') previewAICache.labels  = null;
-    if (key === 'sentenceLabelsLens') previewAICache.labels  = null;
     refreshPreview();
   };
 
@@ -504,11 +443,6 @@ export function closePresetEditor() {
   document.getElementById(EDITOR_ID)?.remove();
   document.documentElement.classList.remove('dra-preset-editor-open');
   document.removeEventListener('keydown', onEditorKeydown);
-  if (aiPreviewListener) {
-    chrome.runtime.onMessage.removeListener(aiPreviewListener);
-    aiPreviewListener = null;
-  }
-  previewAICache = { emotion: null, labels: null };
   _lastRulerLocalY = null;
   draft = null;
 }
