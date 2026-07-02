@@ -270,6 +270,15 @@ function filterLabelColors(root, lens) {
   });
 }
 
+function syncColorInputsDisabled(root, disabled) {
+  ['#pe-font-color', '#pe-bg-color'].forEach(sel => {
+    const el = root.querySelector(sel);
+    if (!el) return;
+    el.disabled = disabled;
+    el.closest('.dra-pe-color-row')?.classList.toggle('pe-disabled', disabled);
+  });
+}
+
 function wireForm(root) {
   const container = root.querySelector('.dra-pe-form');
 
@@ -303,6 +312,7 @@ function wireForm(root) {
       case 'pe-action-open-reader':
         if (!draft.actions) draft.actions = {};
         draft.actions.autoOpenReaderMode = el.checked;
+        syncColorInputsDisabled(root, el.checked);
         refreshPreview();
         break;
     }
@@ -487,6 +497,7 @@ function mountEditor(root, title) {
   // Sync initial sub-item visibility based on draft settings
   root.querySelector('#pe-typo-sub').style.display = draft.settings.typographyEnabled ? '' : 'none';
   root.querySelector('#pe-aids-sub').style.display = draft.settings.readingAidsEnabled ? '' : 'none';
+  syncColorInputsDisabled(root, draft.actions?.autoOpenReaderMode ?? false);
   refreshPreview();
   setupRulerTracking(root);
 
