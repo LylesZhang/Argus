@@ -112,6 +112,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     if (msg.labels?.length > 0) {
       state.aiSentenceLabels = msg.labels;
       state.sentenceLabels   = state.aiSentenceLabels;
+      if (msg.ranking?.length) state.sentenceLabelRanking = msg.ranking;
     }
     chrome.runtime.sendMessage({
       type: 'AI_STATUS', feature: 'labels',

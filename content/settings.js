@@ -11,18 +11,22 @@ export const DEFAULT_SETTINGS = {
   sentenceLabels:        false,
   sentenceLabelsMode:    'local', // 'ai' | 'local'
   sentenceLabelsLens:    'news',  // 'news' | 'stem' | 'humanities' | 'fiction'
+  sentenceLabelColorCount: 2,     // 1 | 2 | 3 — how many importance tiers to color
   labelCoreFactColor:    '#eab308',
+  labelImpactColor:      '#e11d48',
   labelContextColor:     '#3b82f6',
-  labelQuoteColor:       '#ea580c',
   labelConceptColor:     '#9333ea',
   labelMechanismColor:   '#f97316',
-  labelConstraintColor:  '#ef4444',
+  labelFindingColor:     '#0d9488',
   labelThesisColor:      '#ca8a04',
   labelEvidenceColor:    '#22c55e',
   labelExplanationColor: '#6b7280',
-  labelDialogueColor:    '#ec4899',
   labelPlotTurnColor:    '#eab308',
   labelSettingColor:     '#9ca3af',
+  // Retired categories (kept for backward compat with old presets)
+  labelQuoteColor:       '#ea580c',
+  labelConstraintColor:  '#ef4444',
+  labelDialogueColor:    '#ec4899',
   topicFocusMode:        'local', // 'ai' | 'local'
   fontSize:             null,
   lineHeight:           null,

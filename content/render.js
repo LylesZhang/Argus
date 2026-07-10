@@ -5,7 +5,7 @@ import { injectOpenDyslexicFont } from './features/typography.js';
 import { applyBionicToText } from './features/bionic.js';
 import { generateEmotionHighlights, requestEmotionAnalysis } from './features/emotions.js';
 import { generateTransitionHighlights } from './features/transitions.js';
-import { extractAllSentences, generateSentenceLabels, requestSentenceLabels } from './features/labels.js';
+import { extractAllSentences, generateSentenceLabels, requestSentenceLabels, LOCAL_LENS_RANKING, isLabelVisible } from './features/labels.js';
 import { setupRuler, teardownRuler } from './features/ruler.js';
 import { setupAutoScroll, teardownAutoScroll } from './features/autoScroll.js';
 import { applyFocusMask, applyFocusMaskByPrefixes } from './features/topicFocus.js';
@@ -71,10 +71,10 @@ function buildParagraphHTML(plainText) {
   const sentences = splitSentences(plainText.trim());
 
   const VALID_LABEL_TYPES = new Set([
-    'core-fact', 'context', 'quote',
-    'concept', 'mechanism', 'constraint',
+    'core-fact', 'impact', 'context',
+    'concept', 'mechanism', 'finding',
     'thesis', 'evidence', 'explanation',
-    'dialogue', 'plot-turn', 'setting',
+    'plot-turn', 'setting',
   ]);
 
   const sentenceLabelClass = (s) => {
@@ -82,9 +82,9 @@ function buildParagraphHTML(plainText) {
     const trimmed = s.trim();
     const idx   = state.allSentences.findIndex(as => as.slice(0, 25) === trimmed.slice(0, 25));
     const label = state.sentenceLabels.find(l => l.index === idx);
-    return VALID_LABEL_TYPES.has(label?.type)
-      ? ` dra-label-${label.type}`
-      : '';
+    if (!VALID_LABEL_TYPES.has(label?.type)) return '';
+    if (!isLabelVisible(label.type, state.sentenceLabelRanking, state.settings.sentenceLabelColorCount)) return '';
+    return ` dra-label-${label.type}`;
   };
 
   return sentences.map(s =>
@@ -175,15 +175,14 @@ function applyTransformations() {
   document.documentElement.style.setProperty('--dra-complex',  state.settings.emotionComplexColor);
   document.documentElement.style.setProperty('--dra-row-shading', state.settings.rowShadingColor);
   document.documentElement.style.setProperty('--dra-label-core-fact',   state.settings.labelCoreFactColor);
+  document.documentElement.style.setProperty('--dra-label-impact',      state.settings.labelImpactColor);
   document.documentElement.style.setProperty('--dra-label-context',     state.settings.labelContextColor);
-  document.documentElement.style.setProperty('--dra-label-quote',       state.settings.labelQuoteColor);
   document.documentElement.style.setProperty('--dra-label-concept',     state.settings.labelConceptColor);
   document.documentElement.style.setProperty('--dra-label-mechanism',   state.settings.labelMechanismColor);
-  document.documentElement.style.setProperty('--dra-label-constraint',  state.settings.labelConstraintColor);
+  document.documentElement.style.setProperty('--dra-label-finding',     state.settings.labelFindingColor);
   document.documentElement.style.setProperty('--dra-label-thesis',      state.settings.labelThesisColor);
   document.documentElement.style.setProperty('--dra-label-evidence',     state.settings.labelEvidenceColor);
   document.documentElement.style.setProperty('--dra-label-explanation',  state.settings.labelExplanationColor);
-  document.documentElement.style.setProperty('--dra-label-dialogue',     state.settings.labelDialogueColor);
   document.documentElement.style.setProperty('--dra-label-plot-turn',    state.settings.labelPlotTurnColor);
   document.documentElement.style.setProperty('--dra-label-setting',      state.settings.labelSettingColor);
 
@@ -268,8 +267,10 @@ export function render() {
       state.allSentences = extractAllSentences();
       if (state.settings.sentenceLabelsMode === 'local') {
         state.sentenceLabels = generateSentenceLabels();
+        state.sentenceLabelRanking = LOCAL_LENS_RANKING[state.settings.sentenceLabelsLens ?? 'news'] ?? [];
       } else {
         state.sentenceLabels = state.aiSentenceLabels;
+        // ranking for AI mode is set from LABEL_RESULT; keep whatever was stored
       }
     }
 
