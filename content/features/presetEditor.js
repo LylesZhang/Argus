@@ -74,11 +74,11 @@ const PRESET_KEYS = [
   'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation',
   'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
   'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
-  'sentenceLabels', 'sentenceLabelsMode', 'sentenceLabelsLens', 'sentenceLabelColorCount',
-  'labelCoreFactColor', 'labelImpactColor', 'labelContextColor',
-  'labelConceptColor', 'labelMechanismColor', 'labelFindingColor',
+  'sentenceLabels', 'sentenceLabelsMode', 'sentenceLabelsLens',
+  'labelCoreFactColor', 'labelContextColor', 'labelQuoteColor',
+  'labelConceptColor', 'labelMechanismColor', 'labelConstraintColor',
   'labelThesisColor', 'labelEvidenceColor', 'labelExplanationColor',
-  'labelPlotTurnColor', 'labelSettingColor',
+  'labelDialogueColor', 'labelPlotTurnColor', 'labelSettingColor',
   'panelSize',
 ];
 
@@ -228,32 +228,25 @@ function buildFormHTML() {
       ['news','News'],['stem','Academic – STEM'],
       ['humanities','Academic – Humanities'],['fiction','Fiction'],
     ]),
-    `<div class="dra-pe-row">
-      <span class="dra-pe-label">Detail</span>
-      <div class="panel-size-pill dra-pe-panel-size" id="pe-color-count">
-        ${[1,2,3].map(n =>
-          `<button class="panel-size-btn${(draft.settings.sentenceLabelColorCount ?? 2)===n?' active':''}" data-pe-color-count="${n}">${n}</button>`
-        ).join('')}
-      </div>
-    </div>`,
     // Label colors grouped by lens; only the active lens group is shown
     `<div id="pe-label-colors" class="dra-pe-label-colors">
       <div data-pe-lens="news">
         ${colorInput('pe-lc-core-fact', 'labelCoreFactColor', 'Core Fact')}
-        ${colorInput('pe-lc-impact',    'labelImpactColor',   'Impact')}
         ${colorInput('pe-lc-context',   'labelContextColor',  'Context')}
+        ${colorInput('pe-lc-quote',     'labelQuoteColor',    'Quote')}
       </div>
       <div data-pe-lens="stem">
         ${colorInput('pe-lc-concept',   'labelConceptColor',   'Concept')}
         ${colorInput('pe-lc-mechanism', 'labelMechanismColor', 'Mechanism')}
-        ${colorInput('pe-lc-finding',   'labelFindingColor',   'Finding')}
+        ${colorInput('pe-lc-constraint','labelConstraintColor','Constraint')}
       </div>
       <div data-pe-lens="humanities">
         ${colorInput('pe-lc-thesis',      'labelThesisColor',     'Thesis')}
         ${colorInput('pe-lc-evidence',    'labelEvidenceColor',   'Evidence')}
-        ${colorInput('pe-lc-explanation', 'labelExplanationColor','Reasoning')}
+        ${colorInput('pe-lc-explanation', 'labelExplanationColor','Explanation')}
       </div>
       <div data-pe-lens="fiction">
+        ${colorInput('pe-lc-dialogue',  'labelDialogueColor', 'Dialogue')}
         ${colorInput('pe-lc-plot-turn', 'labelPlotTurnColor', 'Plot Turn')}
         ${colorInput('pe-lc-setting',   'labelSettingColor',  'Setting')}
       </div>
@@ -351,11 +344,11 @@ function wireForm(root) {
       'pe-emotion-positive': 'emotionPositiveColor',
       'pe-emotion-negative': 'emotionNegativeColor',
       'pe-emotion-complex':  'emotionComplexColor',
-      'pe-lc-core-fact': 'labelCoreFactColor', 'pe-lc-impact': 'labelImpactColor',
-      'pe-lc-context': 'labelContextColor', 'pe-lc-concept': 'labelConceptColor',
-      'pe-lc-mechanism': 'labelMechanismColor', 'pe-lc-finding': 'labelFindingColor',
+      'pe-lc-core-fact': 'labelCoreFactColor', 'pe-lc-context': 'labelContextColor',
+      'pe-lc-quote': 'labelQuoteColor', 'pe-lc-concept': 'labelConceptColor',
+      'pe-lc-mechanism': 'labelMechanismColor', 'pe-lc-constraint': 'labelConstraintColor',
       'pe-lc-thesis': 'labelThesisColor', 'pe-lc-evidence': 'labelEvidenceColor',
-      'pe-lc-explanation': 'labelExplanationColor',
+      'pe-lc-explanation': 'labelExplanationColor', 'pe-lc-dialogue': 'labelDialogueColor',
       'pe-lc-plot-turn': 'labelPlotTurnColor', 'pe-lc-setting': 'labelSettingColor',
     };
     if (numKeys[el.id]) {
@@ -389,14 +382,6 @@ function wireForm(root) {
       update('panelSize', sz);
       szBtn.closest('.dra-pe-panel-size').querySelectorAll('.panel-size-btn')
         .forEach(b => b.classList.toggle('active', b.dataset.pePanelSize === sz));
-    }
-    // Sentence label color-count buttons
-    const ccBtn = e.target.closest('[data-pe-color-count]');
-    if (ccBtn) {
-      const count = Number(ccBtn.dataset.peColorCount);
-      update('sentenceLabelColorCount', count);
-      ccBtn.closest('.dra-pe-panel-size').querySelectorAll('.panel-size-btn')
-        .forEach(b => b.classList.toggle('active', Number(b.dataset.peColorCount) === count));
     }
   });
 }

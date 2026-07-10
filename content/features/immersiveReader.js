@@ -3,16 +3,15 @@ import { state } from '../state.js';
 import { splitSentences } from '../utils.js';
 import { DEFAULT_EMOTION_POSITIVE, DEFAULT_EMOTION_NEGATIVE, DEFAULT_EMOTION_COMPLEX } from './emotions.js';
 import { DEFAULT_TRANSITION_WORDS } from './transitions.js';
-import { isLabelVisible } from './labels.js';
 
 const READER_ID = 'dra-immersive-reader';
 const MIN_BLOCK_LENGTH = 40;
 
 const LABEL_TYPES = new Set([
-  'core-fact', 'impact', 'context',
-  'concept', 'mechanism', 'finding',
+  'core-fact', 'context', 'quote',
+  'concept', 'mechanism', 'constraint',
   'thesis', 'evidence', 'explanation',
-  'plot-turn', 'setting',
+  'dialogue', 'plot-turn', 'setting',
 ]);
 
 let readerState = { theme: 'warm' };
@@ -176,9 +175,7 @@ function labelClassForSentence(sentence) {
   const trimmed = sentence.trim();
   const sentenceIndex = state.allSentences.findIndex(as => as.slice(0, 25) === trimmed.slice(0, 25));
   const label = state.sentenceLabels.find(l => l.index === sentenceIndex);
-  if (!LABEL_TYPES.has(label?.type)) return '';
-  if (!isLabelVisible(label.type, state.sentenceLabelRanking, state.settings.sentenceLabelColorCount)) return '';
-  return ` dra-label-${label.type}`;
+  return LABEL_TYPES.has(label?.type) ? ` dra-label-${label.type}` : '';
 }
 
 function isFocusedSentence(sentence) {
@@ -440,14 +437,15 @@ function applyReaderStyle(root) {
   root.style.setProperty('--dra-complex', state.settings.emotionComplexColor);
   root.style.setProperty('--dra-row-shading', state.settings.rowShadingColor);
   root.style.setProperty('--dra-label-core-fact', state.settings.labelCoreFactColor);
-  root.style.setProperty('--dra-label-impact', state.settings.labelImpactColor);
   root.style.setProperty('--dra-label-context', state.settings.labelContextColor);
+  root.style.setProperty('--dra-label-quote', state.settings.labelQuoteColor);
   root.style.setProperty('--dra-label-concept', state.settings.labelConceptColor);
   root.style.setProperty('--dra-label-mechanism', state.settings.labelMechanismColor);
-  root.style.setProperty('--dra-label-finding', state.settings.labelFindingColor);
+  root.style.setProperty('--dra-label-constraint', state.settings.labelConstraintColor);
   root.style.setProperty('--dra-label-thesis', state.settings.labelThesisColor);
   root.style.setProperty('--dra-label-evidence', state.settings.labelEvidenceColor);
   root.style.setProperty('--dra-label-explanation', state.settings.labelExplanationColor);
+  root.style.setProperty('--dra-label-dialogue', state.settings.labelDialogueColor);
   root.style.setProperty('--dra-label-plot-turn', state.settings.labelPlotTurnColor);
   root.style.setProperty('--dra-label-setting', state.settings.labelSettingColor);
 

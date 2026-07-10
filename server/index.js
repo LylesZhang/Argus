@@ -202,8 +202,6 @@ app.post('/api/focus', async (req, res) => {
 
 // ── /api/label ─────────────────────────────────────────────────────────
 
-// Categories are ordered by reading importance: essence → key support → background.
-// The color-count control on the client shows only the top-N of this ranking.
 const LENS_PROMPTS = {
   news: (sentences) => `
 Classify sentences from this NEWS ARTICLE. Only include sentences you are confident about.
@@ -212,36 +210,31 @@ Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{ "labels": [{ "index": <n>, "type": "core-fact" | "impact" | "context" }] }
+{ "labels": [{ "index": <n>, "type": "core-fact" | "context" | "quote" }] }
 
-Definitions (ordered by reading importance):
-- "core-fact" — THE ESSENCE: what happened, the central event or fact (the lead)
-- "impact"    — KEY SUPPORT: consequences or significance, why it matters (the "so what")
-- "context"   — BACKGROUND: historical or situational framing that can be skimmed
+Definitions:
+- "core-fact" — the 5W1H lead: who did what, when, where (the core breaking news)
+- "context"   — historical background or framing that explains why the event matters
+- "quote"     — a direct or reported statement from a named official, witness, or expert
 `.trim(),
 
   stem: (sentences) => `
-Classify sentences from this STEM / TECHNICAL text. Only include sentences you are confident about.
-
-First decide the text's sub-type:
-- "explanatory" — a textbook, explainer, or tutorial teaching how something works
-- "report"      — research or results reporting what was discovered
+Classify sentences from this STEM/ACADEMIC text. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{ "textType": "explanatory" | "report",
-  "labels": [{ "index": <n>, "type": "concept" | "mechanism" | "finding" }] }
+{ "labels": [{ "index": <n>, "type": "concept" | "mechanism" | "constraint" }] }
 
 Definitions:
-- "concept"   — what something IS: a definition, key term, or entity
-- "mechanism" — how something WORKS: a causal chain or step-by-step process
-- "finding"   — what it RESULTS IN: a finding, conclusion, quantitative result, or its significance
+- "concept"    — defines or introduces a key term, phenomenon, or scientific principle
+- "mechanism"  — describes a causal chain or sequential process (how something works step by step)
+- "constraint" — states a limitation, exception, boundary condition, or caveat
 `.trim(),
 
   humanities: (sentences) => `
-Classify sentences from this HUMANITIES / SOCIAL SCIENCE text. Only include sentences you are confident about.
+Classify sentences from this HUMANITIES/SOCIAL SCIENCE text. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
@@ -249,36 +242,26 @@ ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 Return ONLY this JSON:
 { "labels": [{ "index": <n>, "type": "thesis" | "evidence" | "explanation" }] }
 
-Definitions (ordered by reading importance):
-- "thesis"      — THE ESSENCE: the author's central claim or argument
-- "evidence"    — KEY SUPPORT: cited sources, archival data, statistics, or quoted works
-- "explanation" — REASONING: how the author connects evidence to the thesis
+Definitions:
+- "thesis"      — the author's central claim, argument, or critical position
+- "evidence"    — cited sources, archival data, statistics, or quoted scholarly works
+- "explanation" — how the author connects evidence to thesis, or rebuts counter-arguments
 `.trim(),
 
   fiction: (sentences) => `
-Classify sentences from this FICTION / NARRATIVE text. Only include sentences you are confident about.
+Classify sentences from this FICTION/NARRATIVE text. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{ "labels": [{ "index": <n>, "type": "plot-turn" | "setting" }] }
+{ "labels": [{ "index": <n>, "type": "dialogue" | "plot-turn" | "setting" }] }
 
-Definitions (ordered by reading importance):
-- "plot-turn" — THE ESSENCE: a key event, revelation, or turning point that advances the story
-- "setting"   — BACKGROUND: environment, atmosphere, or description that does not advance the plot
+Definitions:
+- "dialogue"   — a character speaks or a line of dialogue is reported
+- "plot-turn"  — a key event, revelation, or dramatic turning point that advances the story
+- "setting"    — describes environment, atmosphere, or interior monologue that does not advance plot
 `.trim(),
-};
-
-// Fixed importance ranking per lens. STEM is resolved adaptively from the AI's textType.
-const LENS_RANKING = {
-  news:       ['core-fact', 'impact', 'context'],
-  humanities: ['thesis', 'evidence', 'explanation'],
-  fiction:    ['plot-turn', 'setting'],
-};
-const STEM_RANKING = {
-  explanatory: ['mechanism', 'concept', 'finding'],
-  report:      ['finding', 'mechanism', 'concept'],
 };
 
 async function fetchSentenceLabelsFromGemini(sentences, articleLens) {
@@ -286,16 +269,11 @@ async function fetchSentenceLabelsFromGemini(sentences, articleLens) {
   const promptFn = LENS_PROMPTS[articleLens] ?? LENS_PROMPTS['news'];
   const CHUNK    = 40;
 
-  let stemTextType = null; // captured from first STEM chunk that reports it
-
   const processChunk = async (chunk, offset) => {
     const result = await runChunkWithRetry(
       signal => callGemini(apiKey, promptFn(chunk), signal),
       `label-chunk-offset-${offset}`
     );
-    if (articleLens === 'stem' && !stemTextType && result?.textType) {
-      stemTextType = result.textType;
-    }
     if (result?.labels?.length > 0) {
       return result.labels.map(l => ({ ...l, index: l.index + offset }));
     }
@@ -320,12 +298,8 @@ async function fetchSentenceLabelsFromGemini(sentences, articleLens) {
     }
   }
 
-  const ranking = articleLens === 'stem'
-    ? (STEM_RANKING[stemTextType] ?? STEM_RANKING.explanatory)
-    : (LENS_RANKING[articleLens] ?? LENS_RANKING.news);
-
   const success = totalChunks === 0 || failCount / totalChunks <= FAIL_THRESHOLD;
-  return { labels: allLabels, ranking, success };
+  return { labels: allLabels, success };
 }
 
 app.post('/api/label', async (req, res) => {
@@ -337,8 +311,8 @@ app.post('/api/label', async (req, res) => {
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
   try {
-    const { labels, ranking, success } = await fetchSentenceLabelsFromGemini(sentences, articleLens ?? 'news');
-    res.json({ labels, ranking, success });
+    const { labels, success } = await fetchSentenceLabelsFromGemini(sentences, articleLens ?? 'news');
+    res.json({ labels, success });
   } catch (err) {
     console.error('Label error:', err);
     res.status(500).json({ error: 'Internal server error' });

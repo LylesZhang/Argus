@@ -18,21 +18,18 @@ const DEFAULT_SETTINGS = {
   sentenceLabels:        false,
   sentenceLabelsMode:    'local',
   sentenceLabelsLens:    'news',
-  sentenceLabelColorCount: 2,
   labelCoreFactColor:    '#eab308',
-  labelImpactColor:      '#e11d48',
   labelContextColor:     '#3b82f6',
+  labelQuoteColor:       '#ea580c',
   labelConceptColor:     '#9333ea',
   labelMechanismColor:   '#f97316',
-  labelFindingColor:     '#0d9488',
+  labelConstraintColor:  '#ef4444',
   labelThesisColor:      '#ca8a04',
   labelEvidenceColor:    '#22c55e',
   labelExplanationColor: '#6b7280',
+  labelDialogueColor:    '#ec4899',
   labelPlotTurnColor:    '#eab308',
   labelSettingColor:     '#9ca3af',
-  labelQuoteColor:       '#ea580c',
-  labelConstraintColor:  '#ef4444',
-  labelDialogueColor:    '#ec4899',
   topicFocusMode:        'local',
   fontSize:             18,
   lineHeight:           1.8,
@@ -59,11 +56,11 @@ const PRESET_SETTING_KEYS = [
   'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation',
   'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
   'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
-  'sentenceLabels', 'sentenceLabelsMode', 'sentenceLabelsLens', 'sentenceLabelColorCount',
-  'labelCoreFactColor', 'labelImpactColor', 'labelContextColor',
-  'labelConceptColor', 'labelMechanismColor', 'labelFindingColor',
+  'sentenceLabels', 'sentenceLabelsMode', 'sentenceLabelsLens',
+  'labelCoreFactColor', 'labelContextColor', 'labelQuoteColor',
+  'labelConceptColor', 'labelMechanismColor', 'labelConstraintColor',
   'labelThesisColor', 'labelEvidenceColor', 'labelExplanationColor',
-  'labelPlotTurnColor', 'labelSettingColor',
+  'labelDialogueColor', 'labelPlotTurnColor', 'labelSettingColor',
   'panelSize',
 ];
 const PRESET_SETTING_KEY_SET = new Set(PRESET_SETTING_KEYS);
@@ -308,21 +305,19 @@ function syncUI() {
   document.getElementById('emotion-negative-color').value = settings.emotionNegativeColor;
   document.getElementById('emotion-complex-color').value = settings.emotionComplexColor;
   document.getElementById('label-core-fact-color').value  = settings.labelCoreFactColor;
-  document.getElementById('label-impact-color').value     = settings.labelImpactColor;
   document.getElementById('label-context-color').value    = settings.labelContextColor;
+  document.getElementById('label-quote-color').value      = settings.labelQuoteColor;
   document.getElementById('label-concept-color').value    = settings.labelConceptColor;
   document.getElementById('label-mechanism-color').value  = settings.labelMechanismColor;
-  document.getElementById('label-finding-color').value    = settings.labelFindingColor;
+  document.getElementById('label-constraint-color').value = settings.labelConstraintColor;
   document.getElementById('label-thesis-color').value     = settings.labelThesisColor;
   document.getElementById('label-evidence-color').value      = settings.labelEvidenceColor;
   document.getElementById('label-explanation-color').value   = settings.labelExplanationColor;
+  document.getElementById('label-dialogue-color').value      = settings.labelDialogueColor;
   document.getElementById('label-plot-turn-color').value    = settings.labelPlotTurnColor;
   document.getElementById('label-setting-color').value      = settings.labelSettingColor;
   document.getElementById('label-lens-select').value = settings.sentenceLabelsLens ?? 'news';
   switchLensLegend(settings.sentenceLabelsLens ?? 'news');
-  document.querySelectorAll('#label-color-count-pill .panel-size-btn').forEach(b => {
-    b.classList.toggle('active', Number(b.dataset.colorCount) === (settings.sentenceLabelColorCount ?? 2));
-  });
   document.getElementById('ruler-size-slider').value  = settings.rulerWindowLines;
   document.getElementById('ruler-size-value').textContent = settings.rulerWindowLines.toFixed(1) + ' lines';
   const autoScrollSpeed = clampAutoScrollSpeed(settings.autoScrollSpeed);
@@ -647,25 +642,17 @@ function init() {
     broadcast({ sentenceLabelsLens: e.target.value });
   });
 
-  document.querySelectorAll('#label-color-count-pill .panel-size-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const count = Number(btn.dataset.colorCount);
-      document.querySelectorAll('#label-color-count-pill .panel-size-btn')
-        .forEach(b => b.classList.toggle('active', b === btn));
-      broadcast({ sentenceLabelColorCount: count });
-    });
-  });
-
   const labelColorMap = {
     'label-core-fact-color':   'labelCoreFactColor',
-    'label-impact-color':      'labelImpactColor',
     'label-context-color':     'labelContextColor',
+    'label-quote-color':       'labelQuoteColor',
     'label-concept-color':     'labelConceptColor',
     'label-mechanism-color':   'labelMechanismColor',
-    'label-finding-color':     'labelFindingColor',
+    'label-constraint-color':  'labelConstraintColor',
     'label-thesis-color':      'labelThesisColor',
     'label-evidence-color':    'labelEvidenceColor',
     'label-explanation-color': 'labelExplanationColor',
+    'label-dialogue-color':    'labelDialogueColor',
     'label-plot-turn-color':   'labelPlotTurnColor',
     'label-setting-color':     'labelSettingColor',
   };

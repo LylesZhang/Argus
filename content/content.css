@@ -20,13 +20,13 @@
   padding: 1px 3px;
   border-radius: 4px;
 }
-.dra-label-impact {
-  background: color-mix(in srgb, var(--dra-label-impact, #e11d48) 16%, transparent);
+.dra-label-context {
+  background: color-mix(in srgb, var(--dra-label-context, #3b82f6) 12%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
-.dra-label-context {
-  background: color-mix(in srgb, var(--dra-label-context, #3b82f6) 12%, transparent);
+.dra-label-quote {
+  background: color-mix(in srgb, var(--dra-label-quote, #ea580c) 18%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
@@ -42,8 +42,8 @@
   padding: 1px 3px;
   border-radius: 4px;
 }
-.dra-label-finding {
-  background: color-mix(in srgb, var(--dra-label-finding, #0d9488) 18%, transparent);
+.dra-label-constraint {
+  background: color-mix(in srgb, var(--dra-label-constraint, #ef4444) 12%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
@@ -66,6 +66,11 @@
 }
 
 /* Lens: 小说 */
+.dra-label-dialogue {
+  background: color-mix(in srgb, var(--dra-label-dialogue, #ec4899) 12%, transparent);
+  padding: 1px 3px;
+  border-radius: 4px;
+}
 .dra-label-plot-turn {
   background: color-mix(in srgb, var(--dra-label-plot-turn, #eab308) 25%, transparent);
   padding: 1px 3px;
@@ -78,14 +83,15 @@
 }
 
 .dra-label-core-fact,
-.dra-label-impact,
 .dra-label-context,
+.dra-label-quote,
 .dra-label-concept,
 .dra-label-mechanism,
-.dra-label-finding,
+.dra-label-constraint,
 .dra-label-thesis,
 .dra-label-evidence,
 .dra-label-explanation,
+.dra-label-dialogue,
 .dra-label-plot-turn,
 .dra-label-setting {
   border: none;

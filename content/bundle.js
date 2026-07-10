@@ -16,23 +16,18 @@
     // 'ai' | 'local'
     sentenceLabelsLens: "news",
     // 'news' | 'stem' | 'humanities' | 'fiction'
-    sentenceLabelColorCount: 2,
-    // 1 | 2 | 3 — how many importance tiers to color
     labelCoreFactColor: "#eab308",
-    labelImpactColor: "#e11d48",
     labelContextColor: "#3b82f6",
+    labelQuoteColor: "#ea580c",
     labelConceptColor: "#9333ea",
     labelMechanismColor: "#f97316",
-    labelFindingColor: "#0d9488",
+    labelConstraintColor: "#ef4444",
     labelThesisColor: "#ca8a04",
     labelEvidenceColor: "#22c55e",
     labelExplanationColor: "#6b7280",
+    labelDialogueColor: "#ec4899",
     labelPlotTurnColor: "#eab308",
     labelSettingColor: "#9ca3af",
-    // Retired categories (kept for backward compat with old presets)
-    labelQuoteColor: "#ea580c",
-    labelConstraintColor: "#ef4444",
-    labelDialogueColor: "#ec4899",
     topicFocusMode: "local",
     // 'ai' | 'local'
     fontSize: null,
@@ -71,7 +66,6 @@
       transition: null
     },
     sentenceLabels: [],
-    sentenceLabelRanking: [],
     allSentences: []
   };
 
@@ -592,28 +586,27 @@
         /\b(announced|confirmed|declared|signed|approved|passed|killed|arrested|elected|won|lost)\b/i,
         /\b(breaking|just in|update|developing)\b/i
       ],
-      impact: [
-        /\b(as a result|could|would|may|threatens?|at stake|consequences?|significant(ly)?|impacts?|affects?|means (for|that)|benefits?|at risk)\b/i,
-        /\b(warned|fear|hope|promises?|jeopardi[sz]e)\b/i
-      ],
       context: [
         /\b(in the wake of|following years of|historically|since \d{4}|long.standing|decades.long)\b/i,
         /\b(background|context|previously|at the time)\b/i
+      ],
+      quote: [
+        /[""][^""]{8,}[""].*\b(said|told|stated|added|wrote)\b/i,
+        /\b(said|according to|told reporters?|spokesperson)\b.*[""][^""]{5,}[""]/i
       ]
     },
     stem: {
-      mechanism: [
-        /\b(first|then|next|subsequently|as a result|this causes|leading to|which triggers|therefore|thus|consequently)\b/i
-      ],
       concept: [
         /\bis defined as\b/i,
         /\b(known as|referred to as|termed|called)\b/i,
         /\bthe (process|phenomenon|principle|law|theory|property) of\b/i
       ],
-      finding: [
-        /\b(we (found|show|demonstrate|conclude)|results? show|the results?|in conclusion|our findings?)\b/i,
-        /\b(achieved|outperforms?|reduced by|increased by|improv(es|ed)|represents? a (significant )?breakthrough)\b/i,
-        /\b\d+(\.\d+)?%/
+      mechanism: [
+        /\b(first|then|next|subsequently|as a result|this causes|leading to|which triggers|therefore|thus|consequently)\b/i
+      ],
+      constraint: [
+        /\b(however|but|except when|unless|only (when|if)|provided that|in the absence of)\b/i,
+        /\b(limitation|caveat|assumption|cannot|does not apply|fails when)\b/i
       ]
     },
     humanities: {
@@ -633,6 +626,10 @@
       ]
     },
     fiction: {
+      dialogue: [
+        /^["""«].{5,}["""»]/,
+        /\b(said|whispered|shouted|replied|asked|muttered|exclaimed|cried)\b/i
+      ],
       "plot-turn": [
         /\b(suddenly|at that moment|without warning|for the first time|everything changed|realized|discovered|revealed)\b/i,
         /\b(shot|killed|ran|burst|collapsed|vanished|appeared|attacked|escaped)\b/i
@@ -643,18 +640,6 @@
       ]
     }
   };
-  var LOCAL_LENS_RANKING = {
-    news: ["core-fact", "impact", "context"],
-    stem: ["mechanism", "concept", "finding"],
-    humanities: ["thesis", "evidence", "explanation"],
-    fiction: ["plot-turn", "setting"]
-  };
-  function isLabelVisible(type, ranking, colorCount) {
-    if (!ranking || ranking.length === 0) return true;
-    const idx = ranking.indexOf(type);
-    if (idx === -1) return false;
-    return idx < (colorCount ?? ranking.length);
-  }
   function extractAllSentences() {
     const area = findContentArea();
     return area.innerText.split(/\n+/).filter((p) => p.trim().length > 20).flatMap((p) => splitSentences(p.trim()).filter((s) => s.trim()));
@@ -899,14 +884,15 @@
   var MIN_BLOCK_LENGTH = 40;
   var LABEL_TYPES = /* @__PURE__ */ new Set([
     "core-fact",
-    "impact",
     "context",
+    "quote",
     "concept",
     "mechanism",
-    "finding",
+    "constraint",
     "thesis",
     "evidence",
     "explanation",
+    "dialogue",
     "plot-turn",
     "setting"
   ]);
@@ -1039,9 +1025,7 @@
     const trimmed = sentence.trim();
     const sentenceIndex = state.allSentences.findIndex((as) => as.slice(0, 25) === trimmed.slice(0, 25));
     const label = state.sentenceLabels.find((l) => l.index === sentenceIndex);
-    if (!LABEL_TYPES.has(label?.type)) return "";
-    if (!isLabelVisible(label.type, state.sentenceLabelRanking, state.settings.sentenceLabelColorCount)) return "";
-    return ` dra-label-${label.type}`;
+    return LABEL_TYPES.has(label?.type) ? ` dra-label-${label.type}` : "";
   }
   function isFocusedSentence(sentence) {
     if (state.topicFocusKeywords) {
@@ -1282,14 +1266,15 @@
     root.style.setProperty("--dra-complex", state.settings.emotionComplexColor);
     root.style.setProperty("--dra-row-shading", state.settings.rowShadingColor);
     root.style.setProperty("--dra-label-core-fact", state.settings.labelCoreFactColor);
-    root.style.setProperty("--dra-label-impact", state.settings.labelImpactColor);
     root.style.setProperty("--dra-label-context", state.settings.labelContextColor);
+    root.style.setProperty("--dra-label-quote", state.settings.labelQuoteColor);
     root.style.setProperty("--dra-label-concept", state.settings.labelConceptColor);
     root.style.setProperty("--dra-label-mechanism", state.settings.labelMechanismColor);
-    root.style.setProperty("--dra-label-finding", state.settings.labelFindingColor);
+    root.style.setProperty("--dra-label-constraint", state.settings.labelConstraintColor);
     root.style.setProperty("--dra-label-thesis", state.settings.labelThesisColor);
     root.style.setProperty("--dra-label-evidence", state.settings.labelEvidenceColor);
     root.style.setProperty("--dra-label-explanation", state.settings.labelExplanationColor);
+    root.style.setProperty("--dra-label-dialogue", state.settings.labelDialogueColor);
     root.style.setProperty("--dra-label-plot-turn", state.settings.labelPlotTurnColor);
     root.style.setProperty("--dra-label-setting", state.settings.labelSettingColor);
     article.style.fontSize = state.settings.typographyEnabled && state.settings.fontSize ? `${state.settings.fontSize}px` : "";
@@ -1632,14 +1617,15 @@
     const sentences = splitSentences(plainText.trim());
     const VALID_LABEL_TYPES = /* @__PURE__ */ new Set([
       "core-fact",
-      "impact",
       "context",
+      "quote",
       "concept",
       "mechanism",
-      "finding",
+      "constraint",
       "thesis",
       "evidence",
       "explanation",
+      "dialogue",
       "plot-turn",
       "setting"
     ]);
@@ -1648,9 +1634,7 @@
       const trimmed = s.trim();
       const idx = state.allSentences.findIndex((as) => as.slice(0, 25) === trimmed.slice(0, 25));
       const label = state.sentenceLabels.find((l) => l.index === idx);
-      if (!VALID_LABEL_TYPES.has(label?.type)) return "";
-      if (!isLabelVisible(label.type, state.sentenceLabelRanking, state.settings.sentenceLabelColorCount)) return "";
-      return ` dra-label-${label.type}`;
+      return VALID_LABEL_TYPES.has(label?.type) ? ` dra-label-${label.type}` : "";
     };
     return sentences.map(
       (s) => `<span class="dra-sentence${sentenceLabelClass(s)}">${renderSentence(s)}</span>`
@@ -1744,14 +1728,15 @@
     document.documentElement.style.setProperty("--dra-complex", state.settings.emotionComplexColor);
     document.documentElement.style.setProperty("--dra-row-shading", state.settings.rowShadingColor);
     document.documentElement.style.setProperty("--dra-label-core-fact", state.settings.labelCoreFactColor);
-    document.documentElement.style.setProperty("--dra-label-impact", state.settings.labelImpactColor);
     document.documentElement.style.setProperty("--dra-label-context", state.settings.labelContextColor);
+    document.documentElement.style.setProperty("--dra-label-quote", state.settings.labelQuoteColor);
     document.documentElement.style.setProperty("--dra-label-concept", state.settings.labelConceptColor);
     document.documentElement.style.setProperty("--dra-label-mechanism", state.settings.labelMechanismColor);
-    document.documentElement.style.setProperty("--dra-label-finding", state.settings.labelFindingColor);
+    document.documentElement.style.setProperty("--dra-label-constraint", state.settings.labelConstraintColor);
     document.documentElement.style.setProperty("--dra-label-thesis", state.settings.labelThesisColor);
     document.documentElement.style.setProperty("--dra-label-evidence", state.settings.labelEvidenceColor);
     document.documentElement.style.setProperty("--dra-label-explanation", state.settings.labelExplanationColor);
+    document.documentElement.style.setProperty("--dra-label-dialogue", state.settings.labelDialogueColor);
     document.documentElement.style.setProperty("--dra-label-plot-turn", state.settings.labelPlotTurnColor);
     document.documentElement.style.setProperty("--dra-label-setting", state.settings.labelSettingColor);
     state.contentArea.querySelectorAll("p, li, blockquote").forEach((para) => {
@@ -1811,7 +1796,6 @@
         state.allSentences = extractAllSentences();
         if (state.settings.sentenceLabelsMode === "local") {
           state.sentenceLabels = generateSentenceLabels();
-          state.sentenceLabelRanking = LOCAL_LENS_RANKING[state.settings.sentenceLabelsLens ?? "news"] ?? [];
         } else {
           state.sentenceLabels = state.aiSentenceLabels;
         }
@@ -1868,16 +1852,15 @@
       aiSentenceLabels: [
         { index: 0, type: "core-fact" },
         { index: 1, type: "context" },
-        { index: 2, type: "impact" },
-        { index: 3, type: "impact" },
-        { index: 4, type: "impact" },
-        { index: 5, type: "impact" },
-        { index: 6, type: "impact" },
+        { index: 2, type: "context" },
+        { index: 3, type: "quote" },
+        { index: 4, type: "quote" },
+        { index: 5, type: "context" },
+        { index: 6, type: "context" },
         { index: 7, type: "context" },
         { index: 8, type: "context" },
-        { index: 9, type: "impact" }
-      ],
-      aiSentenceLabelRanking: ["core-fact", "impact", "context"]
+        { index: 9, type: "context" }
+      ]
     },
     stem: {
       title: "Neural Networks Learn to Predict Protein Folding",
@@ -1898,17 +1881,13 @@
       ],
       aiSentenceLabels: [
         { index: 0, type: "concept" },
-        { index: 1, type: "concept" },
         { index: 2, type: "mechanism" },
         { index: 3, type: "mechanism" },
         { index: 4, type: "mechanism" },
-        { index: 5, type: "finding" },
-        { index: 6, type: "finding" },
-        { index: 7, type: "finding" },
-        { index: 8, type: "concept" },
-        { index: 9, type: "finding" }
-      ],
-      aiSentenceLabelRanking: ["mechanism", "concept", "finding"]
+        { index: 5, type: "constraint" },
+        { index: 6, type: "constraint" },
+        { index: 8, type: "concept" }
+      ]
     },
     humanities: {
       title: "The Role of Silence in Modernist Literature",
@@ -1936,8 +1915,7 @@
         { index: 5, type: "explanation" },
         { index: 6, type: "evidence" },
         { index: 7, type: "thesis" }
-      ],
-      aiSentenceLabelRanking: ["thesis", "evidence", "explanation"]
+      ]
     },
     fiction: {
       title: "The Last Garden",
@@ -1957,16 +1935,18 @@
         { word: "sorry", context: "I'm sorr", category: "emotion-negative" }
       ],
       aiSentenceLabels: [
+        { index: 0, type: "dialogue" },
         { index: 1, type: "setting" },
         { index: 2, type: "setting" },
         { index: 3, type: "setting" },
         { index: 4, type: "setting" },
         { index: 5, type: "plot-turn" },
+        { index: 6, type: "dialogue" },
+        { index: 7, type: "dialogue" },
         { index: 8, type: "setting" },
         { index: 9, type: "setting" },
         { index: 10, type: "setting" }
-      ],
-      aiSentenceLabelRanking: ["plot-turn", "setting"]
+      ]
     }
   };
 
@@ -2042,21 +2022,20 @@
     const useLocalLabels = settings.readingAidsEnabled && settings.sentenceLabels && settings.sentenceLabelsMode !== "ai";
     const { allSentences, labels } = useAILabels || useLocalLabels ? getSentenceLabels(blocks, lens) : { allSentences: [], labels: [] };
     const finalLabels = useAILabels ? externalLabels : labels;
-    const ranking = useAILabels ? article.aiSentenceLabelRanking ?? LOCAL_LENS_RANKING[lens] ?? [] : LOCAL_LENS_RANKING[lens] ?? [];
-    const colorCount = settings.sentenceLabelColorCount ?? 3;
     const useAIEmotion = settings.readingAidsEnabled && settings.emotionColor && settings.emotionMode === "ai" && externalEmotions;
     const emotionHighlights = useAIEmotion ? externalEmotions : settings.readingAidsEnabled && settings.emotionColor ? matchEmotionWords(blocks.join(" "), wordLists) : [];
     const transitionWords = settings.readingAidsEnabled && settings.transitionAnimation ? wordLists.transition ?? DEFAULT_TRANSITION_WORDS : [];
     const LABEL_TYPES2 = /* @__PURE__ */ new Set([
       "core-fact",
-      "impact",
       "context",
+      "quote",
       "concept",
       "mechanism",
-      "finding",
+      "constraint",
       "thesis",
       "evidence",
       "explanation",
+      "dialogue",
       "plot-turn",
       "setting"
     ]);
@@ -2065,7 +2044,7 @@
       const sentences = splitSentences(block.trim()).filter(Boolean);
       const html = sentences.map((sentence) => {
         const labelEntry = finalLabels.find((l) => l.index === sIdx);
-        const labelCls = labelEntry && LABEL_TYPES2.has(labelEntry.type) && isLabelVisible(labelEntry.type, ranking, colorCount) ? ` dra-label-${labelEntry.type}` : "";
+        const labelCls = labelEntry && LABEL_TYPES2.has(labelEntry.type) ? ` dra-label-${labelEntry.type}` : "";
         sIdx++;
         const inner = renderSentenceText(sentence, settings, emotionHighlights, transitionWords);
         return `<span class="dra-sentence${labelCls}">${inner}</span>`;
@@ -2112,14 +2091,15 @@
     container.style.setProperty("--dra-row-shading", s.rowShadingColor ?? "#bfb3d0");
     const labelColors = {
       "core-fact": s.labelCoreFactColor ?? "#eab308",
-      "impact": s.labelImpactColor ?? "#e11d48",
       "context": s.labelContextColor ?? "#3b82f6",
+      "quote": s.labelQuoteColor ?? "#ea580c",
       "concept": s.labelConceptColor ?? "#9333ea",
       "mechanism": s.labelMechanismColor ?? "#f97316",
-      "finding": s.labelFindingColor ?? "#0d9488",
+      "constraint": s.labelConstraintColor ?? "#ef4444",
       "thesis": s.labelThesisColor ?? "#ca8a04",
       "evidence": s.labelEvidenceColor ?? "#22c55e",
       "explanation": s.labelExplanationColor ?? "#6b7280",
+      "dialogue": s.labelDialogueColor ?? "#ec4899",
       "plot-turn": s.labelPlotTurnColor ?? "#eab308",
       "setting": s.labelSettingColor ?? "#9ca3af"
     };
@@ -2214,16 +2194,16 @@
     "sentenceLabels",
     "sentenceLabelsMode",
     "sentenceLabelsLens",
-    "sentenceLabelColorCount",
     "labelCoreFactColor",
-    "labelImpactColor",
     "labelContextColor",
+    "labelQuoteColor",
     "labelConceptColor",
     "labelMechanismColor",
-    "labelFindingColor",
+    "labelConstraintColor",
     "labelThesisColor",
     "labelEvidenceColor",
     "labelExplanationColor",
+    "labelDialogueColor",
     "labelPlotTurnColor",
     "labelSettingColor",
     "panelSize"
@@ -2355,32 +2335,25 @@
         ["humanities", "Academic \u2013 Humanities"],
         ["fiction", "Fiction"]
       ]),
-      `<div class="dra-pe-row">
-      <span class="dra-pe-label">Detail</span>
-      <div class="panel-size-pill dra-pe-panel-size" id="pe-color-count">
-        ${[1, 2, 3].map(
-        (n) => `<button class="panel-size-btn${(draft.settings.sentenceLabelColorCount ?? 2) === n ? " active" : ""}" data-pe-color-count="${n}">${n}</button>`
-      ).join("")}
-      </div>
-    </div>`,
       // Label colors grouped by lens; only the active lens group is shown
       `<div id="pe-label-colors" class="dra-pe-label-colors">
       <div data-pe-lens="news">
         ${colorInput("pe-lc-core-fact", "labelCoreFactColor", "Core Fact")}
-        ${colorInput("pe-lc-impact", "labelImpactColor", "Impact")}
         ${colorInput("pe-lc-context", "labelContextColor", "Context")}
+        ${colorInput("pe-lc-quote", "labelQuoteColor", "Quote")}
       </div>
       <div data-pe-lens="stem">
         ${colorInput("pe-lc-concept", "labelConceptColor", "Concept")}
         ${colorInput("pe-lc-mechanism", "labelMechanismColor", "Mechanism")}
-        ${colorInput("pe-lc-finding", "labelFindingColor", "Finding")}
+        ${colorInput("pe-lc-constraint", "labelConstraintColor", "Constraint")}
       </div>
       <div data-pe-lens="humanities">
         ${colorInput("pe-lc-thesis", "labelThesisColor", "Thesis")}
         ${colorInput("pe-lc-evidence", "labelEvidenceColor", "Evidence")}
-        ${colorInput("pe-lc-explanation", "labelExplanationColor", "Reasoning")}
+        ${colorInput("pe-lc-explanation", "labelExplanationColor", "Explanation")}
       </div>
       <div data-pe-lens="fiction">
+        ${colorInput("pe-lc-dialogue", "labelDialogueColor", "Dialogue")}
         ${colorInput("pe-lc-plot-turn", "labelPlotTurnColor", "Plot Turn")}
         ${colorInput("pe-lc-setting", "labelSettingColor", "Setting")}
       </div>
@@ -2488,14 +2461,15 @@
         "pe-emotion-negative": "emotionNegativeColor",
         "pe-emotion-complex": "emotionComplexColor",
         "pe-lc-core-fact": "labelCoreFactColor",
-        "pe-lc-impact": "labelImpactColor",
         "pe-lc-context": "labelContextColor",
+        "pe-lc-quote": "labelQuoteColor",
         "pe-lc-concept": "labelConceptColor",
         "pe-lc-mechanism": "labelMechanismColor",
-        "pe-lc-finding": "labelFindingColor",
+        "pe-lc-constraint": "labelConstraintColor",
         "pe-lc-thesis": "labelThesisColor",
         "pe-lc-evidence": "labelEvidenceColor",
         "pe-lc-explanation": "labelExplanationColor",
+        "pe-lc-dialogue": "labelDialogueColor",
         "pe-lc-plot-turn": "labelPlotTurnColor",
         "pe-lc-setting": "labelSettingColor"
       };
@@ -2525,12 +2499,6 @@
         const sz = szBtn.dataset.pePanelSize;
         update("panelSize", sz);
         szBtn.closest(".dra-pe-panel-size").querySelectorAll(".panel-size-btn").forEach((b) => b.classList.toggle("active", b.dataset.pePanelSize === sz));
-      }
-      const ccBtn = e.target.closest("[data-pe-color-count]");
-      if (ccBtn) {
-        const count = Number(ccBtn.dataset.peColorCount);
-        update("sentenceLabelColorCount", count);
-        ccBtn.closest(".dra-pe-panel-size").querySelectorAll(".panel-size-btn").forEach((b) => b.classList.toggle("active", Number(b.dataset.peColorCount) === count));
       }
     });
   }
@@ -2807,7 +2775,6 @@
       if (msg.labels?.length > 0) {
         state.aiSentenceLabels = msg.labels;
         state.sentenceLabels = state.aiSentenceLabels;
-        if (msg.ranking?.length) state.sentenceLabelRanking = msg.ranking;
       }
       chrome.runtime.sendMessage({
         type: "AI_STATUS",

@@ -19,6 +19,5 @@ export const state = {
     transition:      null,
   },
   sentenceLabels:           [],
-  sentenceLabelRanking:     [],
   allSentences:             [],
 };

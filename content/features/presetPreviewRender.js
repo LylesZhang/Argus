@@ -1,5 +1,5 @@
 import { splitSentences } from '../utils.js';
-import { LENS_RULES, LOCAL_LENS_RANKING, isLabelVisible } from './labels.js';
+import { LENS_RULES } from './labels.js';
 import { matchEmotionWords } from './emotions.js';
 import { DEFAULT_TRANSITION_WORDS } from './transitions.js';
 import { applyBionicToText } from './bionic.js';
@@ -90,11 +90,6 @@ export function renderPreviewArticle(article, settings, wordLists, { externalEmo
     : { allSentences: [], labels: [] };
 
   const finalLabels = useAILabels ? externalLabels : labels;
-  // Importance ranking: AI mode uses the article's stored ranking; local uses the lens default.
-  const ranking = useAILabels
-    ? (article.aiSentenceLabelRanking ?? LOCAL_LENS_RANKING[lens] ?? [])
-    : (LOCAL_LENS_RANKING[lens] ?? []);
-  const colorCount = settings.sentenceLabelColorCount ?? 3;
 
   const useAIEmotion = settings.readingAidsEnabled && settings.emotionColor
     && settings.emotionMode === 'ai' && externalEmotions;
@@ -109,8 +104,8 @@ export function renderPreviewArticle(article, settings, wordLists, { externalEmo
     : [];
 
   const LABEL_TYPES = new Set([
-    'core-fact','impact','context','concept','mechanism','finding',
-    'thesis','evidence','explanation','plot-turn','setting',
+    'core-fact','context','quote','concept','mechanism','constraint',
+    'thesis','evidence','explanation','dialogue','plot-turn','setting',
   ]);
 
   let sIdx = 0;
@@ -118,8 +113,7 @@ export function renderPreviewArticle(article, settings, wordLists, { externalEmo
     const sentences = splitSentences(block.trim()).filter(Boolean);
     const html = sentences.map(sentence => {
       const labelEntry = finalLabels.find(l => l.index === sIdx);
-      const labelCls = (labelEntry && LABEL_TYPES.has(labelEntry.type)
-        && isLabelVisible(labelEntry.type, ranking, colorCount))
+      const labelCls = (labelEntry && LABEL_TYPES.has(labelEntry.type))
         ? ` dra-label-${labelEntry.type}`
         : '';
       sIdx++;
@@ -187,14 +181,15 @@ export function applyPreviewStyles(container, settings, actions = {}) {
 
   const labelColors = {
     'core-fact':   s.labelCoreFactColor   ?? '#eab308',
-    'impact':      s.labelImpactColor     ?? '#e11d48',
     'context':     s.labelContextColor    ?? '#3b82f6',
+    'quote':       s.labelQuoteColor      ?? '#ea580c',
     'concept':     s.labelConceptColor    ?? '#9333ea',
     'mechanism':   s.labelMechanismColor  ?? '#f97316',
-    'finding':     s.labelFindingColor    ?? '#0d9488',
+    'constraint':  s.labelConstraintColor ?? '#ef4444',
     'thesis':      s.labelThesisColor     ?? '#ca8a04',
     'evidence':    s.labelEvidenceColor   ?? '#22c55e',
     'explanation': s.labelExplanationColor ?? '#6b7280',
+    'dialogue':    s.labelDialogueColor   ?? '#ec4899',
     'plot-turn':   s.labelPlotTurnColor   ?? '#eab308',
     'setting':     s.labelSettingColor    ?? '#9ca3af',
   };

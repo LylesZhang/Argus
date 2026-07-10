@@ -33,16 +33,15 @@ export const SAMPLE_ARTICLES = {
     aiSentenceLabels: [
       { index: 0, type: 'core-fact' },
       { index: 1, type: 'context' },
-      { index: 2, type: 'impact' },
-      { index: 3, type: 'impact' },
-      { index: 4, type: 'impact' },
-      { index: 5, type: 'impact' },
-      { index: 6, type: 'impact' },
+      { index: 2, type: 'context' },
+      { index: 3, type: 'quote' },
+      { index: 4, type: 'quote' },
+      { index: 5, type: 'context' },
+      { index: 6, type: 'context' },
       { index: 7, type: 'context' },
       { index: 8, type: 'context' },
-      { index: 9, type: 'impact' },
+      { index: 9, type: 'context' },
     ],
-    aiSentenceLabelRanking: ['core-fact', 'impact', 'context'],
   },
 
   stem: {
@@ -64,17 +63,13 @@ export const SAMPLE_ARTICLES = {
     ],
     aiSentenceLabels: [
       { index: 0, type: 'concept' },
-      { index: 1, type: 'concept' },
       { index: 2, type: 'mechanism' },
       { index: 3, type: 'mechanism' },
       { index: 4, type: 'mechanism' },
-      { index: 5, type: 'finding' },
-      { index: 6, type: 'finding' },
-      { index: 7, type: 'finding' },
+      { index: 5, type: 'constraint' },
+      { index: 6, type: 'constraint' },
       { index: 8, type: 'concept' },
-      { index: 9, type: 'finding' },
     ],
-    aiSentenceLabelRanking: ['mechanism', 'concept', 'finding'],
   },
 
   humanities: {
@@ -104,7 +99,6 @@ export const SAMPLE_ARTICLES = {
       { index: 6, type: 'evidence' },
       { index: 7, type: 'thesis' },
     ],
-    aiSentenceLabelRanking: ['thesis', 'evidence', 'explanation'],
   },
 
   fiction: {
@@ -125,15 +119,17 @@ export const SAMPLE_ARTICLES = {
       { word: 'sorry',         context: "I'm sorr", category: 'emotion-negative' },
     ],
     aiSentenceLabels: [
+      { index: 0,  type: 'dialogue' },
       { index: 1,  type: 'setting' },
       { index: 2,  type: 'setting' },
       { index: 3,  type: 'setting' },
       { index: 4,  type: 'setting' },
       { index: 5,  type: 'plot-turn' },
+      { index: 6,  type: 'dialogue' },
+      { index: 7,  type: 'dialogue' },
       { index: 8,  type: 'setting' },
       { index: 9,  type: 'setting' },
       { index: 10, type: 'setting' },
     ],
-    aiSentenceLabelRanking: ['plot-turn', 'setting'],
   },
 };

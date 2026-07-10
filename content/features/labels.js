@@ -2,36 +2,33 @@ import { findContentArea } from '../detect.js';
 import { state } from '../state.js';
 import { splitSentences } from '../utils.js';
 
-// Rule order within each lens follows importance ranking (essence → support → background),
-// so the highest-priority label wins when a sentence matches multiple.
 export const LENS_RULES = {
   news: {
     'core-fact': [
       /\b(announced|confirmed|declared|signed|approved|passed|killed|arrested|elected|won|lost)\b/i,
       /\b(breaking|just in|update|developing)\b/i,
     ],
-    impact: [
-      /\b(as a result|could|would|may|threatens?|at stake|consequences?|significant(ly)?|impacts?|affects?|means (for|that)|benefits?|at risk)\b/i,
-      /\b(warned|fear|hope|promises?|jeopardi[sz]e)\b/i,
-    ],
     context: [
       /\b(in the wake of|following years of|historically|since \d{4}|long.standing|decades.long)\b/i,
       /\b(background|context|previously|at the time)\b/i,
     ],
+    quote: [
+      /[""][^""]{8,}[""].*\b(said|told|stated|added|wrote)\b/i,
+      /\b(said|according to|told reporters?|spokesperson)\b.*[""][^""]{5,}[""]/i,
+    ],
   },
   stem: {
-    mechanism: [
-      /\b(first|then|next|subsequently|as a result|this causes|leading to|which triggers|therefore|thus|consequently)\b/i,
-    ],
     concept: [
       /\bis defined as\b/i,
       /\b(known as|referred to as|termed|called)\b/i,
       /\bthe (process|phenomenon|principle|law|theory|property) of\b/i,
     ],
-    finding: [
-      /\b(we (found|show|demonstrate|conclude)|results? show|the results?|in conclusion|our findings?)\b/i,
-      /\b(achieved|outperforms?|reduced by|increased by|improv(es|ed)|represents? a (significant )?breakthrough)\b/i,
-      /\b\d+(\.\d+)?%/,
+    mechanism: [
+      /\b(first|then|next|subsequently|as a result|this causes|leading to|which triggers|therefore|thus|consequently)\b/i,
+    ],
+    constraint: [
+      /\b(however|but|except when|unless|only (when|if)|provided that|in the absence of)\b/i,
+      /\b(limitation|caveat|assumption|cannot|does not apply|fails when)\b/i,
     ],
   },
   humanities: {
@@ -51,6 +48,10 @@ export const LENS_RULES = {
     ],
   },
   fiction: {
+    dialogue: [
+      /^["""«].{5,}["""»]/,
+      /\b(said|whispered|shouted|replied|asked|muttered|exclaimed|cried)\b/i,
+    ],
     'plot-turn': [
       /\b(suddenly|at that moment|without warning|for the first time|everything changed|realized|discovered|revealed)\b/i,
       /\b(shot|killed|ran|burst|collapsed|vanished|appeared|attacked|escaped)\b/i,
@@ -61,24 +62,6 @@ export const LENS_RULES = {
     ],
   },
 };
-
-// Importance ranking for local mode (AI mode gets ranking from the server response).
-// STEM defaults to the "explanatory" ordering since local rules can't detect sub-type.
-export const LOCAL_LENS_RANKING = {
-  news:       ['core-fact', 'impact', 'context'],
-  stem:       ['mechanism', 'concept', 'finding'],
-  humanities: ['thesis', 'evidence', 'explanation'],
-  fiction:    ['plot-turn', 'setting'],
-};
-
-// A label type is visible only if it falls within the top-`colorCount` of the
-// importance ranking. Types outside the ranking are hidden.
-export function isLabelVisible(type, ranking, colorCount) {
-  if (!ranking || ranking.length === 0) return true;
-  const idx = ranking.indexOf(type);
-  if (idx === -1) return false;
-  return idx < (colorCount ?? ranking.length);
-}
 
 export function extractAllSentences() {
   const area = findContentArea();
