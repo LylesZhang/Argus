@@ -56,8 +56,10 @@ async function fetchEmotionAnalysis(text, url) {
   return promise;
 }
 
-async function fetchSentenceLabels(sentences, url, articleLens = 'news') {
-  const cacheKey = `${url}|${articleLens}`;
+async function fetchSentenceLabels(sentences, url, lensPurpose = 'inform') {
+  // Cache key includes the reading purpose so switching Lens re-fetches instead of
+  // returning stale labels from the previous purpose.
+  const cacheKey = `${url}|${lensPurpose}`;
   const cached = labelCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) return cached.result;
   if (labelPending.has(cacheKey)) return labelPending.get(cacheKey);
@@ -67,7 +69,7 @@ async function fetchSentenceLabels(sentences, url, articleLens = 'news') {
       const response = await fetchWithAbortTimeout(`${API_BASE}/api/label`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ sentences, articleLens }),
+        body:    JSON.stringify({ sentences, lensPurpose }),
       });
       if (!response.ok) return null;
       const result = await response.json();
@@ -98,7 +100,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     }
 
     if (msg.type === 'LABEL_REQUEST') {
-      fetchSentenceLabels(msg.sentences, sender.tab.url, msg.articleLens).then(labels => {
+      fetchSentenceLabels(msg.sentences, sender.tab.url, msg.lensPurpose ?? msg.articleLens).then(labels => {
         const type = labels ? 'LABEL_RESULT' : 'LABEL_ERROR';
         chrome.tabs.sendMessage(sender.tab.id, labels ? { type, labels } : { type });
       });
