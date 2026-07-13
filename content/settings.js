@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS = {
   transitionAnimation:   false,
   sentenceLabels:        false,   // Lens on/off
   sentenceLabelsLens:    'inform', // reading purpose: inform|understand|evaluate
+  sentenceLabelsDensity: 'medium', // low|medium|high importance threshold
   labelKeyPointColor:     '#eab308',
   labelCoreDetailColor:   '#3b82f6',
   labelConceptColor:      '#9333ea',

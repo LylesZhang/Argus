@@ -5,6 +5,8 @@ import { splitSentences } from '../utils.js';
 // Lens is AI-only: sentence roles are classified by the server per reading purpose.
 // Valid purposes: 'inform' | 'understand' | 'evaluate'.
 
+const DENSITY_THRESHOLDS = { low: 85, medium: 75, high: 65 };
+
 export function extractAllSentences() {
   const area = findContentArea();
   return area.innerText
@@ -17,7 +19,7 @@ export function requestSentenceLabels() {
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'loading' });
     return;
   }
-  if (state.aiSentenceLabels.length > 0) {
+  if (state.sentenceLabelsLoaded) {
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'success' });
     return;
   }
@@ -28,5 +30,6 @@ export function requestSentenceLabels() {
     type:        'LABEL_REQUEST',
     sentences:   state.allSentences,
     lensPurpose: state.settings.sentenceLabelsLens ?? 'inform',
+    minImportance: DENSITY_THRESHOLDS[state.settings.sentenceLabelsDensity] ?? 75,
   });
 }

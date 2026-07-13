@@ -56,35 +56,55 @@ async function fetchEmotionAnalysis(text, url) {
   return promise;
 }
 
-async function fetchSentenceLabels(sentences, url, lensPurpose = 'inform') {
-  // Cache key includes the reading purpose so switching Lens re-fetches instead of
-  // returning stale labels from the previous purpose.
+function normalizeMinImportance(value) {
+  if (value === null || value === '' || typeof value === 'boolean') return 75;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 75;
+  return Math.min(100, Math.max(1, Math.round(parsed)));
+}
+
+function visibleLabels(scoredLabels, threshold) {
+  return scoredLabels
+    .filter(label => label.importance >= threshold)
+    .map(({ index, type }) => ({ index, type }));
+}
+
+async function fetchSentenceLabels(sentences, url, lensPurpose = 'inform', minImportance = 75) {
+  // Scored candidates are independent of display density, so one cache entry can
+  // serve all density choices for the same page and reading purpose.
   const cacheKey = `${url}|${lensPurpose}`;
+  const threshold = normalizeMinImportance(minImportance);
   const cached = labelCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) return cached.result;
-  if (labelPending.has(cacheKey)) return labelPending.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return visibleLabels(cached.result, threshold);
+  }
 
-  const promise = (async () => {
-    try {
-      const response = await fetchWithAbortTimeout(`${API_BASE}/api/label`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ sentences, lensPurpose }),
-      });
-      if (!response.ok) return null;
-      const result = await response.json();
-      if (!result.success) return null;
-      if (result.labels) labelCache.set(cacheKey, { result: result.labels, timestamp: Date.now() });
-      return result.labels ?? null;
-    } catch {
-      return null;
-    } finally {
-      labelPending.delete(cacheKey);
-    }
-  })();
+  let promise = labelPending.get(cacheKey);
+  if (!promise) {
+    promise = (async () => {
+      try {
+        const response = await fetchWithAbortTimeout(`${API_BASE}/api/label`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ sentences, lensPurpose, minImportance: threshold }),
+        });
+        if (!response.ok) return null;
+        const result = await response.json();
+        if (!result.success || !Array.isArray(result.scoredLabels)) return null;
+        labelCache.set(cacheKey, { result: result.scoredLabels, timestamp: Date.now() });
+        return result.scoredLabels;
+      } catch {
+        return null;
+      } finally {
+        labelPending.delete(cacheKey);
+      }
+    })();
 
-  labelPending.set(cacheKey, promise);
-  return promise;
+    labelPending.set(cacheKey, promise);
+  }
+
+  const scoredLabels = await promise;
+  return scoredLabels ? visibleLabels(scoredLabels, threshold) : null;
 }
 
 // ── Message relay & analysis handler ──────────────────────────────────
@@ -100,9 +120,15 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     }
 
     if (msg.type === 'LABEL_REQUEST') {
-      fetchSentenceLabels(msg.sentences, sender.tab.url, msg.lensPurpose ?? msg.articleLens).then(labels => {
-        const type = labels ? 'LABEL_RESULT' : 'LABEL_ERROR';
-        chrome.tabs.sendMessage(sender.tab.id, labels ? { type, labels } : { type });
+      fetchSentenceLabels(
+        msg.sentences,
+        sender.tab.url,
+        msg.lensPurpose ?? msg.articleLens,
+        msg.minImportance,
+      ).then(labels => {
+        const ok = Array.isArray(labels);
+        const type = ok ? 'LABEL_RESULT' : 'LABEL_ERROR';
+        chrome.tabs.sendMessage(sender.tab.id, ok ? { type, labels } : { type });
       });
     }
 

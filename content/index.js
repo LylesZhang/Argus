@@ -28,6 +28,8 @@ function migrateLensSettings(settings) {
   }
   const VALID = new Set(['inform', 'understand', 'evaluate']);
   if (!VALID.has(settings.sentenceLabelsLens)) settings.sentenceLabelsLens = 'inform';
+  const VALID_DENSITIES = new Set(['low', 'medium', 'high']);
+  if (!VALID_DENSITIES.has(settings.sentenceLabelsDensity)) settings.sentenceLabelsDensity = 'medium';
 }
 
 function applyPresetActions(actions) {
@@ -76,6 +78,7 @@ chrome.storage.sync.get(['draSettings', 'draWordLists', 'draPresets'], (data) =>
     state.aiEmotionHighlights = [];
     state.aiSentenceLabels   = [];
     state.sentenceLabels     = [];
+    state.sentenceLabelsLoaded = false;
     clearTimeout(_renderTimer);
     _renderTimer = setTimeout(() => render(), 500);
   }).observe(document.body, { childList: true, subtree: true });
@@ -86,11 +89,15 @@ chrome.storage.sync.get(['draSettings', 'draWordLists', 'draPresets'], (data) =>
 function applySettingsPayload(payload) {
   if (payload.rulerActive === false) state.lastRulerY = null;
   const prevLens = state.settings.sentenceLabelsLens;
+  const prevDensity = state.settings.sentenceLabelsDensity;
   state.settings = { ...state.settings, ...payload };
-  if (payload.sentenceLabelsLens && payload.sentenceLabelsLens !== prevLens) {
+  const lensChanged = payload.sentenceLabelsLens && payload.sentenceLabelsLens !== prevLens;
+  const densityChanged = payload.sentenceLabelsDensity && payload.sentenceLabelsDensity !== prevDensity;
+  if (lensChanged || densityChanged) {
     state.aiSentenceLabels         = [];
     state.sentenceLabels           = [];
     state.sentenceLabelsInProgress = false;
+    state.sentenceLabelsLoaded     = false;
   }
   if ('typewriterSpeed'  in payload) setTypewriterSpeed(payload.typewriterSpeed);
   if ('typewriterActive' in payload) setTypewriterActive(payload.typewriterActive);
@@ -120,13 +127,12 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'LABEL_RESULT') {
     state.sentenceLabelsInProgress = false;
-    if (msg.labels?.length > 0) {
-      state.aiSentenceLabels = msg.labels;
-      state.sentenceLabels   = state.aiSentenceLabels;
-    }
+    state.sentenceLabelsLoaded = Array.isArray(msg.labels);
+    state.aiSentenceLabels = Array.isArray(msg.labels) ? msg.labels : [];
+    state.sentenceLabels   = state.aiSentenceLabels;
     chrome.runtime.sendMessage({
       type: 'AI_STATUS', feature: 'labels',
-      status: msg.labels?.length > 0 ? 'success' : 'error',
+      status: Array.isArray(msg.labels) ? 'success' : 'error',
     });
     render();
     refreshImmersiveReader();
@@ -134,6 +140,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'LABEL_ERROR') {
     state.sentenceLabelsInProgress = false;
+    state.sentenceLabelsLoaded = false;
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'error' });
   }
 
@@ -188,6 +195,7 @@ chrome.runtime.onMessage.addListener((msg) => {
       state.aiSentenceLabels         = [];
       state.sentenceLabels           = [];
       state.sentenceLabelsInProgress = false;
+      state.sentenceLabelsLoaded     = false;
     }
     render();
   }

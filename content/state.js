@@ -7,6 +7,7 @@ export const state = {
   lastRulerY:              null,
   emotionAIInProgress:      false,
   sentenceLabelsInProgress: false,
+  sentenceLabelsLoaded:     false,
   aiEmotionHighlights:      [],
   aiSentenceLabels:         [],
   articleHighlights:        [],

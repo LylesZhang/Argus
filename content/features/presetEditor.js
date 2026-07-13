@@ -76,7 +76,7 @@ const PRESET_KEYS = [
   'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation',
   'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
   'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
-  'sentenceLabels', 'sentenceLabelsLens',
+  'sentenceLabels', 'sentenceLabelsLens', 'sentenceLabelsDensity',
   'labelKeyPointColor', 'labelCoreDetailColor',
   'labelConceptColor', 'labelReasoningColor', 'labelTakeawayColor',
   'labelClaimColor', 'labelEvidenceColor', 'labelCounterpointColor',
@@ -117,11 +117,13 @@ function refreshPreview() {
   const article = SAMPLE_ARTICLES[lens] ?? SAMPLE_ARTICLES.inform;
   const previewBody = root.querySelector('.dra-pe-preview-body');
   if (!previewBody) return;
+  const densityThreshold = ({ low: 85, medium: 75, high: 65 })[s.sentenceLabelsDensity] ?? 75;
+  const previewLabels = article.aiSentenceLabels?.filter(label => label.importance >= densityThreshold) ?? null;
 
   // AI results come from pre-computed static data in sampleArticles.js — no live API calls.
   const html = renderPreviewArticle(article, s, state.wordLists, {
     externalEmotions: s.emotionMode === 'ai' ? (article.aiEmotionHighlights ?? null) : null,
-    externalLabels:   s.sentenceLabels ? (article.aiSentenceLabels ?? null) : null,
+    externalLabels:   s.sentenceLabels ? previewLabels : null,
   });
 
   previewBody.innerHTML = `
@@ -252,6 +254,9 @@ function buildFormHTML() {
       ['inform','Get Information'],['understand','Understand'],
       ['evaluate','Evaluate'],
     ]),
+    selectInput('pe-label-density', 'sentenceLabelsDensity', 'Highlight Density', [
+      ['low','Low'],['medium','Medium'],['high','High'],
+    ]),
     // Label colors grouped by purpose; only the active purpose group is shown
     `<div id="pe-label-colors" class="dra-pe-label-colors">
       <div data-pe-lens="inform">
@@ -338,6 +343,7 @@ function wireForm(root) {
       case 'pe-toggle-emotion':      update('emotionColor',      el.checked); break;
       case 'pe-toggle-labels':       update('sentenceLabels',    el.checked); break;
       case 'pe-label-lens':          update('sentenceLabelsLens', el.value);  break;
+      case 'pe-label-density':       update('sentenceLabelsDensity', el.value); break;
       case 'pe-action-open-reader':
         if (!draft.actions) draft.actions = {};
         draft.actions.autoOpenReaderMode = el.checked;

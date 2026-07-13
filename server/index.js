@@ -204,52 +204,112 @@ app.post('/api/focus', async (req, res) => {
 
 // Lenses are keyed by READING PURPOSE (not article genre). Each highlights the
 // sentence roles most useful for that purpose, regardless of the text's genre.
+const LENS_SCORING_GUIDE = `
+Score importance independently of any display density or cutoff. Consider:
+- contribution to the passage's main point
+- whether another sentence already supplies the same information
+- contribution to understanding the facts, logic, or argument
+- how much removing the sentence would damage the reader's understanding
+
+Calibration anchors:
+- 100 — indispensable; without it the passage cannot be understood or summarized correctly
+- 80  — clearly needed to understand a major fact, logical step, or argument
+- 60  — helpful but optional supporting information
+- 40  — background or minor detail
+- 20  — repetitive, decorative, or peripheral
+
+Merely matching one of the label definitions does NOT justify a high score.
+Return only candidates scoring 50 or higher. It is valid to return an empty array.
+`.trim();
+
 const LENS_PROMPTS = {
   inform: (sentences) => `
-The reader wants to GET INFORMATION quickly from this text. Highlight only the sentences that carry the facts they need. Only include sentences you are confident about.
+The reader wants to GET INFORMATION quickly from this text. Score sentences by how important they are to that purpose.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{ "labels": [{ "index": <n>, "type": "key-point" | "core-detail" }] }
+{ "labels": [{ "index": <n>, "type": "key-point" | "core-detail", "importance": <1-100> }] }
 
 Definitions:
 - "key-point"   — the main fact, answer, or bottom-line takeaway of the passage
 - "core-detail" — a specific supporting fact worth noting: a number, date, name, place, or amount
+
+${LENS_SCORING_GUIDE}
 `.trim(),
 
   understand: (sentences) => `
-The reader wants to UNDERSTAND THE CONCEPTS AND LOGIC of this text — to build a mental model of the ideas and how they connect. Only include sentences you are confident about.
+The reader wants to UNDERSTAND THE CONCEPTS AND LOGIC of this text — to build a mental model of the ideas and how they connect. Score sentences by how important they are to that purpose.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{ "labels": [{ "index": <n>, "type": "concept" | "reasoning" | "takeaway" }] }
+{ "labels": [{ "index": <n>, "type": "concept" | "reasoning" | "takeaway", "importance": <1-100> }] }
 
 Definitions:
 - "concept"   — defines or introduces a key term or idea (a "X is ..." definition; what something IS)
 - "reasoning" — the causal or logical connective tissue (how/why: because, therefore, leads to, this causes)
 - "takeaway"  — the author's central conclusion or main insight (a "so ... / this means ..." statement; NOT a definition)
+
+${LENS_SCORING_GUIDE}
 `.trim(),
 
   evaluate: (sentences) => `
-The reader wants to EVALUATE THE ARGUMENT of this text — to judge whether the case holds up. Only include sentences you are confident about.
+The reader wants to EVALUATE THE ARGUMENT of this text — to judge whether the case holds up. Score sentences by how important they are to that purpose.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{ "labels": [{ "index": <n>, "type": "claim" | "evidence" | "counterpoint" }] }
+{ "labels": [{ "index": <n>, "type": "claim" | "evidence" | "counterpoint", "importance": <1-100> }] }
 
 Definitions:
 - "claim"        — an assertion or position the author is arguing for
 - "evidence"     — data, citations, examples, or facts offered to support a claim
 - "counterpoint" — a concession, limitation, caveat, or opposing view the author acknowledges
+
+${LENS_SCORING_GUIDE}
 `.trim(),
 
 };
+
+const LENS_TYPES = {
+  inform: new Set(['key-point', 'core-detail']),
+  understand: new Set(['concept', 'reasoning', 'takeaway']),
+  evaluate: new Set(['claim', 'evidence', 'counterpoint']),
+};
+
+function clampMinImportance(value) {
+  if (value === null || value === '' || typeof value === 'boolean') return 75;
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 75;
+  return Math.min(100, Math.max(1, Math.round(parsed)));
+}
+
+function normalizeSentenceLabels(labels, sentenceCount, lensPurpose) {
+  if (!Array.isArray(labels)) return null;
+  const validTypes = LENS_TYPES[lensPurpose] ?? LENS_TYPES.inform;
+  const bestByIndex = new Map();
+
+  for (const label of labels) {
+    if (label?.index === null || label?.index === '' || label?.importance === null || label?.importance === '') continue;
+    const index = Number(label?.index);
+    const importance = Number(label?.importance);
+    if (!Number.isInteger(index) || index < 0 || index >= sentenceCount) continue;
+    if (!validTypes.has(label?.type)) continue;
+    if (!Number.isFinite(importance) || importance < 50 || importance > 100) continue;
+
+    const normalized = { index, type: label.type, importance: Math.round(importance) };
+    const existing = bestByIndex.get(index);
+    if (!existing || normalized.importance > existing.importance) {
+      bestByIndex.set(index, normalized);
+    }
+  }
+
+  return [...bestByIndex.values()].sort((a, b) => a.index - b.index);
+}
 
 async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {
   const apiKey   = process.env.GEMINI_API_KEY;
@@ -261,10 +321,9 @@ async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {
       signal => callGemini(apiKey, promptFn(chunk), signal),
       `label-chunk-offset-${offset}`
     );
-    if (result?.labels?.length > 0) {
-      return result.labels.map(l => ({ ...l, index: l.index + offset }));
-    }
-    return null;
+    const labels = normalizeSentenceLabels(result?.labels, chunk.length, lensPurpose);
+    if (labels === null) return null;
+    return labels.map(l => ({ ...l, index: l.index + offset }));
   };
 
   const allLabels = [];
@@ -290,7 +349,7 @@ async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {
 }
 
 app.post('/api/label', async (req, res) => {
-  const { sentences, lensPurpose, articleLens } = req.body;
+  const { sentences, lensPurpose, articleLens, minImportance } = req.body;
   if (!Array.isArray(sentences) || sentences.length === 0) {
     return res.status(400).json({ error: 'sentences array required' });
   }
@@ -299,8 +358,11 @@ app.post('/api/label', async (req, res) => {
 
   try {
     // Accept `lensPurpose` (new) with `articleLens` fallback for older clients.
-    const { labels, success } = await fetchSentenceLabelsFromGemini(sentences, lensPurpose ?? articleLens ?? 'inform');
-    res.json({ labels, success });
+    const purpose = lensPurpose ?? articleLens ?? 'inform';
+    const threshold = clampMinImportance(minImportance);
+    const { labels: scoredLabels, success } = await fetchSentenceLabelsFromGemini(sentences, purpose);
+    const labels = scoredLabels.filter(label => label.importance >= threshold);
+    res.json({ labels, scoredLabels, success });
   } catch (err) {
     console.error('Label error:', err);
     res.status(500).json({ error: 'Internal server error' });

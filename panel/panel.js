@@ -17,6 +17,7 @@ const DEFAULT_SETTINGS = {
   transitionAnimation:   false,
   sentenceLabels:        false,
   sentenceLabelsLens:    'inform',
+  sentenceLabelsDensity: 'medium',
   labelKeyPointColor:     '#eab308',
   labelCoreDetailColor:   '#3b82f6',
   labelConceptColor:      '#9333ea',
@@ -51,7 +52,7 @@ const PRESET_SETTING_KEYS = [
   'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation',
   'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
   'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
-  'sentenceLabels', 'sentenceLabelsLens',
+  'sentenceLabels', 'sentenceLabelsLens', 'sentenceLabelsDensity',
   'labelKeyPointColor', 'labelCoreDetailColor',
   'labelConceptColor', 'labelReasoningColor', 'labelTakeawayColor',
   'labelClaimColor', 'labelEvidenceColor', 'labelCounterpointColor',
@@ -306,6 +307,7 @@ function syncUI() {
   document.getElementById('label-evidence-color').value     = settings.labelEvidenceColor;
   document.getElementById('label-counterpoint-color').value = settings.labelCounterpointColor;
   document.getElementById('label-lens-select').value = settings.sentenceLabelsLens ?? 'inform';
+  document.getElementById('label-density-select').value = settings.sentenceLabelsDensity ?? 'medium';
   switchLensLegend(settings.sentenceLabelsLens ?? 'inform');
   document.getElementById('ruler-size-slider').value  = settings.rulerWindowLines;
   document.getElementById('ruler-size-value').textContent = settings.rulerWindowLines.toFixed(1) + ' lines';
@@ -630,6 +632,9 @@ function init() {
   document.getElementById('label-lens-select').addEventListener('change', e => {
     switchLensLegend(e.target.value);
     broadcast({ sentenceLabelsLens: e.target.value });
+  });
+  document.getElementById('label-density-select').addEventListener('change', e => {
+    broadcast({ sentenceLabelsDensity: e.target.value });
   });
 
   const labelColorMap = {
@@ -1079,6 +1084,7 @@ const OLD_LENS_TO_PURPOSE = { news: 'inform', stem: 'understand', humanities: 'u
 function migrateLensSettings(s) {
   if (OLD_LENS_TO_PURPOSE[s.sentenceLabelsLens]) s.sentenceLabelsLens = OLD_LENS_TO_PURPOSE[s.sentenceLabelsLens];
   if (!['inform', 'understand', 'evaluate'].includes(s.sentenceLabelsLens)) s.sentenceLabelsLens = 'inform';
+  if (!['low', 'medium', 'high'].includes(s.sentenceLabelsDensity)) s.sentenceLabelsDensity = 'medium';
 }
 
 chrome.storage.sync.get('draSettings', (data) => {

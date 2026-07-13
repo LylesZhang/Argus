@@ -15,6 +15,8 @@
     // Lens on/off
     sentenceLabelsLens: "inform",
     // reading purpose: inform|understand|evaluate
+    sentenceLabelsDensity: "medium",
+    // low|medium|high importance threshold
     labelKeyPointColor: "#eab308",
     labelCoreDetailColor: "#3b82f6",
     labelConceptColor: "#9333ea",
@@ -49,6 +51,7 @@
     lastRulerY: null,
     emotionAIInProgress: false,
     sentenceLabelsInProgress: false,
+    sentenceLabelsLoaded: false,
     aiEmotionHighlights: [],
     aiSentenceLabels: [],
     articleHighlights: [],
@@ -575,6 +578,7 @@
   }
 
   // content/features/labels.js
+  var DENSITY_THRESHOLDS = { low: 85, medium: 75, high: 65 };
   function extractAllSentences() {
     const area = findContentArea();
     return area.innerText.split(/\n+/).filter((p) => p.trim().length > 20).flatMap((p) => splitSentences(p.trim()).filter((s) => s.trim()));
@@ -584,7 +588,7 @@
       chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "loading" });
       return;
     }
-    if (state.aiSentenceLabels.length > 0) {
+    if (state.sentenceLabelsLoaded) {
       chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "success" });
       return;
     }
@@ -594,7 +598,8 @@
     chrome.runtime.sendMessage({
       type: "LABEL_REQUEST",
       sentences: state.allSentences,
-      lensPurpose: state.settings.sentenceLabelsLens ?? "inform"
+      lensPurpose: state.settings.sentenceLabelsLens ?? "inform",
+      minImportance: DENSITY_THRESHOLDS[state.settings.sentenceLabelsDensity] ?? 75
     });
   }
 
@@ -1749,12 +1754,12 @@
         { word: "confident", context: "remain con", category: "emotion-positive" }
       ],
       aiSentenceLabels: [
-        { index: 0, type: "key-point" },
-        { index: 1, type: "core-detail" },
-        { index: 2, type: "key-point" },
-        { index: 3, type: "core-detail" },
-        { index: 6, type: "core-detail" },
-        { index: 8, type: "core-detail" }
+        { index: 0, type: "key-point", importance: 96 },
+        { index: 1, type: "core-detail", importance: 78 },
+        { index: 2, type: "key-point", importance: 88 },
+        { index: 3, type: "core-detail", importance: 67 },
+        { index: 6, type: "core-detail", importance: 72 },
+        { index: 8, type: "core-detail", importance: 82 }
       ]
     },
     understand: {
@@ -1775,14 +1780,14 @@
         { word: "untreatable", context: "sidered untreatable", category: "emotion-negative" }
       ],
       aiSentenceLabels: [
-        { index: 0, type: "concept" },
-        { index: 2, type: "reasoning" },
-        { index: 3, type: "reasoning" },
-        { index: 4, type: "reasoning" },
-        { index: 6, type: "reasoning" },
-        { index: 7, type: "takeaway" },
-        { index: 8, type: "takeaway" },
-        { index: 9, type: "takeaway" }
+        { index: 0, type: "concept", importance: 94 },
+        { index: 2, type: "reasoning", importance: 68 },
+        { index: 3, type: "reasoning", importance: 77 },
+        { index: 4, type: "reasoning", importance: 87 },
+        { index: 6, type: "reasoning", importance: 72 },
+        { index: 7, type: "takeaway", importance: 66 },
+        { index: 8, type: "takeaway", importance: 91 },
+        { index: 9, type: "takeaway", importance: 81 }
       ]
     },
     evaluate: {
@@ -1803,13 +1808,13 @@
         { word: "resisting", context: "course, r", category: "emotion-complex" }
       ],
       aiSentenceLabels: [
-        { index: 0, type: "claim" },
-        { index: 1, type: "evidence" },
-        { index: 2, type: "evidence" },
-        { index: 4, type: "claim" },
-        { index: 5, type: "claim" },
-        { index: 6, type: "evidence" },
-        { index: 7, type: "claim" }
+        { index: 0, type: "claim", importance: 97 },
+        { index: 1, type: "evidence", importance: 70 },
+        { index: 2, type: "evidence", importance: 79 },
+        { index: 4, type: "claim", importance: 86 },
+        { index: 5, type: "claim", importance: 68 },
+        { index: 6, type: "evidence", importance: 76 },
+        { index: 7, type: "claim", importance: 90 }
       ]
     }
   };
@@ -2032,6 +2037,7 @@
     "emotionComplexColor",
     "sentenceLabels",
     "sentenceLabelsLens",
+    "sentenceLabelsDensity",
     "labelKeyPointColor",
     "labelCoreDetailColor",
     "labelConceptColor",
@@ -2070,9 +2076,11 @@
     const article = SAMPLE_ARTICLES[lens] ?? SAMPLE_ARTICLES.inform;
     const previewBody = root.querySelector(".dra-pe-preview-body");
     if (!previewBody) return;
+    const densityThreshold = { low: 85, medium: 75, high: 65 }[s.sentenceLabelsDensity] ?? 75;
+    const previewLabels = article.aiSentenceLabels?.filter((label) => label.importance >= densityThreshold) ?? null;
     const html = renderPreviewArticle(article, s, state.wordLists, {
       externalEmotions: s.emotionMode === "ai" ? article.aiEmotionHighlights ?? null : null,
-      externalLabels: s.sentenceLabels ? article.aiSentenceLabels ?? null : null
+      externalLabels: s.sentenceLabels ? previewLabels : null
     });
     previewBody.innerHTML = `
     <div class="dra-pe-preview-meta">Previewing: ${{ inform: "Get Information", understand: "Understand", evaluate: "Evaluate" }[lens] ?? lens} sample</div>
@@ -2187,6 +2195,11 @@
         ["understand", "Understand"],
         ["evaluate", "Evaluate"]
       ]),
+      selectInput("pe-label-density", "sentenceLabelsDensity", "Highlight Density", [
+        ["low", "Low"],
+        ["medium", "Medium"],
+        ["high", "High"]
+      ]),
       // Label colors grouped by purpose; only the active purpose group is shown
       `<div id="pe-label-colors" class="dra-pe-label-colors">
       <div data-pe-lens="inform">
@@ -2278,6 +2291,9 @@
           break;
         case "pe-label-lens":
           update("sentenceLabelsLens", el.value);
+          break;
+        case "pe-label-density":
+          update("sentenceLabelsDensity", el.value);
           break;
         case "pe-action-open-reader":
           if (!draft.actions) draft.actions = {};
@@ -2553,6 +2569,8 @@
     }
     const VALID = /* @__PURE__ */ new Set(["inform", "understand", "evaluate"]);
     if (!VALID.has(settings.sentenceLabelsLens)) settings.sentenceLabelsLens = "inform";
+    const VALID_DENSITIES = /* @__PURE__ */ new Set(["low", "medium", "high"]);
+    if (!VALID_DENSITIES.has(settings.sentenceLabelsDensity)) settings.sentenceLabelsDensity = "medium";
   }
   function applyPresetActions(actions) {
     if (actions?.autoOpenReaderMode === true) {
@@ -2596,6 +2614,7 @@
       state.aiEmotionHighlights = [];
       state.aiSentenceLabels = [];
       state.sentenceLabels = [];
+      state.sentenceLabelsLoaded = false;
       clearTimeout(_renderTimer);
       _renderTimer = setTimeout(() => render(), 500);
     }).observe(document.body, { childList: true, subtree: true });
@@ -2603,11 +2622,15 @@
   function applySettingsPayload(payload) {
     if (payload.rulerActive === false) state.lastRulerY = null;
     const prevLens = state.settings.sentenceLabelsLens;
+    const prevDensity = state.settings.sentenceLabelsDensity;
     state.settings = { ...state.settings, ...payload };
-    if (payload.sentenceLabelsLens && payload.sentenceLabelsLens !== prevLens) {
+    const lensChanged = payload.sentenceLabelsLens && payload.sentenceLabelsLens !== prevLens;
+    const densityChanged = payload.sentenceLabelsDensity && payload.sentenceLabelsDensity !== prevDensity;
+    if (lensChanged || densityChanged) {
       state.aiSentenceLabels = [];
       state.sentenceLabels = [];
       state.sentenceLabelsInProgress = false;
+      state.sentenceLabelsLoaded = false;
     }
     if ("typewriterSpeed" in payload) setTypewriterSpeed(payload.typewriterSpeed);
     if ("typewriterActive" in payload) setTypewriterActive(payload.typewriterActive);
@@ -2633,20 +2656,20 @@
     }
     if (msg.type === "LABEL_RESULT") {
       state.sentenceLabelsInProgress = false;
-      if (msg.labels?.length > 0) {
-        state.aiSentenceLabels = msg.labels;
-        state.sentenceLabels = state.aiSentenceLabels;
-      }
+      state.sentenceLabelsLoaded = Array.isArray(msg.labels);
+      state.aiSentenceLabels = Array.isArray(msg.labels) ? msg.labels : [];
+      state.sentenceLabels = state.aiSentenceLabels;
       chrome.runtime.sendMessage({
         type: "AI_STATUS",
         feature: "labels",
-        status: msg.labels?.length > 0 ? "success" : "error"
+        status: Array.isArray(msg.labels) ? "success" : "error"
       });
       render();
       refreshImmersiveReader();
     }
     if (msg.type === "LABEL_ERROR") {
       state.sentenceLabelsInProgress = false;
+      state.sentenceLabelsLoaded = false;
       chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "error" });
     }
     if (msg.type === "FOCUS_AI_REQUEST") {
@@ -2696,6 +2719,7 @@
         state.aiSentenceLabels = [];
         state.sentenceLabels = [];
         state.sentenceLabelsInProgress = false;
+        state.sentenceLabelsLoaded = false;
       }
       render();
     }
