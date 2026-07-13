@@ -3,6 +3,7 @@ import { state } from '../state.js';
 const POPUP_ID = 'dra-simplify-popup';
 let listening = false;
 let pendingRequestId = null;
+let currentRect = null;
 
 function getPopup() {
   return document.getElementById(POPUP_ID);
@@ -26,6 +27,7 @@ function positionPopup(popup, rect) {
 }
 
 function showSimplifyButton(selectedText, rect) {
+  currentRect = rect;
   hidePopup();
 
   const popup = document.createElement('div');
@@ -95,6 +97,7 @@ export function showSimplifyResult(simplified, requestId) {
   body.className = 'dra-simplify-result';
   body.textContent = simplified;
   popup.appendChild(body);
+  if (currentRect) positionPopup(popup, currentRect);
 }
 
 export function showSimplifyError(requestId) {

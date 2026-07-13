@@ -1512,6 +1512,7 @@
   var POPUP_ID = "dra-simplify-popup";
   var listening2 = false;
   var pendingRequestId = null;
+  var currentRect = null;
   function getPopup() {
     return document.getElementById(POPUP_ID);
   }
@@ -1531,6 +1532,7 @@
     popup.style.left = left + "px";
   }
   function showSimplifyButton(selectedText, rect) {
+    currentRect = rect;
     hidePopup();
     const popup = document.createElement("div");
     popup.id = POPUP_ID;
@@ -1588,6 +1590,7 @@
     body.className = "dra-simplify-result";
     body.textContent = simplified;
     popup.appendChild(body);
+    if (currentRect) positionPopup(popup, currentRect);
   }
   function showSimplifyError(requestId) {
     if (requestId !== pendingRequestId) return;
