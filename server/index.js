@@ -229,6 +229,8 @@ The reader wants to GET INFORMATION quickly from this text. Score sentences by h
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
+Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones.
+
 Return ONLY this JSON:
 { "labels": [{ "index": <n>, "type": "key-point" | "core-detail", "importance": <1-100> }] }
 
@@ -244,6 +246,8 @@ The reader wants to UNDERSTAND THE CONCEPTS AND LOGIC of this text — to build 
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
+
+Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones.
 
 Return ONLY this JSON:
 { "labels": [{ "index": <n>, "type": "concept" | "reasoning" | "takeaway", "importance": <1-100> }] }
@@ -261,6 +265,8 @@ The reader wants to EVALUATE THE ARGUMENT of this text — to judge whether the 
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
+
+Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones.
 
 Return ONLY this JSON:
 { "labels": [{ "index": <n>, "type": "claim" | "evidence" | "counterpoint", "importance": <1-100> }] }
@@ -317,8 +323,9 @@ async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {
   const CHUNK    = 40;
 
   const processChunk = async (chunk, offset) => {
+    const budget = Math.max(2, Math.floor(chunk.length * 0.20));
     const result = await runChunkWithRetry(
-      signal => callGemini(apiKey, promptFn(chunk), signal),
+      signal => callGemini(apiKey, promptFn(chunk, budget), signal),
       `label-chunk-offset-${offset}`
     );
     const labels = normalizeSentenceLabels(result?.labels, chunk.length, lensPurpose);
