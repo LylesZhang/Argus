@@ -148,6 +148,24 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
       });
     }
 
+    if (msg.type === 'SIMPLIFY_REQUEST') {
+      fetchWithAbortTimeout(`${API_BASE}/api/simplify`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ text: msg.text }),
+      })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+        .then(result => {
+          const type = result?.simplified ? 'SIMPLIFY_RESULT' : 'SIMPLIFY_ERROR';
+          chrome.tabs.sendMessage(sender.tab.id,
+            result?.simplified
+              ? { type, simplified: result.simplified, requestId: msg.requestId }
+              : { type, requestId: msg.requestId }
+          );
+        });
+    }
+
     if (msg.type === 'FOCUS_ANALYZE') {
       fetchWithAbortTimeout(`${API_BASE}/api/focus`, {
         method:  'POST',

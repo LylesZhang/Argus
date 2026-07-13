@@ -10,6 +10,7 @@ import { DEFAULT_EMOTION_POSITIVE, DEFAULT_EMOTION_NEGATIVE, DEFAULT_EMOTION_COM
 import { DEFAULT_TRANSITION_WORDS } from './features/transitions.js';
 import { openImmersiveReader, closeImmersiveReader, refreshImmersiveReader, setTypewriterActive, setTypewriterSpeed, startTypewriterFromBeginning } from './features/immersiveReader.js';
 import { openPresetEditor, maybeShowOnboarding } from './features/presetEditor.js';
+import { showSimplifyResult, showSimplifyError } from './features/simplify.js';
 
 const DEFAULT_WORD_LISTS = {
   emotionPositive: [...DEFAULT_EMOTION_POSITIVE],
@@ -271,6 +272,14 @@ chrome.runtime.onMessage.addListener((msg) => {
         !state.settings.emotionColor ||
         state.settings.emotionMode !== 'ai') return;
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'error' });
+  }
+
+  if (msg.type === 'SIMPLIFY_RESULT') {
+    showSimplifyResult(msg.simplified, msg.requestId);
+  }
+
+  if (msg.type === 'SIMPLIFY_ERROR') {
+    showSimplifyError(msg.requestId);
   }
 
   if (msg.type === 'AI_RETRY') {
