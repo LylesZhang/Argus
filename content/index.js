@@ -88,11 +88,16 @@ chrome.storage.sync.get(['draSettings', 'draWordLists', 'draPresets'], (data) =>
     _lastUrl = location.href;
     state.contentArea        = null;
     state.aiEmotionHighlights = [];
+    state.emotionLoaded       = false;
+    state.emotionRequestFailed = false;
+    state.emotionRequestId = null;
     state.aiSentenceLabels   = [];
     state.aiScoredSentenceLabels = [];
     state.sentenceLabels     = [];
     state.allSentences       = [];
     state.sentenceLabelsLoaded = false;
+    state.sentenceLabelsRequestFailed = false;
+    state.sentenceLabelsRequestId = null;
     clearTimeout(_renderTimer);
     _renderTimer = setTimeout(() => render(), 500);
   }).observe(document.body, { childList: true, subtree: true });
@@ -101,10 +106,39 @@ chrome.storage.sync.get(['draSettings', 'draWordLists', 'draPresets'], (data) =>
 // ── Message router ─────────────────────────────────────────────────────
 
 function applySettingsPayload(payload) {
+  if (Number.isFinite(payload.settingsRevision)) {
+    if (payload.settingsRevision <= state.lastSettingsRevision) return;
+    state.lastSettingsRevision = payload.settingsRevision;
+  }
   if (payload.rulerActive === false) state.lastRulerY = null;
   const prevLens = state.settings.sentenceLabelsLens;
   const prevDensity = state.settings.sentenceLabelsDensity;
+  const prevEmotionMode = state.settings.emotionMode;
   state.settings = { ...state.settings, ...payload };
+  if (payload.emotionColor === false) {
+    state.aiEmotionHighlights = [];
+    state.emotionLoaded = false;
+    state.emotionRequestFailed = false;
+    state.emotionAIInProgress = false;
+    state.emotionRequestId = null;
+  }
+  if (payload.emotionMode && payload.emotionMode !== prevEmotionMode) {
+    state.emotionRequestFailed = false;
+    state.emotionRequestId = null;
+    if (payload.emotionMode === 'ai') {
+      state.emotionLoaded = false;
+      state.aiEmotionHighlights = [];
+    }
+  }
+  if (payload.sentenceLabels === false) {
+    state.aiSentenceLabels = [];
+    state.aiScoredSentenceLabels = [];
+    state.sentenceLabels = [];
+    state.sentenceLabelsInProgress = false;
+    state.sentenceLabelsLoaded = false;
+    state.sentenceLabelsRequestFailed = false;
+    state.sentenceLabelsRequestId = null;
+  }
   const lensChanged = payload.sentenceLabelsLens && payload.sentenceLabelsLens !== prevLens;
   const densityChanged = payload.sentenceLabelsDensity && payload.sentenceLabelsDensity !== prevDensity;
   if (lensChanged) {
@@ -113,16 +147,22 @@ function applySettingsPayload(payload) {
     state.sentenceLabels           = [];
     state.sentenceLabelsInProgress = false;
     state.sentenceLabelsLoaded     = false;
+    state.sentenceLabelsRequestFailed = false;
+    state.sentenceLabelsRequestId = null;
   } else if (densityChanged && state.sentenceLabelsLoaded) {
+    state.sentenceLabelsRequestId = null;
     state.aiSentenceLabels = filterScoredLabels(state.aiScoredSentenceLabels, currentLensThreshold());
     state.sentenceLabels = state.aiSentenceLabels;
     state.sentenceLabelsInProgress = false;
     state.sentenceLabelsLoaded = true;
+    state.sentenceLabelsRequestFailed = false;
   } else if (densityChanged) {
     state.aiSentenceLabels         = [];
     state.sentenceLabels           = [];
     state.sentenceLabelsInProgress = false;
     state.sentenceLabelsLoaded     = false;
+    state.sentenceLabelsRequestFailed = false;
+    state.sentenceLabelsRequestId = null;
   }
   if ('typewriterSpeed'  in payload) setTypewriterSpeed(payload.typewriterSpeed);
   if ('typewriterActive' in payload) setTypewriterActive(payload.typewriterActive);
@@ -151,10 +191,12 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'LABEL_RESULT') {
+    if (msg.requestId !== state.sentenceLabelsRequestId) return;
     if (msg.lensPurpose !== (state.settings.sentenceLabelsLens ?? 'inform') ||
         msg.minImportance !== currentLensThreshold()) return;
     state.sentenceLabelsInProgress = false;
     state.sentenceLabelsLoaded = Array.isArray(msg.labels);
+    state.sentenceLabelsRequestFailed = false;
     state.aiScoredSentenceLabels = Array.isArray(msg.scoredLabels) ? msg.scoredLabels : [];
     state.aiSentenceLabels = Array.isArray(msg.labels) ? msg.labels : [];
     state.sentenceLabels   = state.aiSentenceLabels;
@@ -167,10 +209,12 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'LABEL_ERROR') {
+    if (msg.requestId !== state.sentenceLabelsRequestId) return;
     if (msg.lensPurpose !== (state.settings.sentenceLabelsLens ?? 'inform') ||
         msg.minImportance !== currentLensThreshold()) return;
     state.sentenceLabelsInProgress = false;
     state.sentenceLabelsLoaded = false;
+    state.sentenceLabelsRequestFailed = true;
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'error' });
   }
 
@@ -198,28 +242,44 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'EMOTION_RESULT') {
+    if (msg.requestId !== state.emotionRequestId) return;
+    if (!state.settings.readingAidsEnabled ||
+        !state.settings.emotionColor ||
+        state.settings.emotionMode !== 'ai') {
+      state.emotionAIInProgress = false;
+      return;
+    }
     console.log('[EMO] result received | highlights:', msg.highlights?.length ?? 'null');
     state.emotionAIInProgress = false;
-    if (msg.highlights?.length > 0) {
-      state.aiEmotionHighlights = msg.highlights;
-    }
+    state.emotionLoaded = Array.isArray(msg.highlights);
+    state.emotionRequestFailed = false;
+    state.aiEmotionHighlights = Array.isArray(msg.highlights) ? msg.highlights : [];
     chrome.runtime.sendMessage({
       type: 'AI_STATUS', feature: 'emotion',
-      status: msg.highlights?.length > 0 ? 'success' : 'error',
+      status: Array.isArray(msg.highlights) ? 'success' : 'error',
     });
     render();
     refreshImmersiveReader();
   }
 
   if (msg.type === 'EMOTION_ERROR') {
+    if (msg.requestId !== state.emotionRequestId) return;
     state.emotionAIInProgress = false;
+    state.emotionLoaded = false;
+    state.emotionRequestFailed = true;
+    if (!state.settings.readingAidsEnabled ||
+        !state.settings.emotionColor ||
+        state.settings.emotionMode !== 'ai') return;
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'error' });
   }
 
   if (msg.type === 'AI_RETRY') {
     if (msg.feature === 'emotion') {
       state.aiEmotionHighlights = [];
+      state.emotionLoaded = false;
+      state.emotionRequestFailed = false;
       state.emotionAIInProgress = false;
+      state.emotionRequestId = null;
     }
     if (msg.feature === 'labels') {
       state.aiSentenceLabels         = [];
@@ -227,6 +287,8 @@ chrome.runtime.onMessage.addListener((msg) => {
       state.sentenceLabels           = [];
       state.sentenceLabelsInProgress = false;
       state.sentenceLabelsLoaded     = false;
+      state.sentenceLabelsRequestFailed = false;
+      state.sentenceLabelsRequestId = null;
     }
     render();
   }

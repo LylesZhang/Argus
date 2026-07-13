@@ -75,19 +75,34 @@ export function generateEmotionHighlights() {
 }
 
 export function requestEmotionAnalysis() {
+  // Defensive gate: callers and delayed render cycles must never start emotion
+  // analysis unless the AI Emotion feature is currently enabled.
+  if (!state.settings.readingAidsEnabled ||
+      !state.settings.emotionColor ||
+      state.settings.emotionMode !== 'ai') {
+    state.emotionAIInProgress = false;
+    return;
+  }
   if (state.emotionAIInProgress) {
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'loading' });
     return;
   }
-  if (state.aiEmotionHighlights.length > 0) {
+  if (state.emotionLoaded) {
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'success' });
     return;
   }
+  if (state.emotionRequestFailed) {
+    chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'error' });
+    return;
+  }
   state.emotionAIInProgress = true;
+  const requestId = `${state.requestSessionId}:emotion:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  state.emotionRequestId = requestId;
   chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'loading' });
   const area = findContentArea();
   chrome.runtime.sendMessage({
     type: 'EMOTION_REQUEST',
+    requestId,
     url:  window.location.href,
     text: area.innerText.trim(),
   });

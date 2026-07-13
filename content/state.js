@@ -1,13 +1,20 @@
 import { DEFAULT_SETTINGS } from './settings.js';
 
 export const state = {
+  requestSessionId:         `${Date.now()}-${Math.random().toString(36).slice(2)}`,
   settings:                { ...DEFAULT_SETTINGS },
+  lastSettingsRevision:    0,
   originalHTML:            new WeakMap(),
   contentArea:             null,
   lastRulerY:              null,
   emotionAIInProgress:      false,
+  emotionLoaded:            false,
+  emotionRequestFailed:     false,
+  emotionRequestId:         null,
   sentenceLabelsInProgress: false,
   sentenceLabelsLoaded:     false,
+  sentenceLabelsRequestFailed: false,
+  sentenceLabelsRequestId:   null,
   aiEmotionHighlights:      [],
   aiSentenceLabels:         [],
   aiScoredSentenceLabels:   [],

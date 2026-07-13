@@ -8,6 +8,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+app.get('/api/status', (_req, res) => {
+  res.json(pendingRequestStatus());
+});
+
 const GEMINI_URL =
   'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
@@ -15,21 +19,79 @@ const GEMINI_URL =
 const CHUNK_TIMEOUT_MS  = 20_000; // single Gemini call timeout
 const CHUNK_MAX_RETRIES = 3;
 const FAIL_THRESHOLD    = 0.5;    // >50% chunks failed → overall failure
+const REQUEST_TIMEOUT_MS = positiveInt(process.env.GEMINI_REQUEST_TIMEOUT_MS, 120_000);
+
+// Environment variables configure behavior; live pending state must stay in
+// memory because it changes for every request.
+const pendingRequests = new Map();
+let nextRequestId = 1;
+
+function positiveInt(value, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function beginTrackedRequest(kind) {
+  const id = nextRequestId++;
+  const controller = new AbortController();
+  const startedAt = Date.now();
+  const timer = setTimeout(() => {
+    controller.abort(new Error('request timeout'));
+  }, REQUEST_TIMEOUT_MS);
+  const entry = { id, kind, startedAt, controller, timer };
+  pendingRequests.set(id, entry);
+  console.log(`[${kind}] request ${id} started; pending=${pendingRequests.size}`);
+
+  return {
+    id,
+    signal: controller.signal,
+    get timedOut() { return controller.signal.aborted; },
+    finish() {
+      clearTimeout(timer);
+      pendingRequests.delete(id);
+      console.log(`[${kind}] request ${id} finished; pending=${pendingRequests.size}`);
+    },
+  };
+}
+
+function pendingRequestStatus() {
+  return {
+    pending: pendingRequests.size,
+    hasPendingRequests: pendingRequests.size > 0,
+    timeoutMs: REQUEST_TIMEOUT_MS,
+  };
+}
 
 // Retry any error (not just 503); caller passes AbortController signal per attempt
-async function runChunkWithRetry(fn, label) {
+async function runChunkWithRetry(fn, label, requestSignal) {
   for (let attempt = 1; attempt <= CHUNK_MAX_RETRIES; attempt++) {
+    if (requestSignal?.aborted) return null;
     const ctrl = new AbortController();
+    const abortAttempt = () => ctrl.abort(requestSignal.reason);
+    requestSignal?.addEventListener('abort', abortAttempt, { once: true });
     const tid  = setTimeout(() => ctrl.abort(), CHUNK_TIMEOUT_MS);
     try {
       const result = await fn(ctrl.signal);
       clearTimeout(tid);
+      requestSignal?.removeEventListener('abort', abortAttempt);
       return result;
     } catch (err) {
       clearTimeout(tid);
+      requestSignal?.removeEventListener('abort', abortAttempt);
+      if (requestSignal?.aborted) return null;
       console.warn(`[${label}] attempt ${attempt}/${CHUNK_MAX_RETRIES} failed: ${err.message.slice(0, 60)}`);
       if (attempt < CHUNK_MAX_RETRIES) {
-        await new Promise(r => setTimeout(r, 1000 * attempt));
+        if (requestSignal?.aborted) return null;
+        await new Promise(resolve => {
+          let tid;
+          const stopBackoff = () => {
+            clearTimeout(tid);
+            requestSignal?.removeEventListener('abort', stopBackoff);
+            resolve();
+          };
+          tid = setTimeout(stopBackoff, 1000 * attempt);
+          requestSignal?.addEventListener('abort', stopBackoff, { once: true });
+        });
       }
     }
   }
@@ -125,6 +187,7 @@ app.post('/api/analyze', async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
+  const request = beginTrackedRequest('analyze');
   try {
     const clipped     = text.slice(0, 60000);
     const wordCount   = clipped.split(/\s+/).length;
@@ -140,7 +203,8 @@ app.post('/api/analyze', async (req, res) => {
     for (let i = 0; i < chunks.length; i++) {
       const result = await runChunkWithRetry(
         signal => callGemini(apiKey, PROMPT(chunks[i], chunkBudget), signal),
-        `analyze-chunk-${i}`
+        `analyze-chunk-${i}`,
+        request.signal
       );
       if (result?.highlights?.length > 0) {
         highlights.push(...result.highlights);
@@ -151,11 +215,17 @@ app.post('/api/analyze', async (req, res) => {
       }
     }
 
+    if (request.timedOut) {
+      return res.status(504).json({ error: 'Analysis request timed out' });
+    }
     const success = chunks.length === 0 || failCount / chunks.length <= FAIL_THRESHOLD;
     res.json({ highlights, success });
   } catch (err) {
     console.error('Server error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    if (request.timedOut) res.status(504).json({ error: 'Analysis request timed out' });
+    else res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    request.finish();
   }
 });
 
@@ -186,17 +256,25 @@ app.post('/api/focus', async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
+  const request = beginTrackedRequest('focus');
   try {
     const clipped = text.slice(0, 60000);
     const result  = await runChunkWithRetry(
       signal => callGemini(apiKey, FOCUS_PROMPT(clipped, topic), signal),
-      'focus'
+      'focus',
+      request.signal
     );
+    if (request.timedOut) {
+      return res.status(504).json({ error: 'Focus request timed out' });
+    }
     if (!result) return res.status(503).json({ error: 'Gemini unavailable' });
     res.json(result);
   } catch (err) {
     console.error('Focus error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    if (request.timedOut) res.status(504).json({ error: 'Focus request timed out' });
+    else res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    request.finish();
   }
 });
 
@@ -317,7 +395,7 @@ function normalizeSentenceLabels(labels, sentenceCount, lensPurpose) {
   return [...bestByIndex.values()].sort((a, b) => a.index - b.index);
 }
 
-async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {
+async function fetchSentenceLabelsFromGemini(sentences, lensPurpose, requestSignal) {
   const apiKey   = process.env.GEMINI_API_KEY;
   const promptFn = LENS_PROMPTS[lensPurpose] ?? LENS_PROMPTS['inform'];
   const CHUNK    = 40;
@@ -326,7 +404,8 @@ async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {
     const budget = Math.min(chunk.length, Math.max(2, Math.floor(chunk.length * 0.40)));
     const result = await runChunkWithRetry(
       signal => callGemini(apiKey, promptFn(chunk, budget), signal),
-      `label-chunk-offset-${offset}`
+      `label-chunk-offset-${offset}`,
+      requestSignal
     );
     const labels = normalizeSentenceLabels(result?.labels, chunk.length, lensPurpose);
     if (labels === null) return null;
@@ -367,16 +446,23 @@ app.post('/api/label', async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
+  const request = beginTrackedRequest('label');
   try {
     // Accept `lensPurpose` (new) with `articleLens` fallback for older clients.
     const purpose = lensPurpose ?? articleLens ?? 'inform';
     const threshold = clampMinImportance(minImportance);
-    const { labels: scoredLabels, success } = await fetchSentenceLabelsFromGemini(sentences, purpose);
+    const { labels: scoredLabels, success } = await fetchSentenceLabelsFromGemini(sentences, purpose, request.signal);
+    if (request.timedOut) {
+      return res.status(504).json({ error: 'Label request timed out' });
+    }
     const labels = scoredLabels.filter(label => label.importance >= threshold);
     res.json({ labels, scoredLabels, success });
   } catch (err) {
     console.error('Label error:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    if (request.timedOut) res.status(504).json({ error: 'Label request timed out' });
+    else res.status(500).json({ error: 'Internal server error' });
+  } finally {
+    request.finish();
   }
 });
 

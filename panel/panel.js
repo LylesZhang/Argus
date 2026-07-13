@@ -61,6 +61,7 @@ const PRESET_SETTING_KEYS = [
 const PRESET_SETTING_KEY_SET = new Set(PRESET_SETTING_KEYS);
 
 let settings = { ...DEFAULT_SETTINGS };
+let settingsRevision = Date.now();
 let sectionCollapseState = {};
 let effectsWarningDisabled = false;
 
@@ -258,8 +259,14 @@ function switchLensLegend(purpose) {
 
 function broadcast(changed) {
   settings = { ...settings, ...changed };
+  settingsRevision += 1;
   chrome.storage.sync.set({ draSettings: settings });
-  chrome.runtime.sendMessage({ type: 'SETTINGS_CHANGED', payload: changed });
+  // Send a full snapshot so the content script cannot retain stale values when
+  // a previous delta message was missed during navigation or service-worker sleep.
+  chrome.runtime.sendMessage({
+    type: 'SETTINGS_CHANGED',
+    payload: { ...settings, settingsRevision },
+  });
   clearActivePresetForSettings(changed);
   maybeShowEffectsWarning(changed);
 }

@@ -119,7 +119,9 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     if (msg.type === 'EMOTION_REQUEST') {
       fetchEmotionAnalysis(msg.text, msg.url).then(result => {
         const type = result ? 'EMOTION_RESULT' : 'EMOTION_ERROR';
-        chrome.tabs.sendMessage(sender.tab.id, result ? { type, ...result } : { type });
+        chrome.tabs.sendMessage(sender.tab.id, result
+          ? { type, ...result, requestId: msg.requestId }
+          : { type, requestId: msg.requestId });
       });
     }
 
@@ -135,6 +137,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
         const responseContext = {
           lensPurpose: msg.lensPurpose ?? msg.articleLens ?? 'inform',
           minImportance: normalizeMinImportance(msg.minImportance),
+          requestId: msg.requestId,
         };
         chrome.tabs.sendMessage(sender.tab.id, ok ? {
           type,
