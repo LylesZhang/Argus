@@ -253,6 +253,11 @@ function removeTransformations() {
 export function render() {
   removeTransformations();
 
+  // Derive active highlights from the current switches on every render. Never
+  // let results from one reading aid leak into another aid's render cycle.
+  state.articleHighlights = [];
+  if (!state.settings.sentenceLabels) state.sentenceLabels = [];
+
   if (state.settings.readingAidsEnabled) {
     const transitionHL = state.settings.transitionAnimation ? generateTransitionHighlights() : [];
     const emotionHL    = !state.settings.emotionColor ? [] :
@@ -260,7 +265,9 @@ export function render() {
     state.articleHighlights = [...emotionHL, ...transitionHL];
 
     if (state.settings.sentenceLabels) {
-      state.allSentences = extractAllSentences();
+      // Label indexes refer to the sentence snapshot used for the AI request.
+      // Recomputing it when another setting changes can invalidate every index.
+      if (state.allSentences.length === 0) state.allSentences = extractAllSentences();
       state.sentenceLabels = state.aiSentenceLabels;  // Lens is AI-only
     }
 

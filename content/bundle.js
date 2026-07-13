@@ -1698,12 +1698,14 @@
   }
   function render() {
     removeTransformations();
+    state.articleHighlights = [];
+    if (!state.settings.sentenceLabels) state.sentenceLabels = [];
     if (state.settings.readingAidsEnabled) {
       const transitionHL = state.settings.transitionAnimation ? generateTransitionHighlights() : [];
       const emotionHL = !state.settings.emotionColor ? [] : state.settings.emotionMode === "local" ? generateEmotionHighlights() : state.aiEmotionHighlights;
       state.articleHighlights = [...emotionHL, ...transitionHL];
       if (state.settings.sentenceLabels) {
-        state.allSentences = extractAllSentences();
+        if (state.allSentences.length === 0) state.allSentences = extractAllSentences();
         state.sentenceLabels = state.aiSentenceLabels;
       }
       const needsEmotionAI = state.settings.emotionColor && state.settings.emotionMode === "ai";
@@ -2623,6 +2625,7 @@
       state.aiSentenceLabels = [];
       state.aiScoredSentenceLabels = [];
       state.sentenceLabels = [];
+      state.allSentences = [];
       state.sentenceLabelsLoaded = false;
       clearTimeout(_renderTimer);
       _renderTimer = setTimeout(() => render(), 500);

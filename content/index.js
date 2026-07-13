@@ -91,6 +91,7 @@ chrome.storage.sync.get(['draSettings', 'draWordLists', 'draPresets'], (data) =>
     state.aiSentenceLabels   = [];
     state.aiScoredSentenceLabels = [];
     state.sentenceLabels     = [];
+    state.allSentences       = [];
     state.sentenceLabelsLoaded = false;
     clearTimeout(_renderTimer);
     _renderTimer = setTimeout(() => render(), 500);

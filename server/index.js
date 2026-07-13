@@ -219,7 +219,7 @@ Calibration anchors:
 - 20  — repetitive, decorative, or peripheral
 
 Merely matching one of the label definitions does NOT justify a high score.
-Return only candidates scoring 50 or higher. It is valid to return an empty array.
+Return only candidates scoring 60 or higher. It is valid to return an empty array.
 `.trim();
 
 const LENS_PROMPTS = {
