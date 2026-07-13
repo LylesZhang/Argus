@@ -9,7 +9,7 @@ export const DEFAULT_SETTINGS = {
   rowShadingColor:       '#bfb3d0',
   transitionAnimation:   false,
   sentenceLabels:        false,   // Lens on/off
-  sentenceLabelsLens:    'inform', // reading purpose: inform|understand|evaluate|immerse
+  sentenceLabelsLens:    'inform', // reading purpose: inform|understand|evaluate
   labelKeyPointColor:     '#eab308',
   labelCoreDetailColor:   '#3b82f6',
   labelConceptColor:      '#9333ea',
@@ -18,8 +18,6 @@ export const DEFAULT_SETTINGS = {
   labelClaimColor:        '#ca8a04',
   labelEvidenceColor:     '#22c55e',
   labelCounterpointColor: '#e11d48',
-  labelTurningPointColor: '#eab308',
-  labelCharacterColor:    '#ec4899',
   topicFocusMode:        'local', // 'ai' | 'local'
   fontSize:             null,
   lineHeight:           null,

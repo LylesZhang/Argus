@@ -25,8 +25,6 @@ const DEFAULT_SETTINGS = {
   labelClaimColor:        '#ca8a04',
   labelEvidenceColor:     '#22c55e',
   labelCounterpointColor: '#e11d48',
-  labelTurningPointColor: '#eab308',
-  labelCharacterColor:    '#ec4899',
   topicFocusMode:        'local',
   fontSize:             18,
   lineHeight:           1.8,
@@ -57,7 +55,6 @@ const PRESET_SETTING_KEYS = [
   'labelKeyPointColor', 'labelCoreDetailColor',
   'labelConceptColor', 'labelReasoningColor', 'labelTakeawayColor',
   'labelClaimColor', 'labelEvidenceColor', 'labelCounterpointColor',
-  'labelTurningPointColor', 'labelCharacterColor',
   'panelSize',
 ];
 const PRESET_SETTING_KEY_SET = new Set(PRESET_SETTING_KEYS);
@@ -251,7 +248,7 @@ function updateAIStatus(feature, status) {
 // ── Lens legend switcher ───────────────────────────────────────────────
 
 function switchLensLegend(purpose) {
-  ['inform', 'understand', 'evaluate', 'immerse'].forEach(p => {
+  ['inform', 'understand', 'evaluate'].forEach(p => {
     document.getElementById(`legend-${p}`).style.display = p === purpose ? '' : 'none';
   });
 }
@@ -308,8 +305,6 @@ function syncUI() {
   document.getElementById('label-claim-color').value        = settings.labelClaimColor;
   document.getElementById('label-evidence-color').value     = settings.labelEvidenceColor;
   document.getElementById('label-counterpoint-color').value = settings.labelCounterpointColor;
-  document.getElementById('label-turning-point-color').value = settings.labelTurningPointColor;
-  document.getElementById('label-character-color').value    = settings.labelCharacterColor;
   document.getElementById('label-lens-select').value = settings.sentenceLabelsLens ?? 'inform';
   switchLensLegend(settings.sentenceLabelsLens ?? 'inform');
   document.getElementById('ruler-size-slider').value  = settings.rulerWindowLines;
@@ -646,8 +641,6 @@ function init() {
     'label-claim-color':        'labelClaimColor',
     'label-evidence-color':     'labelEvidenceColor',
     'label-counterpoint-color': 'labelCounterpointColor',
-    'label-turning-point-color': 'labelTurningPointColor',
-    'label-character-color':    'labelCharacterColor',
   };
   Object.entries(labelColorMap).forEach(([id, key]) => {
     document.getElementById(id).addEventListener('input', e => {
@@ -1082,10 +1075,10 @@ chrome.runtime.onMessage.addListener((msg) => {
 // ── Boot ───────────────────────────────────────────────────────────────
 
 // Migrate old genre-based lens values to reading-purpose lens ids.
-const OLD_LENS_TO_PURPOSE = { news: 'inform', stem: 'understand', humanities: 'understand', fiction: 'immerse' };
+const OLD_LENS_TO_PURPOSE = { news: 'inform', stem: 'understand', humanities: 'understand', fiction: 'inform', immerse: 'inform' };
 function migrateLensSettings(s) {
   if (OLD_LENS_TO_PURPOSE[s.sentenceLabelsLens]) s.sentenceLabelsLens = OLD_LENS_TO_PURPOSE[s.sentenceLabelsLens];
-  if (!['inform', 'understand', 'evaluate', 'immerse'].includes(s.sentenceLabelsLens)) s.sentenceLabelsLens = 'inform';
+  if (!['inform', 'understand', 'evaluate'].includes(s.sentenceLabelsLens)) s.sentenceLabelsLens = 'inform';
 }
 
 chrome.storage.sync.get('draSettings', (data) => {

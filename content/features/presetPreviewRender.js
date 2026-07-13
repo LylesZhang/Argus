@@ -85,7 +85,7 @@ export function renderPreviewArticle(article, settings, wordLists, { externalEmo
 
   const LABEL_TYPES = new Set([
     'key-point','core-detail','concept','reasoning','takeaway',
-    'claim','evidence','counterpoint','turning-point','character',
+    'claim','evidence','counterpoint',
   ]);
 
   let sIdx = 0;
@@ -168,8 +168,6 @@ export function applyPreviewStyles(container, settings, actions = {}) {
     'claim':         s.labelClaimColor       ?? '#ca8a04',
     'evidence':      s.labelEvidenceColor    ?? '#22c55e',
     'counterpoint':  s.labelCounterpointColor ?? '#e11d48',
-    'turning-point': s.labelTurningPointColor ?? '#eab308',
-    'character':     s.labelCharacterColor   ?? '#ec4899',
   };
   for (const [key, val] of Object.entries(labelColors)) {
     container.style.setProperty(`--dra-label-${key}`, val);

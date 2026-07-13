@@ -60,18 +60,6 @@
   border-radius: 4px;
 }
 
-/* Lens: 沉浸阅读 */
-.dra-label-turning-point {
-  background: color-mix(in srgb, var(--dra-label-turning-point, #eab308) 25%, transparent);
-  padding: 1px 3px;
-  border-radius: 4px;
-}
-.dra-label-character {
-  background: color-mix(in srgb, var(--dra-label-character, #ec4899) 12%, transparent);
-  padding: 1px 3px;
-  border-radius: 4px;
-}
-
 .dra-label-key-point,
 .dra-label-core-detail,
 .dra-label-concept,
@@ -79,9 +67,7 @@
 .dra-label-takeaway,
 .dra-label-claim,
 .dra-label-evidence,
-.dra-label-counterpoint,
-.dra-label-turning-point,
-.dra-label-character {
+.dra-label-counterpoint {
   border: none;
   outline: none;
   text-decoration: none;

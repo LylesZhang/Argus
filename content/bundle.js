@@ -14,7 +14,7 @@
     sentenceLabels: false,
     // Lens on/off
     sentenceLabelsLens: "inform",
-    // reading purpose: inform|understand|evaluate|immerse
+    // reading purpose: inform|understand|evaluate
     labelKeyPointColor: "#eab308",
     labelCoreDetailColor: "#3b82f6",
     labelConceptColor: "#9333ea",
@@ -23,8 +23,6 @@
     labelClaimColor: "#ca8a04",
     labelEvidenceColor: "#22c55e",
     labelCounterpointColor: "#e11d48",
-    labelTurningPointColor: "#eab308",
-    labelCharacterColor: "#ec4899",
     topicFocusMode: "local",
     // 'ai' | 'local'
     fontSize: null,
@@ -812,9 +810,7 @@
     "takeaway",
     "claim",
     "evidence",
-    "counterpoint",
-    "turning-point",
-    "character"
+    "counterpoint"
   ]);
   var readerState = { theme: "warm" };
   var readerContent = { title: "", blocks: [] };
@@ -1193,8 +1189,6 @@
     root.style.setProperty("--dra-label-claim", state.settings.labelClaimColor);
     root.style.setProperty("--dra-label-evidence", state.settings.labelEvidenceColor);
     root.style.setProperty("--dra-label-counterpoint", state.settings.labelCounterpointColor);
-    root.style.setProperty("--dra-label-turning-point", state.settings.labelTurningPointColor);
-    root.style.setProperty("--dra-label-character", state.settings.labelCharacterColor);
     article.style.fontSize = state.settings.typographyEnabled && state.settings.fontSize ? `${state.settings.fontSize}px` : "";
     article.style.lineHeight = state.settings.typographyEnabled && state.settings.lineHeight ? String(state.settings.lineHeight) : "";
     article.style.fontFamily = state.settings.typographyEnabled && state.settings.fontFamily ? state.settings.fontFamily : "";
@@ -1541,9 +1535,7 @@
       "takeaway",
       "claim",
       "evidence",
-      "counterpoint",
-      "turning-point",
-      "character"
+      "counterpoint"
     ]);
     const sentenceLabelClass = (s) => {
       if (!state.settings.sentenceLabels) return "";
@@ -1651,8 +1643,6 @@
     document.documentElement.style.setProperty("--dra-label-claim", state.settings.labelClaimColor);
     document.documentElement.style.setProperty("--dra-label-evidence", state.settings.labelEvidenceColor);
     document.documentElement.style.setProperty("--dra-label-counterpoint", state.settings.labelCounterpointColor);
-    document.documentElement.style.setProperty("--dra-label-turning-point", state.settings.labelTurningPointColor);
-    document.documentElement.style.setProperty("--dra-label-character", state.settings.labelCharacterColor);
     state.contentArea.querySelectorAll("p, li, blockquote").forEach((para) => {
       if (para.innerText.trim().length < 20) return;
       if (state.settings.typographyEnabled) {
@@ -1821,34 +1811,6 @@
         { index: 6, type: "evidence" },
         { index: 7, type: "claim" }
       ]
-    },
-    immerse: {
-      title: "The Last Garden",
-      imagePlaceholders: [{ caption: "The overgrown garden at dusk", position: 2 }],
-      blocks: [
-        `"You shouldn't have come back," she said quietly, her voice barely audible above the rain. He stood in the doorway, water dripping from his coat, saying nothing for a long moment.`,
-        "The room smelled of old books and dried lavender. A single candle flickered on the windowsill, casting long shadows across the faded wallpaper. Outside, the storm had settled into a steady, mournful rhythm.",
-        `Suddenly he realized she was trembling \u2014 not from cold, but from something deeper, something he had carried into the room with him like a ghost. "I'm sorry," he said at last. "I didn't know where else to go."`,
-        "She turned slowly toward the window. The garden beyond was dark and overgrown, but she could still see the outline of the old oak tree where they had carved their names as children. It felt like another life, another world entirely."
-      ],
-      aiEmotionHighlights: [
-        { word: "quietly", context: "said quie", category: "emotion-negative" },
-        { word: "barely audible", context: "e barely ", category: "emotion-negative" },
-        { word: "mournful", context: "a mournfu", category: "emotion-negative" },
-        { word: "trembling", context: "was trem", category: "emotion-negative" },
-        { word: "ghost", context: "like a g", category: "emotion-complex" },
-        { word: "sorry", context: "I'm sorr", category: "emotion-negative" }
-      ],
-      aiSentenceLabels: [
-        { index: 0, type: "character" },
-        { index: 1, type: "character" },
-        { index: 5, type: "turning-point" },
-        { index: 6, type: "character" },
-        { index: 7, type: "character" },
-        { index: 8, type: "character" },
-        { index: 9, type: "turning-point" },
-        { index: 10, type: "character" }
-      ]
     }
   };
 
@@ -1917,9 +1879,7 @@
       "takeaway",
       "claim",
       "evidence",
-      "counterpoint",
-      "turning-point",
-      "character"
+      "counterpoint"
     ]);
     let sIdx = 0;
     const paragraphs = blocks.map((block, blockIdx) => {
@@ -1979,9 +1939,7 @@
       "takeaway": s.labelTakeawayColor ?? "#0d9488",
       "claim": s.labelClaimColor ?? "#ca8a04",
       "evidence": s.labelEvidenceColor ?? "#22c55e",
-      "counterpoint": s.labelCounterpointColor ?? "#e11d48",
-      "turning-point": s.labelTurningPointColor ?? "#eab308",
-      "character": s.labelCharacterColor ?? "#ec4899"
+      "counterpoint": s.labelCounterpointColor ?? "#e11d48"
     };
     for (const [key, val] of Object.entries(labelColors)) {
       container.style.setProperty(`--dra-label-${key}`, val);
@@ -2082,8 +2040,6 @@
     "labelClaimColor",
     "labelEvidenceColor",
     "labelCounterpointColor",
-    "labelTurningPointColor",
-    "labelCharacterColor",
     "panelSize"
   ];
   var ONBOARDING_PREVIEW_SETTINGS = {
@@ -2119,7 +2075,7 @@
       externalLabels: s.sentenceLabels ? article.aiSentenceLabels ?? null : null
     });
     previewBody.innerHTML = `
-    <div class="dra-pe-preview-meta">Previewing: ${{ inform: "Get Information", understand: "Understand", evaluate: "Evaluate", immerse: "Immerse" }[lens] ?? lens} sample</div>
+    <div class="dra-pe-preview-meta">Previewing: ${{ inform: "Get Information", understand: "Understand", evaluate: "Evaluate" }[lens] ?? lens} sample</div>
     <h3 class="dra-pe-preview-title">${escHTML(article.title)}</h3>
     <div class="dra-pe-article" style="position:relative">${html}</div>`;
     applyPreviewStyles(previewBody, s, draft.actions);
@@ -2229,8 +2185,7 @@
       selectInput("pe-label-lens", "sentenceLabelsLens", "Reading Purpose (sets preview article)", [
         ["inform", "Get Information"],
         ["understand", "Understand"],
-        ["evaluate", "Evaluate"],
-        ["immerse", "Immerse"]
+        ["evaluate", "Evaluate"]
       ]),
       // Label colors grouped by purpose; only the active purpose group is shown
       `<div id="pe-label-colors" class="dra-pe-label-colors">
@@ -2247,10 +2202,6 @@
         ${colorInput("pe-lc-claim", "labelClaimColor", "Claim")}
         ${colorInput("pe-lc-evidence", "labelEvidenceColor", "Evidence")}
         ${colorInput("pe-lc-counterpoint", "labelCounterpointColor", "Counterpoint")}
-      </div>
-      <div data-pe-lens="immerse">
-        ${colorInput("pe-lc-turning-point", "labelTurningPointColor", "Turning Point")}
-        ${colorInput("pe-lc-character", "labelCharacterColor", "Character")}
       </div>
     </div>`
     ].join("");
@@ -2362,9 +2313,7 @@
         "pe-lc-takeaway": "labelTakeawayColor",
         "pe-lc-claim": "labelClaimColor",
         "pe-lc-evidence": "labelEvidenceColor",
-        "pe-lc-counterpoint": "labelCounterpointColor",
-        "pe-lc-turning-point": "labelTurningPointColor",
-        "pe-lc-character": "labelCharacterColor"
+        "pe-lc-counterpoint": "labelCounterpointColor"
       };
       if (numKeys[el.id]) {
         const v = parseFloat(el.value);
@@ -2597,12 +2546,12 @@
     emotionComplex: [...DEFAULT_EMOTION_COMPLEX],
     transition: [...DEFAULT_TRANSITION_WORDS]
   };
-  var OLD_LENS_TO_PURPOSE = { news: "inform", stem: "understand", humanities: "understand", fiction: "immerse" };
+  var OLD_LENS_TO_PURPOSE = { news: "inform", stem: "understand", humanities: "understand", fiction: "inform", immerse: "inform" };
   function migrateLensSettings(settings) {
     if (OLD_LENS_TO_PURPOSE[settings.sentenceLabelsLens]) {
       settings.sentenceLabelsLens = OLD_LENS_TO_PURPOSE[settings.sentenceLabelsLens];
     }
-    const VALID = /* @__PURE__ */ new Set(["inform", "understand", "evaluate", "immerse"]);
+    const VALID = /* @__PURE__ */ new Set(["inform", "understand", "evaluate"]);
     if (!VALID.has(settings.sentenceLabelsLens)) settings.sentenceLabelsLens = "inform";
   }
   function applyPresetActions(actions) {

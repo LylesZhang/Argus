@@ -80,7 +80,6 @@ const PRESET_KEYS = [
   'labelKeyPointColor', 'labelCoreDetailColor',
   'labelConceptColor', 'labelReasoningColor', 'labelTakeawayColor',
   'labelClaimColor', 'labelEvidenceColor', 'labelCounterpointColor',
-  'labelTurningPointColor', 'labelCharacterColor',
   'panelSize',
 ];
 
@@ -126,7 +125,7 @@ function refreshPreview() {
   });
 
   previewBody.innerHTML = `
-    <div class="dra-pe-preview-meta">Previewing: ${({inform:'Get Information',understand:'Understand',evaluate:'Evaluate',immerse:'Immerse'})[lens] ?? lens} sample</div>
+    <div class="dra-pe-preview-meta">Previewing: ${({inform:'Get Information',understand:'Understand',evaluate:'Evaluate'})[lens] ?? lens} sample</div>
     <h3 class="dra-pe-preview-title">${escHTML(article.title)}</h3>
     <div class="dra-pe-article" style="position:relative">${html}</div>`;
 
@@ -251,7 +250,7 @@ function buildFormHTML() {
     </div>`,
     selectInput('pe-label-lens', 'sentenceLabelsLens', 'Reading Purpose (sets preview article)', [
       ['inform','Get Information'],['understand','Understand'],
-      ['evaluate','Evaluate'],['immerse','Immerse'],
+      ['evaluate','Evaluate'],
     ]),
     // Label colors grouped by purpose; only the active purpose group is shown
     `<div id="pe-label-colors" class="dra-pe-label-colors">
@@ -268,10 +267,6 @@ function buildFormHTML() {
         ${colorInput('pe-lc-claim',        'labelClaimColor',        'Claim')}
         ${colorInput('pe-lc-evidence',     'labelEvidenceColor',     'Evidence')}
         ${colorInput('pe-lc-counterpoint', 'labelCounterpointColor', 'Counterpoint')}
-      </div>
-      <div data-pe-lens="immerse">
-        ${colorInput('pe-lc-turning-point', 'labelTurningPointColor', 'Turning Point')}
-        ${colorInput('pe-lc-character',     'labelCharacterColor',    'Character')}
       </div>
     </div>`,
   ].join('');
@@ -371,7 +366,6 @@ function wireForm(root) {
       'pe-lc-concept': 'labelConceptColor', 'pe-lc-reasoning': 'labelReasoningColor',
       'pe-lc-takeaway': 'labelTakeawayColor', 'pe-lc-claim': 'labelClaimColor',
       'pe-lc-evidence': 'labelEvidenceColor', 'pe-lc-counterpoint': 'labelCounterpointColor',
-      'pe-lc-turning-point': 'labelTurningPointColor', 'pe-lc-character': 'labelCharacterColor',
     };
     if (numKeys[el.id]) {
       const v = parseFloat(el.value);

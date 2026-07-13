@@ -249,19 +249,6 @@ Definitions:
 - "counterpoint" — a concession, limitation, caveat, or opposing view the author acknowledges
 `.trim(),
 
-  immerse: (sentences) => `
-The reader wants to IMMERSE in this narrative — to follow the story and experience it. Only include sentences you are confident about.
-
-Sentences:
-${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
-
-Return ONLY this JSON:
-{ "labels": [{ "index": <n>, "type": "turning-point" | "character" }] }
-
-Definitions:
-- "turning-point" — a key event, revelation, or dramatic beat that advances the story
-- "character"     — a moment of a character's decision, feeling, or interpersonal interaction
-`.trim(),
 };
 
 async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {

@@ -3,7 +3,7 @@ import { state } from '../state.js';
 import { splitSentences } from '../utils.js';
 
 // Lens is AI-only: sentence roles are classified by the server per reading purpose.
-// Valid purposes: 'inform' | 'understand' | 'evaluate' | 'immerse'.
+// Valid purposes: 'inform' | 'understand' | 'evaluate'.
 
 export function extractAllSentences() {
   const area = findContentArea();

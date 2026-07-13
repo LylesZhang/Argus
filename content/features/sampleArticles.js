@@ -97,32 +97,4 @@ export const SAMPLE_ARTICLES = {
     ],
   },
 
-  immerse: {
-    title: 'The Last Garden',
-    imagePlaceholders: [{ caption: 'The overgrown garden at dusk', position: 2 }],
-    blocks: [
-      '"You shouldn\'t have come back," she said quietly, her voice barely audible above the rain. He stood in the doorway, water dripping from his coat, saying nothing for a long moment.',
-      'The room smelled of old books and dried lavender. A single candle flickered on the windowsill, casting long shadows across the faded wallpaper. Outside, the storm had settled into a steady, mournful rhythm.',
-      'Suddenly he realized she was trembling — not from cold, but from something deeper, something he had carried into the room with him like a ghost. "I\'m sorry," he said at last. "I didn\'t know where else to go."',
-      'She turned slowly toward the window. The garden beyond was dark and overgrown, but she could still see the outline of the old oak tree where they had carved their names as children. It felt like another life, another world entirely.',
-    ],
-    aiEmotionHighlights: [
-      { word: 'quietly',       context: 'said quie', category: 'emotion-negative' },
-      { word: 'barely audible', context: 'e barely ', category: 'emotion-negative' },
-      { word: 'mournful',      context: 'a mournfu', category: 'emotion-negative' },
-      { word: 'trembling',     context: 'was trem', category: 'emotion-negative' },
-      { word: 'ghost',         context: 'like a g', category: 'emotion-complex' },
-      { word: 'sorry',         context: "I'm sorr", category: 'emotion-negative' },
-    ],
-    aiSentenceLabels: [
-      { index: 0,  type: 'character' },
-      { index: 1,  type: 'character' },
-      { index: 5,  type: 'turning-point' },
-      { index: 6,  type: 'character' },
-      { index: 7,  type: 'character' },
-      { index: 8,  type: 'character' },
-      { index: 9,  type: 'turning-point' },
-      { index: 10, type: 'character' },
-    ],
-  },
 };

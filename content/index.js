@@ -21,12 +21,12 @@ const DEFAULT_WORD_LISTS = {
 // ── Bootstrap ──────────────────────────────────────────────────────────
 
 // Migrate old genre-based lens values to reading-purpose lens ids.
-const OLD_LENS_TO_PURPOSE = { news: 'inform', stem: 'understand', humanities: 'understand', fiction: 'immerse' };
+const OLD_LENS_TO_PURPOSE = { news: 'inform', stem: 'understand', humanities: 'understand', fiction: 'inform', immerse: 'inform' };
 function migrateLensSettings(settings) {
   if (OLD_LENS_TO_PURPOSE[settings.sentenceLabelsLens]) {
     settings.sentenceLabelsLens = OLD_LENS_TO_PURPOSE[settings.sentenceLabelsLens];
   }
-  const VALID = new Set(['inform', 'understand', 'evaluate', 'immerse']);
+  const VALID = new Set(['inform', 'understand', 'evaluate']);
   if (!VALID.has(settings.sentenceLabelsLens)) settings.sentenceLabelsLens = 'inform';
 }
 

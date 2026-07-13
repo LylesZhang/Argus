@@ -74,7 +74,6 @@ function buildParagraphHTML(plainText) {
     'key-point', 'core-detail',
     'concept', 'reasoning', 'takeaway',
     'claim', 'evidence', 'counterpoint',
-    'turning-point', 'character',
   ]);
 
   const sentenceLabelClass = (s) => {
@@ -182,8 +181,6 @@ function applyTransformations() {
   document.documentElement.style.setProperty('--dra-label-claim',        state.settings.labelClaimColor);
   document.documentElement.style.setProperty('--dra-label-evidence',     state.settings.labelEvidenceColor);
   document.documentElement.style.setProperty('--dra-label-counterpoint', state.settings.labelCounterpointColor);
-  document.documentElement.style.setProperty('--dra-label-turning-point', state.settings.labelTurningPointColor);
-  document.documentElement.style.setProperty('--dra-label-character',    state.settings.labelCharacterColor);
 
   // Apply per-element styles (child elements often override contentArea-level styles)
   state.contentArea.querySelectorAll('p, li, blockquote').forEach(para => {

@@ -11,7 +11,6 @@ const LABEL_TYPES = new Set([
   'key-point', 'core-detail',
   'concept', 'reasoning', 'takeaway',
   'claim', 'evidence', 'counterpoint',
-  'turning-point', 'character',
 ]);
 
 let readerState = { theme: 'warm' };
@@ -444,8 +443,6 @@ function applyReaderStyle(root) {
   root.style.setProperty('--dra-label-claim', state.settings.labelClaimColor);
   root.style.setProperty('--dra-label-evidence', state.settings.labelEvidenceColor);
   root.style.setProperty('--dra-label-counterpoint', state.settings.labelCounterpointColor);
-  root.style.setProperty('--dra-label-turning-point', state.settings.labelTurningPointColor);
-  root.style.setProperty('--dra-label-character', state.settings.labelCharacterColor);
 
   article.style.fontSize = state.settings.typographyEnabled && state.settings.fontSize ? `${state.settings.fontSize}px` : '';
   article.style.lineHeight = state.settings.typographyEnabled && state.settings.lineHeight ? String(state.settings.lineHeight) : '';
