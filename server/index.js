@@ -323,7 +323,7 @@ async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {
   const CHUNK    = 40;
 
   const processChunk = async (chunk, offset) => {
-    const budget = Math.min(chunk.length, Math.max(2, Math.floor(chunk.length * 0.20)));
+    const budget = Math.min(chunk.length, Math.max(2, Math.floor(chunk.length * 0.40)));
     const result = await runChunkWithRetry(
       signal => callGemini(apiKey, promptFn(chunk, budget), signal),
       `label-chunk-offset-${offset}`
