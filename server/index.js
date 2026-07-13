@@ -118,7 +118,9 @@ Step 1 — Classify the article as "narrative", "analytical", or "mixed":
   narrative  → more emotion highlights
   analytical → fewer emotion highlights
   mixed      → balanced
-  Total: ${budget} highlights.
+  At most ${budget} highlights. Return fewer when the text contains fewer
+  genuinely emotionally significant expressions; do not fill the budget with
+  ordinary evaluative or descriptive language.
 
 Step 2 — Select highlights (only from the article above, never from these instructions):
   - Each entry is ONE specific occurrence; same word may appear multiple times if each is independently significant.
@@ -191,9 +193,9 @@ app.post('/api/analyze', async (req, res) => {
   try {
     const clipped     = text.slice(0, 60000);
     const wordCount   = clipped.split(/\s+/).length;
-    const totalBudget = Math.floor(wordCount / 100) * 6;
+    const totalBudget = Math.floor(wordCount / 100) * 3;
     const chunks      = chunkByParagraphs(clipped);
-    const chunkBudget = Math.max(4, Math.floor(totalBudget / chunks.length));
+    const chunkBudget = Math.max(2, Math.floor(totalBudget / chunks.length));
 
     console.log(`[analyze] wordCount=${wordCount} totalBudget=${totalBudget} chunks=${chunks.length} chunkBudget=${chunkBudget}`);
 
