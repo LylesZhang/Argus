@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS = {
   gradientRows:          false,
   rowShadingColor:       '#bfb3d0',
   transitionAnimation:   false,
+  sentenceSimplify:      false,
   sentenceLabels:        false,
   sentenceLabelsLens:    'inform',
   sentenceLabelsDensity: 'medium',
@@ -49,7 +50,7 @@ const PRESET_SETTING_KEYS = [
   'typographyEnabled', 'fontFamily', 'boldBeginning', 'fontSize', 'lineHeight',
   'wordSpacing', 'letterSpacing', 'fontColor', 'bgColor',
   'typewriterSpeed',
-  'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation',
+  'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation', 'sentenceSimplify',
   'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
   'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
   'sentenceLabels', 'sentenceLabelsLens', 'sentenceLabelsDensity',
@@ -281,6 +282,7 @@ function syncUI() {
   document.getElementById('toggle-emotion').checked   = settings.emotionColor;
   document.getElementById('toggle-gradient').checked  = settings.gradientRows;
   document.getElementById('toggle-transition').checked = settings.transitionAnimation;
+  document.getElementById('toggle-simplify').checked   = settings.sentenceSimplify;
   document.getElementById('toggle-ruler').checked     = settings.rulerActive;
   document.getElementById('toggle-auto-scroll').checked = settings.autoScrollActive;
 
@@ -452,6 +454,11 @@ function init() {
   document.getElementById('toggle-transition').addEventListener('change', e => {
     enableReadingAidIfNeeded(e.target.checked);
     broadcast({ transitionAnimation: e.target.checked });
+  });
+
+  document.getElementById('toggle-simplify').addEventListener('change', e => {
+    enableReadingAidIfNeeded(e.target.checked);
+    broadcast({ sentenceSimplify: e.target.checked });
   });
 
   document.getElementById('toggle-labels').addEventListener('change', e => {

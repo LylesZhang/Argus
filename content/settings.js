@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS = {
   labelClaimColor:        '#ca8a04',
   labelEvidenceColor:     '#22c55e',
   labelCounterpointColor: '#e11d48',
+  sentenceSimplify:      false,
   topicFocusMode:        'local', // 'ai' | 'local'
   fontSize:             null,
   lineHeight:           null,

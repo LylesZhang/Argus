@@ -440,6 +440,42 @@ async function fetchSentenceLabelsFromGemini(sentences, lensPurpose, requestSign
   return { labels: allLabels, success };
 }
 
+// ── /api/simplify ──────────────────────────────────────────────────────
+
+const SIMPLIFY_PROMPT = (text) => `
+Rewrite the following text in simpler English. Keep the exact same meaning — do not add or remove any facts. Use shorter words and shorter sentences where possible. Aim for an 8th-grade reading level.
+
+Text:
+"${text}"
+
+Return ONLY this JSON:
+{ "simplified": "<simplified version>" }
+`.trim();
+
+app.post('/api/simplify', async (req, res) => {
+  const { text } = req.body;
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    return res.status(400).json({ error: 'text is required' });
+  }
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
+
+  try {
+    const clipped = text.slice(0, 4000);
+    const result  = await runChunkWithRetry(
+      signal => callGemini(apiKey, SIMPLIFY_PROMPT(clipped), signal),
+      'simplify'
+    );
+    if (!result?.simplified) return res.status(503).json({ error: 'Gemini unavailable' });
+    res.json({ simplified: result.simplified, success: true });
+  } catch (err) {
+    console.error('Simplify error:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ── /api/label ─────────────────────────────────────────────────────────
+
 app.post('/api/label', async (req, res) => {
   const { sentences, lensPurpose, articleLens, minImportance } = req.body;
   if (!Array.isArray(sentences) || sentences.length === 0) {

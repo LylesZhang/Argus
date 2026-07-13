@@ -10,6 +10,7 @@ import { setupRuler, teardownRuler } from './features/ruler.js';
 import { setupAutoScroll, teardownAutoScroll } from './features/autoScroll.js';
 import { applyFocusMask, applyFocusMaskByPrefixes } from './features/topicFocus.js';
 import { setupSelectionMenu, teardownSelectionMenu } from './features/selectionMenu.js';
+import { setupSimplify, teardownSimplify } from './features/simplify.js';
 
 // ── Sentence rendering ─────────────────────────────────────────────────
 
@@ -292,4 +293,10 @@ export function render() {
     (state.settings.emotionColor || state.settings.transitionAnimation);
   if (needsSelectionMenu) setupSelectionMenu(render);
   else teardownSelectionMenu();
+
+  if (state.settings.readingAidsEnabled && state.settings.sentenceSimplify) {
+    setupSimplify();
+  } else {
+    teardownSimplify();
+  }
 }
