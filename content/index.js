@@ -18,6 +18,18 @@ const DEFAULT_WORD_LISTS = {
   transition:      [...DEFAULT_TRANSITION_WORDS],
 };
 
+const LENS_DENSITY_THRESHOLDS = { low: 85, medium: 75, high: 65 };
+
+function currentLensThreshold() {
+  return LENS_DENSITY_THRESHOLDS[state.settings.sentenceLabelsDensity] ?? 75;
+}
+
+function filterScoredLabels(scoredLabels, threshold) {
+  return scoredLabels
+    .filter(label => Number(label.importance) >= threshold)
+    .map(({ index, type }) => ({ index, type }));
+}
+
 // ── Bootstrap ──────────────────────────────────────────────────────────
 
 // Migrate old genre-based lens values to reading-purpose lens ids.
@@ -77,6 +89,7 @@ chrome.storage.sync.get(['draSettings', 'draWordLists', 'draPresets'], (data) =>
     state.contentArea        = null;
     state.aiEmotionHighlights = [];
     state.aiSentenceLabels   = [];
+    state.aiScoredSentenceLabels = [];
     state.sentenceLabels     = [];
     state.sentenceLabelsLoaded = false;
     clearTimeout(_renderTimer);
@@ -93,7 +106,18 @@ function applySettingsPayload(payload) {
   state.settings = { ...state.settings, ...payload };
   const lensChanged = payload.sentenceLabelsLens && payload.sentenceLabelsLens !== prevLens;
   const densityChanged = payload.sentenceLabelsDensity && payload.sentenceLabelsDensity !== prevDensity;
-  if (lensChanged || densityChanged) {
+  if (lensChanged) {
+    state.aiSentenceLabels         = [];
+    state.aiScoredSentenceLabels   = [];
+    state.sentenceLabels           = [];
+    state.sentenceLabelsInProgress = false;
+    state.sentenceLabelsLoaded     = false;
+  } else if (densityChanged && state.sentenceLabelsLoaded) {
+    state.aiSentenceLabels = filterScoredLabels(state.aiScoredSentenceLabels, currentLensThreshold());
+    state.sentenceLabels = state.aiSentenceLabels;
+    state.sentenceLabelsInProgress = false;
+    state.sentenceLabelsLoaded = true;
+  } else if (densityChanged) {
     state.aiSentenceLabels         = [];
     state.sentenceLabels           = [];
     state.sentenceLabelsInProgress = false;
@@ -126,8 +150,11 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'LABEL_RESULT') {
+    if (msg.lensPurpose !== (state.settings.sentenceLabelsLens ?? 'inform') ||
+        msg.minImportance !== currentLensThreshold()) return;
     state.sentenceLabelsInProgress = false;
     state.sentenceLabelsLoaded = Array.isArray(msg.labels);
+    state.aiScoredSentenceLabels = Array.isArray(msg.scoredLabels) ? msg.scoredLabels : [];
     state.aiSentenceLabels = Array.isArray(msg.labels) ? msg.labels : [];
     state.sentenceLabels   = state.aiSentenceLabels;
     chrome.runtime.sendMessage({
@@ -139,6 +166,8 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'LABEL_ERROR') {
+    if (msg.lensPurpose !== (state.settings.sentenceLabelsLens ?? 'inform') ||
+        msg.minImportance !== currentLensThreshold()) return;
     state.sentenceLabelsInProgress = false;
     state.sentenceLabelsLoaded = false;
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'error' });
@@ -193,6 +222,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     }
     if (msg.feature === 'labels') {
       state.aiSentenceLabels         = [];
+      state.aiScoredSentenceLabels   = [];
       state.sentenceLabels           = [];
       state.sentenceLabelsInProgress = false;
       state.sentenceLabelsLoaded     = false;

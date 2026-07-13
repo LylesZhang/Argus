@@ -10,6 +10,7 @@ export const state = {
   sentenceLabelsLoaded:     false,
   aiEmotionHighlights:      [],
   aiSentenceLabels:         [],
+  aiScoredSentenceLabels:   [],
   articleHighlights:        [],
   topicFocusKeywords:       null,
   topicFocusAIPrefixes:     null,

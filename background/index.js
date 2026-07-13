@@ -69,6 +69,10 @@ function visibleLabels(scoredLabels, threshold) {
     .map(({ index, type }) => ({ index, type }));
 }
 
+function labelResult(scoredLabels, threshold) {
+  return { labels: visibleLabels(scoredLabels, threshold), scoredLabels };
+}
+
 async function fetchSentenceLabels(sentences, url, lensPurpose = 'inform', minImportance = 75) {
   // Scored candidates are independent of display density, so one cache entry can
   // serve all density choices for the same page and reading purpose.
@@ -76,7 +80,7 @@ async function fetchSentenceLabels(sentences, url, lensPurpose = 'inform', minIm
   const threshold = normalizeMinImportance(minImportance);
   const cached = labelCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
-    return visibleLabels(cached.result, threshold);
+    return labelResult(cached.result, threshold);
   }
 
   let promise = labelPending.get(cacheKey);
@@ -104,7 +108,7 @@ async function fetchSentenceLabels(sentences, url, lensPurpose = 'inform', minIm
   }
 
   const scoredLabels = await promise;
-  return scoredLabels ? visibleLabels(scoredLabels, threshold) : null;
+  return scoredLabels ? labelResult(scoredLabels, threshold) : null;
 }
 
 // ── Message relay & analysis handler ──────────────────────────────────
@@ -125,10 +129,19 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
         sender.tab.url,
         msg.lensPurpose ?? msg.articleLens,
         msg.minImportance,
-      ).then(labels => {
-        const ok = Array.isArray(labels);
+      ).then(result => {
+        const ok = Array.isArray(result?.labels) && Array.isArray(result?.scoredLabels);
         const type = ok ? 'LABEL_RESULT' : 'LABEL_ERROR';
-        chrome.tabs.sendMessage(sender.tab.id, ok ? { type, labels } : { type });
+        const responseContext = {
+          lensPurpose: msg.lensPurpose ?? msg.articleLens ?? 'inform',
+          minImportance: normalizeMinImportance(msg.minImportance),
+        };
+        chrome.tabs.sendMessage(sender.tab.id, ok ? {
+          type,
+          labels: result.labels,
+          scoredLabels: result.scoredLabels,
+          ...responseContext,
+        } : { type, ...responseContext });
       });
     }
 
