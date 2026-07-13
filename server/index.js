@@ -193,9 +193,9 @@ app.post('/api/analyze', async (req, res) => {
   try {
     const clipped     = text.slice(0, 60000);
     const wordCount   = clipped.split(/\s+/).length;
-    const totalBudget = Math.floor(wordCount / 100) * 3;
+    const totalBudget = Math.floor(wordCount / 100) * 4;
     const chunks      = chunkByParagraphs(clipped);
-    const chunkBudget = Math.max(2, Math.floor(totalBudget / chunks.length));
+    const chunkBudget = Math.max(1, Math.floor(totalBudget / chunks.length));
 
     console.log(`[analyze] wordCount=${wordCount} totalBudget=${totalBudget} chunks=${chunks.length} chunkBudget=${chunkBudget}`);
 
