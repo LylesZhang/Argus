@@ -223,13 +223,13 @@ Return only candidates scoring 50 or higher. It is valid to return an empty arra
 `.trim();
 
 const LENS_PROMPTS = {
-  inform: (sentences) => `
+  inform: (sentences, budget) => `
 The reader wants to GET INFORMATION quickly from this text. Score sentences by how important they are to that purpose.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
-Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones.
+Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones. Do not fill the budget when fewer sentences genuinely deserve a score of 50 or higher.
 
 Return ONLY this JSON:
 { "labels": [{ "index": <n>, "type": "key-point" | "core-detail", "importance": <1-100> }] }
@@ -241,13 +241,13 @@ Definitions:
 ${LENS_SCORING_GUIDE}
 `.trim(),
 
-  understand: (sentences) => `
+  understand: (sentences, budget) => `
 The reader wants to UNDERSTAND THE CONCEPTS AND LOGIC of this text — to build a mental model of the ideas and how they connect. Score sentences by how important they are to that purpose.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
-Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones.
+Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones. Do not fill the budget when fewer sentences genuinely deserve a score of 50 or higher.
 
 Return ONLY this JSON:
 { "labels": [{ "index": <n>, "type": "concept" | "reasoning" | "takeaway", "importance": <1-100> }] }
@@ -260,13 +260,13 @@ Definitions:
 ${LENS_SCORING_GUIDE}
 `.trim(),
 
-  evaluate: (sentences) => `
+  evaluate: (sentences, budget) => `
 The reader wants to EVALUATE THE ARGUMENT of this text — to judge whether the case holds up. Score sentences by how important they are to that purpose.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
-Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones.
+Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones. Do not fill the budget when fewer sentences genuinely deserve a score of 50 or higher.
 
 Return ONLY this JSON:
 { "labels": [{ "index": <n>, "type": "claim" | "evidence" | "counterpoint", "importance": <1-100> }] }
@@ -323,14 +323,18 @@ async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {
   const CHUNK    = 40;
 
   const processChunk = async (chunk, offset) => {
-    const budget = Math.max(2, Math.floor(chunk.length * 0.20));
+    const budget = Math.min(chunk.length, Math.max(2, Math.floor(chunk.length * 0.20)));
     const result = await runChunkWithRetry(
       signal => callGemini(apiKey, promptFn(chunk, budget), signal),
       `label-chunk-offset-${offset}`
     );
     const labels = normalizeSentenceLabels(result?.labels, chunk.length, lensPurpose);
     if (labels === null) return null;
-    return labels.map(l => ({ ...l, index: l.index + offset }));
+    return labels
+      .sort((a, b) => b.importance - a.importance || a.index - b.index)
+      .slice(0, budget)
+      .sort((a, b) => a.index - b.index)
+      .map(l => ({ ...l, index: l.index + offset }));
   };
 
   const allLabels = [];
