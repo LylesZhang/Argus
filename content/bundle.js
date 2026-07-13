@@ -2156,14 +2156,15 @@
     if (actions?.autoOpenReaderMode === false) closeImmersiveReader();
   }
   var draft = null;
+  var onboardingStep = null;
   function initDraft(mode, { currentSettings, preset } = {}) {
-    const baseSettings = mode === "modify" ? { ...preset.settings } : { ...DEFAULT_SETTINGS, ...state.settings, ...currentSettings ?? {} };
+    const baseSettings = mode === "modify" ? { ...preset.settings } : mode === "onboarding" ? { ...DEFAULT_SETTINGS, ...ONBOARDING_PREVIEW_SETTINGS } : { ...DEFAULT_SETTINGS, ...state.settings, ...currentSettings ?? {} };
     const s = {};
     for (const k of PRESET_KEYS) s[k] = baseSettings[k] ?? DEFAULT_SETTINGS[k];
     draft = {
       mode,
       presetId: mode === "modify" ? preset.id : null,
-      name: mode === "modify" ? preset.name : "",
+      name: mode === "modify" ? preset.name : mode === "onboarding" ? "My Reading Setup" : "",
       settings: s,
       actions: mode === "modify" ? { autoOpenReaderMode: preset.actions?.autoOpenReaderMode ?? false } : { autoOpenReaderMode: false }
     };
@@ -2208,6 +2209,26 @@
     "labelSettingColor",
     "panelSize"
   ];
+  var ONBOARDING_PREVIEW_SETTINGS = {
+    typographyEnabled: true,
+    fontFamily: "",
+    boldBeginning: true,
+    fontSize: 18,
+    lineHeight: 1.8,
+    wordSpacing: 0.05,
+    letterSpacing: 0,
+    fontColor: "#2c2c2c",
+    bgColor: "#ffffff",
+    readingAidsEnabled: true,
+    gradientRows: true,
+    rowShadingColor: "#d8d1e2",
+    transitionAnimation: true,
+    rulerActive: false,
+    emotionColor: false,
+    emotionMode: "local",
+    sentenceLabels: false,
+    sentenceLabelsMode: "local"
+  };
   function refreshPreview() {
     const root = document.getElementById(EDITOR_ID);
     if (!root || !draft) return;
@@ -2589,11 +2610,22 @@
     document.removeEventListener("keydown", onEditorKeydown);
     _lastRulerLocalY = null;
     draft = null;
+    onboardingStep = null;
   }
   function onEditorKeydown(e) {
-    if (e.key === "Escape") closePresetEditor();
+    if (e.key === "Escape") cancelEditor();
   }
-  function buildEditorHTML(title) {
+  function completeOnboardingWithoutSaving() {
+    chrome.storage.sync.set({ draPresets: { byId: {}, order: [], activeId: null } });
+  }
+  function cancelEditor() {
+    if (draft?.mode === "onboarding" && onboardingStep === "preview") {
+      completeOnboardingWithoutSaving();
+    }
+    closePresetEditor();
+  }
+  function buildEditorHTML(title, { onboarding = false } = {}) {
+    const previewNotice = onboarding ? `<div class="dra-pe-preview-notice">This is a preview. Your current page will only change after you save this preset.</div>` : "";
     return `
   <div class="dra-pe-overlay">
     <div class="dra-pe-card">
@@ -2605,6 +2637,7 @@
         <div class="dra-pe-form dra-pe-left"></div>
         <div class="dra-pe-right">
           <div class="dra-pe-preview-label">Live Preview</div>
+          ${previewNotice}
           <div class="dra-pe-preview-body"></div>
         </div>
       </div>
@@ -2615,7 +2648,7 @@
           <span class="dra-pe-name-error hidden">Preset name already exists</span>
         </div>
         <div class="dra-pe-footer-btns">
-          <button class="dra-pe-btn-cancel">Cancel</button>
+          <button class="dra-pe-btn-cancel">${onboarding ? "Skip for Now" : "Cancel"}</button>
           <button class="dra-pe-btn-save">Save</button>
         </div>
       </footer>
@@ -2623,7 +2656,8 @@
   </div>`;
   }
   function mountEditor(root, title) {
-    root.innerHTML = buildEditorHTML(title);
+    const isOnboarding = draft.mode === "onboarding";
+    root.innerHTML = buildEditorHTML(title, { onboarding: isOnboarding });
     root.querySelector(".dra-pe-form").innerHTML = buildFormHTML();
     wireForm(root);
     root.querySelector("#pe-typo-sub").style.display = draft.settings.typographyEnabled ? "" : "none";
@@ -2631,8 +2665,8 @@
     syncColorInputsDisabled(root, draft.actions?.autoOpenReaderMode ?? false);
     refreshPreview();
     setupRulerTracking(root);
-    root.querySelector(".dra-pe-close").addEventListener("click", closePresetEditor);
-    root.querySelector(".dra-pe-btn-cancel").addEventListener("click", closePresetEditor);
+    root.querySelector(".dra-pe-close").addEventListener("click", cancelEditor);
+    root.querySelector(".dra-pe-btn-cancel").addEventListener("click", cancelEditor);
     root.querySelector(".dra-pe-btn-save").addEventListener("click", () => handleSave(root));
     root.querySelector(".dra-pe-name-input").addEventListener("input", (e) => {
       e.currentTarget.classList.remove("dra-pe-error");
@@ -2640,7 +2674,7 @@
     });
     if (draft.name) root.querySelector(".dra-pe-name-input").value = draft.name;
     root.querySelector(".dra-pe-overlay").addEventListener("click", (e) => {
-      if (e.target === e.currentTarget) closePresetEditor();
+      if (e.target === e.currentTarget) cancelEditor();
     });
   }
   function openPresetEditor({ mode, preset, currentSettings } = {}) {
@@ -2652,24 +2686,21 @@
     document.documentElement.classList.add("dra-preset-editor-open");
     document.addEventListener("keydown", onEditorKeydown);
     if (mode === "onboarding") {
+      onboardingStep = "welcome";
       root.innerHTML = `
       <div class="dra-pe-overlay">
         <div class="dra-pe-card dra-pe-card--onboarding">
           <div class="dra-pe-ob-logo">Argus</div>
           <h2 class="dra-pe-ob-title">Welcome to Argus</h2>
-          <p class="dra-pe-ob-body">Would you like to set up your reading preferences now? You can create a custom preset that controls typography, highlights, and more.</p>
+          <p class="dra-pe-ob-body">Set up your reading preferences with a live preview. Nothing will change on the current page until you save your first preset.</p>
           <div class="dra-pe-ob-btns">
             <button class="dra-pe-btn-yes">Set Up Preferences</button>
-            <button class="dra-pe-btn-no">Skip for Now</button>
           </div>
         </div>
       </div>`;
       root.querySelector(".dra-pe-btn-yes").addEventListener("click", () => {
+        onboardingStep = "preview";
         mountEditor(root, "Create Your First Preset");
-      });
-      root.querySelector(".dra-pe-btn-no").addEventListener("click", () => {
-        chrome.storage.sync.set({ draPresets: { byId: {}, order: [], activeId: null } });
-        closePresetEditor();
       });
       root.querySelector(".dra-pe-overlay").addEventListener("click", (e) => {
         if (e.target === e.currentTarget) closePresetEditor();

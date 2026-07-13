@@ -670,6 +670,17 @@ html.dra-preset-editor-open body {
   flex-shrink: 0;
 }
 
+#dra-preset-editor .dra-pe-preview-notice {
+  margin: 0 0 10px;
+  padding: 9px 11px;
+  border: 1px solid rgba(90, 174, 169, 0.35);
+  border-radius: 8px;
+  background: rgba(90, 174, 169, 0.08);
+  color: #3f4b5b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 #dra-preset-editor .dra-pe-preview-body {
   flex: 1;
   padding: 8px 20px 20px;
