@@ -205,11 +205,13 @@ app.post('/api/focus', async (req, res) => {
 // Lenses are keyed by READING PURPOSE (not article genre). Each highlights the
 // sentence roles most useful for that purpose, regardless of the text's genre.
 const LENS_PROMPTS = {
-  inform: (sentences) => `
+  inform: (sentences, budget) => `
 The reader wants to GET INFORMATION quickly from this text. Highlight only the sentences that carry the facts they need. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
+
+Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones.
 
 Return ONLY this JSON:
 { "labels": [{ "index": <n>, "type": "key-point" | "core-detail" }] }
@@ -219,11 +221,13 @@ Definitions:
 - "core-detail" — a specific supporting fact worth noting: a number, date, name, place, or amount
 `.trim(),
 
-  understand: (sentences) => `
+  understand: (sentences, budget) => `
 The reader wants to UNDERSTAND THE CONCEPTS AND LOGIC of this text — to build a mental model of the ideas and how they connect. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
+
+Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones.
 
 Return ONLY this JSON:
 { "labels": [{ "index": <n>, "type": "concept" | "reasoning" | "takeaway" }] }
@@ -234,11 +238,13 @@ Definitions:
 - "takeaway"  — the author's central conclusion or main insight (a "so ... / this means ..." statement; NOT a definition)
 `.trim(),
 
-  evaluate: (sentences) => `
+  evaluate: (sentences, budget) => `
 The reader wants to EVALUATE THE ARGUMENT of this text — to judge whether the case holds up. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
+
+Be highly selective. Label at most ${budget} of these ${sentences.length} sentences — only the most essential ones.
 
 Return ONLY this JSON:
 { "labels": [{ "index": <n>, "type": "claim" | "evidence" | "counterpoint" }] }
@@ -257,8 +263,9 @@ async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {
   const CHUNK    = 40;
 
   const processChunk = async (chunk, offset) => {
+    const budget = Math.max(2, Math.floor(chunk.length * 0.20));
     const result = await runChunkWithRetry(
-      signal => callGemini(apiKey, promptFn(chunk), signal),
+      signal => callGemini(apiKey, promptFn(chunk, budget), signal),
       `label-chunk-offset-${offset}`
     );
     if (result?.labels?.length > 0) {
