@@ -14,43 +14,38 @@
 
 /* ── Sentence Type Highlights ────────────────────────────────────────── */
 
-/* Lens: 新闻 */
-.dra-label-core-fact {
-  background: color-mix(in srgb, var(--dra-label-core-fact, #eab308) 28%, transparent);
+/* Lens: 获取信息 */
+.dra-label-key-point {
+  background: color-mix(in srgb, var(--dra-label-key-point, #eab308) 28%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
-.dra-label-context {
-  background: color-mix(in srgb, var(--dra-label-context, #3b82f6) 12%, transparent);
-  padding: 1px 3px;
-  border-radius: 4px;
-}
-.dra-label-quote {
-  background: color-mix(in srgb, var(--dra-label-quote, #ea580c) 18%, transparent);
+.dra-label-core-detail {
+  background: color-mix(in srgb, var(--dra-label-core-detail, #3b82f6) 14%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
 
-/* Lens: 学术-理工 */
+/* Lens: 理解概念与逻辑 */
 .dra-label-concept {
   background: color-mix(in srgb, var(--dra-label-concept, #9333ea) 12%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
-.dra-label-mechanism {
-  background: color-mix(in srgb, var(--dra-label-mechanism, #f97316) 14%, transparent);
+.dra-label-reasoning {
+  background: color-mix(in srgb, var(--dra-label-reasoning, #f97316) 14%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
-.dra-label-constraint {
-  background: color-mix(in srgb, var(--dra-label-constraint, #ef4444) 12%, transparent);
+.dra-label-takeaway {
+  background: color-mix(in srgb, var(--dra-label-takeaway, #0d9488) 18%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
 
-/* Lens: 学术-人文 */
-.dra-label-thesis {
-  background: color-mix(in srgb, var(--dra-label-thesis, #ca8a04) 18%, transparent);
+/* Lens: 评估论证 */
+.dra-label-claim {
+  background: color-mix(in srgb, var(--dra-label-claim, #ca8a04) 18%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
@@ -59,41 +54,34 @@
   padding: 1px 3px;
   border-radius: 4px;
 }
-.dra-label-explanation {
-  background: color-mix(in srgb, var(--dra-label-explanation, #6b7280) 12%, transparent);
+.dra-label-counterpoint {
+  background: color-mix(in srgb, var(--dra-label-counterpoint, #e11d48) 14%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
 
-/* Lens: 小说 */
-.dra-label-dialogue {
-  background: color-mix(in srgb, var(--dra-label-dialogue, #ec4899) 12%, transparent);
+/* Lens: 沉浸阅读 */
+.dra-label-turning-point {
+  background: color-mix(in srgb, var(--dra-label-turning-point, #eab308) 25%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
-.dra-label-plot-turn {
-  background: color-mix(in srgb, var(--dra-label-plot-turn, #eab308) 25%, transparent);
-  padding: 1px 3px;
-  border-radius: 4px;
-}
-.dra-label-setting {
-  background: color-mix(in srgb, var(--dra-label-setting, #9ca3af) 12%, transparent);
+.dra-label-character {
+  background: color-mix(in srgb, var(--dra-label-character, #ec4899) 12%, transparent);
   padding: 1px 3px;
   border-radius: 4px;
 }
 
-.dra-label-core-fact,
-.dra-label-context,
-.dra-label-quote,
+.dra-label-key-point,
+.dra-label-core-detail,
 .dra-label-concept,
-.dra-label-mechanism,
-.dra-label-constraint,
-.dra-label-thesis,
+.dra-label-reasoning,
+.dra-label-takeaway,
+.dra-label-claim,
 .dra-label-evidence,
-.dra-label-explanation,
-.dra-label-dialogue,
-.dra-label-plot-turn,
-.dra-label-setting {
+.dra-label-counterpoint,
+.dra-label-turning-point,
+.dra-label-character {
   border: none;
   outline: none;
   text-decoration: none;

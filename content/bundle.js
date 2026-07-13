@@ -12,22 +12,19 @@
     rowShadingColor: "#bfb3d0",
     transitionAnimation: false,
     sentenceLabels: false,
-    sentenceLabelsMode: "local",
-    // 'ai' | 'local'
-    sentenceLabelsLens: "news",
-    // 'news' | 'stem' | 'humanities' | 'fiction'
-    labelCoreFactColor: "#eab308",
-    labelContextColor: "#3b82f6",
-    labelQuoteColor: "#ea580c",
+    // Lens on/off
+    sentenceLabelsLens: "inform",
+    // reading purpose: inform|understand|evaluate|immerse
+    labelKeyPointColor: "#eab308",
+    labelCoreDetailColor: "#3b82f6",
     labelConceptColor: "#9333ea",
-    labelMechanismColor: "#f97316",
-    labelConstraintColor: "#ef4444",
-    labelThesisColor: "#ca8a04",
+    labelReasoningColor: "#f97316",
+    labelTakeawayColor: "#0d9488",
+    labelClaimColor: "#ca8a04",
     labelEvidenceColor: "#22c55e",
-    labelExplanationColor: "#6b7280",
-    labelDialogueColor: "#ec4899",
-    labelPlotTurnColor: "#eab308",
-    labelSettingColor: "#9ca3af",
+    labelCounterpointColor: "#e11d48",
+    labelTurningPointColor: "#eab308",
+    labelCharacterColor: "#ec4899",
     topicFocusMode: "local",
     // 'ai' | 'local'
     fontSize: null,
@@ -580,84 +577,9 @@
   }
 
   // content/features/labels.js
-  var LENS_RULES = {
-    news: {
-      "core-fact": [
-        /\b(announced|confirmed|declared|signed|approved|passed|killed|arrested|elected|won|lost)\b/i,
-        /\b(breaking|just in|update|developing)\b/i
-      ],
-      context: [
-        /\b(in the wake of|following years of|historically|since \d{4}|long.standing|decades.long)\b/i,
-        /\b(background|context|previously|at the time)\b/i
-      ],
-      quote: [
-        /[""][^""]{8,}[""].*\b(said|told|stated|added|wrote)\b/i,
-        /\b(said|according to|told reporters?|spokesperson)\b.*[""][^""]{5,}[""]/i
-      ]
-    },
-    stem: {
-      concept: [
-        /\bis defined as\b/i,
-        /\b(known as|referred to as|termed|called)\b/i,
-        /\bthe (process|phenomenon|principle|law|theory|property) of\b/i
-      ],
-      mechanism: [
-        /\b(first|then|next|subsequently|as a result|this causes|leading to|which triggers|therefore|thus|consequently)\b/i
-      ],
-      constraint: [
-        /\b(however|but|except when|unless|only (when|if)|provided that|in the absence of)\b/i,
-        /\b(limitation|caveat|assumption|cannot|does not apply|fails when)\b/i
-      ]
-    },
-    humanities: {
-      thesis: [
-        /\b(this (paper|essay|article|study) (argues?|contends?|proposes?|demonstrates?))\b/i,
-        /\b(I argue|I contend|my (claim|argument|thesis) is)\b/i
-      ],
-      evidence: [
-        /\b(according to|cited in|as [A-Z][a-z]+ (\(\d{4}\))? (noted?|argues?|writes?))\b/i,
-        /\b(historical records?|archival|census data|survey(s)?|statistics show)\b/i,
-        /\(\d{4}[,)]/
-      ],
-      explanation: [
-        /\b(this (means?|suggests?|indicates?|demonstrates?|reveals?|implies?))\b/i,
-        /\b(in other words|that is to say|put differently|this is because)\b/i,
-        /\b(explains? (why|how)|the reason (is|why|for))\b/i
-      ]
-    },
-    fiction: {
-      dialogue: [
-        /^["""«].{5,}["""»]/,
-        /\b(said|whispered|shouted|replied|asked|muttered|exclaimed|cried)\b/i
-      ],
-      "plot-turn": [
-        /\b(suddenly|at that moment|without warning|for the first time|everything changed|realized|discovered|revealed)\b/i,
-        /\b(shot|killed|ran|burst|collapsed|vanished|appeared|attacked|escaped)\b/i
-      ],
-      setting: [
-        /\b(the (room|air|sky|street|forest|castle|ocean|light|darkness|silence))\b/i,
-        /\b(smelled?|felt|looked|seemed|appeared|stretched|loomed|glittered|faded)\b/i
-      ]
-    }
-  };
   function extractAllSentences() {
     const area = findContentArea();
     return area.innerText.split(/\n+/).filter((p) => p.trim().length > 20).flatMap((p) => splitSentences(p.trim()).filter((s) => s.trim()));
-  }
-  function generateSentenceLabels() {
-    const lens = state.settings.sentenceLabelsLens ?? "news";
-    const rules = LENS_RULES[lens];
-    const sentences = extractAllSentences();
-    const labels = [];
-    sentences.forEach((s, i) => {
-      for (const [type, patterns] of Object.entries(rules)) {
-        if (patterns.some((rx) => rx.test(s))) {
-          labels.push({ index: i, type });
-          break;
-        }
-      }
-    });
-    return labels;
   }
   function requestSentenceLabels() {
     if (state.sentenceLabelsInProgress) {
@@ -674,7 +596,7 @@
     chrome.runtime.sendMessage({
       type: "LABEL_REQUEST",
       sentences: state.allSentences,
-      articleLens: state.settings.sentenceLabelsLens ?? "news"
+      lensPurpose: state.settings.sentenceLabelsLens ?? "inform"
     });
   }
 
@@ -883,18 +805,16 @@
   var READER_ID = "dra-immersive-reader";
   var MIN_BLOCK_LENGTH = 40;
   var LABEL_TYPES = /* @__PURE__ */ new Set([
-    "core-fact",
-    "context",
-    "quote",
+    "key-point",
+    "core-detail",
     "concept",
-    "mechanism",
-    "constraint",
-    "thesis",
+    "reasoning",
+    "takeaway",
+    "claim",
     "evidence",
-    "explanation",
-    "dialogue",
-    "plot-turn",
-    "setting"
+    "counterpoint",
+    "turning-point",
+    "character"
   ]);
   var readerState = { theme: "warm" };
   var readerContent = { title: "", blocks: [] };
@@ -1265,18 +1185,16 @@
     root.style.setProperty("--dra-negative", state.settings.emotionNegativeColor);
     root.style.setProperty("--dra-complex", state.settings.emotionComplexColor);
     root.style.setProperty("--dra-row-shading", state.settings.rowShadingColor);
-    root.style.setProperty("--dra-label-core-fact", state.settings.labelCoreFactColor);
-    root.style.setProperty("--dra-label-context", state.settings.labelContextColor);
-    root.style.setProperty("--dra-label-quote", state.settings.labelQuoteColor);
+    root.style.setProperty("--dra-label-key-point", state.settings.labelKeyPointColor);
+    root.style.setProperty("--dra-label-core-detail", state.settings.labelCoreDetailColor);
     root.style.setProperty("--dra-label-concept", state.settings.labelConceptColor);
-    root.style.setProperty("--dra-label-mechanism", state.settings.labelMechanismColor);
-    root.style.setProperty("--dra-label-constraint", state.settings.labelConstraintColor);
-    root.style.setProperty("--dra-label-thesis", state.settings.labelThesisColor);
+    root.style.setProperty("--dra-label-reasoning", state.settings.labelReasoningColor);
+    root.style.setProperty("--dra-label-takeaway", state.settings.labelTakeawayColor);
+    root.style.setProperty("--dra-label-claim", state.settings.labelClaimColor);
     root.style.setProperty("--dra-label-evidence", state.settings.labelEvidenceColor);
-    root.style.setProperty("--dra-label-explanation", state.settings.labelExplanationColor);
-    root.style.setProperty("--dra-label-dialogue", state.settings.labelDialogueColor);
-    root.style.setProperty("--dra-label-plot-turn", state.settings.labelPlotTurnColor);
-    root.style.setProperty("--dra-label-setting", state.settings.labelSettingColor);
+    root.style.setProperty("--dra-label-counterpoint", state.settings.labelCounterpointColor);
+    root.style.setProperty("--dra-label-turning-point", state.settings.labelTurningPointColor);
+    root.style.setProperty("--dra-label-character", state.settings.labelCharacterColor);
     article.style.fontSize = state.settings.typographyEnabled && state.settings.fontSize ? `${state.settings.fontSize}px` : "";
     article.style.lineHeight = state.settings.typographyEnabled && state.settings.lineHeight ? String(state.settings.lineHeight) : "";
     article.style.fontFamily = state.settings.typographyEnabled && state.settings.fontFamily ? state.settings.fontFamily : "";
@@ -1616,18 +1534,16 @@
   function buildParagraphHTML(plainText) {
     const sentences = splitSentences(plainText.trim());
     const VALID_LABEL_TYPES = /* @__PURE__ */ new Set([
-      "core-fact",
-      "context",
-      "quote",
+      "key-point",
+      "core-detail",
       "concept",
-      "mechanism",
-      "constraint",
-      "thesis",
+      "reasoning",
+      "takeaway",
+      "claim",
       "evidence",
-      "explanation",
-      "dialogue",
-      "plot-turn",
-      "setting"
+      "counterpoint",
+      "turning-point",
+      "character"
     ]);
     const sentenceLabelClass = (s) => {
       if (!state.settings.sentenceLabels) return "";
@@ -1727,18 +1643,16 @@
     document.documentElement.style.setProperty("--dra-negative", state.settings.emotionNegativeColor);
     document.documentElement.style.setProperty("--dra-complex", state.settings.emotionComplexColor);
     document.documentElement.style.setProperty("--dra-row-shading", state.settings.rowShadingColor);
-    document.documentElement.style.setProperty("--dra-label-core-fact", state.settings.labelCoreFactColor);
-    document.documentElement.style.setProperty("--dra-label-context", state.settings.labelContextColor);
-    document.documentElement.style.setProperty("--dra-label-quote", state.settings.labelQuoteColor);
+    document.documentElement.style.setProperty("--dra-label-key-point", state.settings.labelKeyPointColor);
+    document.documentElement.style.setProperty("--dra-label-core-detail", state.settings.labelCoreDetailColor);
     document.documentElement.style.setProperty("--dra-label-concept", state.settings.labelConceptColor);
-    document.documentElement.style.setProperty("--dra-label-mechanism", state.settings.labelMechanismColor);
-    document.documentElement.style.setProperty("--dra-label-constraint", state.settings.labelConstraintColor);
-    document.documentElement.style.setProperty("--dra-label-thesis", state.settings.labelThesisColor);
+    document.documentElement.style.setProperty("--dra-label-reasoning", state.settings.labelReasoningColor);
+    document.documentElement.style.setProperty("--dra-label-takeaway", state.settings.labelTakeawayColor);
+    document.documentElement.style.setProperty("--dra-label-claim", state.settings.labelClaimColor);
     document.documentElement.style.setProperty("--dra-label-evidence", state.settings.labelEvidenceColor);
-    document.documentElement.style.setProperty("--dra-label-explanation", state.settings.labelExplanationColor);
-    document.documentElement.style.setProperty("--dra-label-dialogue", state.settings.labelDialogueColor);
-    document.documentElement.style.setProperty("--dra-label-plot-turn", state.settings.labelPlotTurnColor);
-    document.documentElement.style.setProperty("--dra-label-setting", state.settings.labelSettingColor);
+    document.documentElement.style.setProperty("--dra-label-counterpoint", state.settings.labelCounterpointColor);
+    document.documentElement.style.setProperty("--dra-label-turning-point", state.settings.labelTurningPointColor);
+    document.documentElement.style.setProperty("--dra-label-character", state.settings.labelCharacterColor);
     state.contentArea.querySelectorAll("p, li, blockquote").forEach((para) => {
       if (para.innerText.trim().length < 20) return;
       if (state.settings.typographyEnabled) {
@@ -1794,16 +1708,11 @@
       state.articleHighlights = [...emotionHL, ...transitionHL];
       if (state.settings.sentenceLabels) {
         state.allSentences = extractAllSentences();
-        if (state.settings.sentenceLabelsMode === "local") {
-          state.sentenceLabels = generateSentenceLabels();
-        } else {
-          state.sentenceLabels = state.aiSentenceLabels;
-        }
+        state.sentenceLabels = state.aiSentenceLabels;
       }
       const needsEmotionAI = state.settings.emotionColor && state.settings.emotionMode === "ai";
-      const needsLabelsAI = state.settings.sentenceLabels && state.settings.sentenceLabelsMode === "ai";
       if (needsEmotionAI) requestEmotionAnalysis();
-      if (needsLabelsAI) requestSentenceLabels();
+      if (state.settings.sentenceLabels) requestSentenceLabels();
     }
     if (state.settings.typographyEnabled || state.settings.readingAidsEnabled || state.topicFocusKeywords || state.topicFocusAIPrefixes) {
       applyTransformations();
@@ -1822,7 +1731,7 @@
 
   // content/features/sampleArticles.js
   var SAMPLE_ARTICLES = {
-    news: {
+    inform: {
       title: "City Council Approves New Climate Action Plan",
       imagePlaceholders: [{ caption: "City Council Meeting", position: 1 }],
       blocks: [
@@ -1850,19 +1759,15 @@
         { word: "confident", context: "remain con", category: "emotion-positive" }
       ],
       aiSentenceLabels: [
-        { index: 0, type: "core-fact" },
-        { index: 1, type: "context" },
-        { index: 2, type: "context" },
-        { index: 3, type: "quote" },
-        { index: 4, type: "quote" },
-        { index: 5, type: "context" },
-        { index: 6, type: "context" },
-        { index: 7, type: "context" },
-        { index: 8, type: "context" },
-        { index: 9, type: "context" }
+        { index: 0, type: "key-point" },
+        { index: 1, type: "core-detail" },
+        { index: 2, type: "key-point" },
+        { index: 3, type: "core-detail" },
+        { index: 6, type: "core-detail" },
+        { index: 8, type: "core-detail" }
       ]
     },
-    stem: {
+    understand: {
       title: "Neural Networks Learn to Predict Protein Folding",
       imagePlaceholders: [{ caption: "Protein Structure Diagram", position: 1 }],
       blocks: [
@@ -1881,15 +1786,16 @@
       ],
       aiSentenceLabels: [
         { index: 0, type: "concept" },
-        { index: 2, type: "mechanism" },
-        { index: 3, type: "mechanism" },
-        { index: 4, type: "mechanism" },
-        { index: 5, type: "constraint" },
-        { index: 6, type: "constraint" },
-        { index: 8, type: "concept" }
+        { index: 2, type: "reasoning" },
+        { index: 3, type: "reasoning" },
+        { index: 4, type: "reasoning" },
+        { index: 6, type: "reasoning" },
+        { index: 7, type: "takeaway" },
+        { index: 8, type: "takeaway" },
+        { index: 9, type: "takeaway" }
       ]
     },
-    humanities: {
+    evaluate: {
       title: "The Role of Silence in Modernist Literature",
       imagePlaceholders: [{ caption: "Virginia Woolf, 1902", position: 0 }],
       blocks: [
@@ -1907,17 +1813,16 @@
         { word: "resisting", context: "course, r", category: "emotion-complex" }
       ],
       aiSentenceLabels: [
-        { index: 0, type: "thesis" },
-        { index: 1, type: "explanation" },
+        { index: 0, type: "claim" },
+        { index: 1, type: "evidence" },
         { index: 2, type: "evidence" },
-        { index: 3, type: "explanation" },
-        { index: 4, type: "explanation" },
-        { index: 5, type: "explanation" },
+        { index: 4, type: "claim" },
+        { index: 5, type: "claim" },
         { index: 6, type: "evidence" },
-        { index: 7, type: "thesis" }
+        { index: 7, type: "claim" }
       ]
     },
-    fiction: {
+    immerse: {
       title: "The Last Garden",
       imagePlaceholders: [{ caption: "The overgrown garden at dusk", position: 2 }],
       blocks: [
@@ -1935,17 +1840,14 @@
         { word: "sorry", context: "I'm sorr", category: "emotion-negative" }
       ],
       aiSentenceLabels: [
-        { index: 0, type: "dialogue" },
-        { index: 1, type: "setting" },
-        { index: 2, type: "setting" },
-        { index: 3, type: "setting" },
-        { index: 4, type: "setting" },
-        { index: 5, type: "plot-turn" },
-        { index: 6, type: "dialogue" },
-        { index: 7, type: "dialogue" },
-        { index: 8, type: "setting" },
-        { index: 9, type: "setting" },
-        { index: 10, type: "setting" }
+        { index: 0, type: "character" },
+        { index: 1, type: "character" },
+        { index: 5, type: "turning-point" },
+        { index: 6, type: "character" },
+        { index: 7, type: "character" },
+        { index: 8, type: "character" },
+        { index: 9, type: "turning-point" },
+        { index: 10, type: "character" }
       ]
     }
   };
@@ -1953,20 +1855,6 @@
   // content/features/presetPreviewRender.js
   function escapeHTML2(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-  }
-  function getSentenceLabels(blocks, lens) {
-    const rules = LENS_RULES[lens] ?? LENS_RULES.news;
-    const allSentences = blocks.flatMap((b) => splitSentences(b.trim()).filter(Boolean));
-    const labels = [];
-    allSentences.forEach((s, i) => {
-      for (const [type, patterns] of Object.entries(rules)) {
-        if (patterns.some((rx) => rx.test(s))) {
-          labels.push({ index: i, type });
-          break;
-        }
-      }
-    });
-    return { allSentences, labels };
   }
   function renderSentenceText(sentence, settings, emotionHighlights, transitionWords) {
     if (!settings.readingAidsEnabled) {
@@ -2017,27 +1905,21 @@
   }
   function renderPreviewArticle(article, settings, wordLists, { externalEmotions, externalLabels } = {}) {
     const { blocks } = article;
-    const lens = settings.sentenceLabelsLens ?? "news";
-    const useAILabels = settings.readingAidsEnabled && settings.sentenceLabels && settings.sentenceLabelsMode === "ai" && externalLabels;
-    const useLocalLabels = settings.readingAidsEnabled && settings.sentenceLabels && settings.sentenceLabelsMode !== "ai";
-    const { allSentences, labels } = useAILabels || useLocalLabels ? getSentenceLabels(blocks, lens) : { allSentences: [], labels: [] };
-    const finalLabels = useAILabels ? externalLabels : labels;
+    const finalLabels = settings.readingAidsEnabled && settings.sentenceLabels && externalLabels ? externalLabels : [];
     const useAIEmotion = settings.readingAidsEnabled && settings.emotionColor && settings.emotionMode === "ai" && externalEmotions;
     const emotionHighlights = useAIEmotion ? externalEmotions : settings.readingAidsEnabled && settings.emotionColor ? matchEmotionWords(blocks.join(" "), wordLists) : [];
     const transitionWords = settings.readingAidsEnabled && settings.transitionAnimation ? wordLists.transition ?? DEFAULT_TRANSITION_WORDS : [];
     const LABEL_TYPES2 = /* @__PURE__ */ new Set([
-      "core-fact",
-      "context",
-      "quote",
+      "key-point",
+      "core-detail",
       "concept",
-      "mechanism",
-      "constraint",
-      "thesis",
+      "reasoning",
+      "takeaway",
+      "claim",
       "evidence",
-      "explanation",
-      "dialogue",
-      "plot-turn",
-      "setting"
+      "counterpoint",
+      "turning-point",
+      "character"
     ]);
     let sIdx = 0;
     const paragraphs = blocks.map((block, blockIdx) => {
@@ -2090,18 +1972,16 @@
     container.style.setProperty("--dra-complex", s.emotionComplexColor ?? "#8e44ad");
     container.style.setProperty("--dra-row-shading", s.rowShadingColor ?? "#bfb3d0");
     const labelColors = {
-      "core-fact": s.labelCoreFactColor ?? "#eab308",
-      "context": s.labelContextColor ?? "#3b82f6",
-      "quote": s.labelQuoteColor ?? "#ea580c",
+      "key-point": s.labelKeyPointColor ?? "#eab308",
+      "core-detail": s.labelCoreDetailColor ?? "#3b82f6",
       "concept": s.labelConceptColor ?? "#9333ea",
-      "mechanism": s.labelMechanismColor ?? "#f97316",
-      "constraint": s.labelConstraintColor ?? "#ef4444",
-      "thesis": s.labelThesisColor ?? "#ca8a04",
+      "reasoning": s.labelReasoningColor ?? "#f97316",
+      "takeaway": s.labelTakeawayColor ?? "#0d9488",
+      "claim": s.labelClaimColor ?? "#ca8a04",
       "evidence": s.labelEvidenceColor ?? "#22c55e",
-      "explanation": s.labelExplanationColor ?? "#6b7280",
-      "dialogue": s.labelDialogueColor ?? "#ec4899",
-      "plot-turn": s.labelPlotTurnColor ?? "#eab308",
-      "setting": s.labelSettingColor ?? "#9ca3af"
+      "counterpoint": s.labelCounterpointColor ?? "#e11d48",
+      "turning-point": s.labelTurningPointColor ?? "#eab308",
+      "character": s.labelCharacterColor ?? "#ec4899"
     };
     for (const [key, val] of Object.entries(labelColors)) {
       container.style.setProperty(`--dra-label-${key}`, val);
@@ -2193,20 +2073,17 @@
     "emotionNegativeColor",
     "emotionComplexColor",
     "sentenceLabels",
-    "sentenceLabelsMode",
     "sentenceLabelsLens",
-    "labelCoreFactColor",
-    "labelContextColor",
-    "labelQuoteColor",
+    "labelKeyPointColor",
+    "labelCoreDetailColor",
     "labelConceptColor",
-    "labelMechanismColor",
-    "labelConstraintColor",
-    "labelThesisColor",
+    "labelReasoningColor",
+    "labelTakeawayColor",
+    "labelClaimColor",
     "labelEvidenceColor",
-    "labelExplanationColor",
-    "labelDialogueColor",
-    "labelPlotTurnColor",
-    "labelSettingColor",
+    "labelCounterpointColor",
+    "labelTurningPointColor",
+    "labelCharacterColor",
     "panelSize"
   ];
   var ONBOARDING_PREVIEW_SETTINGS = {
@@ -2233,16 +2110,16 @@
     const root = document.getElementById(EDITOR_ID);
     if (!root || !draft) return;
     const s = draft.settings;
-    const lens = s.sentenceLabelsLens ?? "news";
-    const article = SAMPLE_ARTICLES[lens] ?? SAMPLE_ARTICLES.news;
+    const lens = s.sentenceLabelsLens ?? "inform";
+    const article = SAMPLE_ARTICLES[lens] ?? SAMPLE_ARTICLES.inform;
     const previewBody = root.querySelector(".dra-pe-preview-body");
     if (!previewBody) return;
     const html = renderPreviewArticle(article, s, state.wordLists, {
       externalEmotions: s.emotionMode === "ai" ? article.aiEmotionHighlights ?? null : null,
-      externalLabels: s.sentenceLabelsMode === "ai" ? article.aiSentenceLabels ?? null : null
+      externalLabels: s.sentenceLabels ? article.aiSentenceLabels ?? null : null
     });
     previewBody.innerHTML = `
-    <div class="dra-pe-preview-meta">Previewing: ${lens.charAt(0).toUpperCase() + lens.slice(1)} article</div>
+    <div class="dra-pe-preview-meta">Previewing: ${{ inform: "Get Information", understand: "Understand", evaluate: "Evaluate", immerse: "Immerse" }[lens] ?? lens} sample</div>
     <h3 class="dra-pe-preview-title">${escHTML(article.title)}</h3>
     <div class="dra-pe-article" style="position:relative">${html}</div>`;
     applyPreviewStyles(previewBody, s, draft.actions);
@@ -2345,38 +2222,35 @@
       colorInput("pe-emotion-positive", "emotionPositiveColor", "Positive Color"),
       colorInput("pe-emotion-negative", "emotionNegativeColor", "Negative Color"),
       colorInput("pe-emotion-complex", "emotionComplexColor", "Complex Color"),
-      // Sentence Labels
-      `<div class="dra-pe-row dra-pe-ai-row">
-      ${toggle("pe-toggle-labels", "sentenceLabels", "Sentence Labels")}
-      ${modePill("pe-labels-mode-pill", "sentenceLabels", "sentenceLabelsMode")}
+      // Lens (AI-only, no mode pill)
+      `<div class="dra-pe-row">
+      ${toggle("pe-toggle-labels", "sentenceLabels", "Lens")}
     </div>`,
-      selectInput("pe-label-lens", "sentenceLabelsLens", "Article Type (sets preview article)", [
-        ["news", "News"],
-        ["stem", "Academic \u2013 STEM"],
-        ["humanities", "Academic \u2013 Humanities"],
-        ["fiction", "Fiction"]
+      selectInput("pe-label-lens", "sentenceLabelsLens", "Reading Purpose (sets preview article)", [
+        ["inform", "Get Information"],
+        ["understand", "Understand"],
+        ["evaluate", "Evaluate"],
+        ["immerse", "Immerse"]
       ]),
-      // Label colors grouped by lens; only the active lens group is shown
+      // Label colors grouped by purpose; only the active purpose group is shown
       `<div id="pe-label-colors" class="dra-pe-label-colors">
-      <div data-pe-lens="news">
-        ${colorInput("pe-lc-core-fact", "labelCoreFactColor", "Core Fact")}
-        ${colorInput("pe-lc-context", "labelContextColor", "Context")}
-        ${colorInput("pe-lc-quote", "labelQuoteColor", "Quote")}
+      <div data-pe-lens="inform">
+        ${colorInput("pe-lc-key-point", "labelKeyPointColor", "Key Point")}
+        ${colorInput("pe-lc-core-detail", "labelCoreDetailColor", "Core Detail")}
       </div>
-      <div data-pe-lens="stem">
+      <div data-pe-lens="understand">
         ${colorInput("pe-lc-concept", "labelConceptColor", "Concept")}
-        ${colorInput("pe-lc-mechanism", "labelMechanismColor", "Mechanism")}
-        ${colorInput("pe-lc-constraint", "labelConstraintColor", "Constraint")}
+        ${colorInput("pe-lc-reasoning", "labelReasoningColor", "Reasoning")}
+        ${colorInput("pe-lc-takeaway", "labelTakeawayColor", "Takeaway")}
       </div>
-      <div data-pe-lens="humanities">
-        ${colorInput("pe-lc-thesis", "labelThesisColor", "Thesis")}
+      <div data-pe-lens="evaluate">
+        ${colorInput("pe-lc-claim", "labelClaimColor", "Claim")}
         ${colorInput("pe-lc-evidence", "labelEvidenceColor", "Evidence")}
-        ${colorInput("pe-lc-explanation", "labelExplanationColor", "Explanation")}
+        ${colorInput("pe-lc-counterpoint", "labelCounterpointColor", "Counterpoint")}
       </div>
-      <div data-pe-lens="fiction">
-        ${colorInput("pe-lc-dialogue", "labelDialogueColor", "Dialogue")}
-        ${colorInput("pe-lc-plot-turn", "labelPlotTurnColor", "Plot Turn")}
-        ${colorInput("pe-lc-setting", "labelSettingColor", "Setting")}
+      <div data-pe-lens="immerse">
+        ${colorInput("pe-lc-turning-point", "labelTurningPointColor", "Turning Point")}
+        ${colorInput("pe-lc-character", "labelCharacterColor", "Character")}
       </div>
     </div>`
     ].join("");
@@ -2481,18 +2355,16 @@
         "pe-emotion-positive": "emotionPositiveColor",
         "pe-emotion-negative": "emotionNegativeColor",
         "pe-emotion-complex": "emotionComplexColor",
-        "pe-lc-core-fact": "labelCoreFactColor",
-        "pe-lc-context": "labelContextColor",
-        "pe-lc-quote": "labelQuoteColor",
+        "pe-lc-key-point": "labelKeyPointColor",
+        "pe-lc-core-detail": "labelCoreDetailColor",
         "pe-lc-concept": "labelConceptColor",
-        "pe-lc-mechanism": "labelMechanismColor",
-        "pe-lc-constraint": "labelConstraintColor",
-        "pe-lc-thesis": "labelThesisColor",
+        "pe-lc-reasoning": "labelReasoningColor",
+        "pe-lc-takeaway": "labelTakeawayColor",
+        "pe-lc-claim": "labelClaimColor",
         "pe-lc-evidence": "labelEvidenceColor",
-        "pe-lc-explanation": "labelExplanationColor",
-        "pe-lc-dialogue": "labelDialogueColor",
-        "pe-lc-plot-turn": "labelPlotTurnColor",
-        "pe-lc-setting": "labelSettingColor"
+        "pe-lc-counterpoint": "labelCounterpointColor",
+        "pe-lc-turning-point": "labelTurningPointColor",
+        "pe-lc-character": "labelCharacterColor"
       };
       if (numKeys[el.id]) {
         const v = parseFloat(el.value);
@@ -2508,7 +2380,7 @@
       if (btn) {
         const feature = btn.dataset.peFeature;
         const mode = btn.dataset.peMode;
-        const keyMap = { emotion: "emotionMode", sentenceLabels: "sentenceLabelsMode" };
+        const keyMap = { emotion: "emotionMode" };
         const key = keyMap[feature];
         if (key) {
           update(key, mode);
@@ -2725,6 +2597,14 @@
     emotionComplex: [...DEFAULT_EMOTION_COMPLEX],
     transition: [...DEFAULT_TRANSITION_WORDS]
   };
+  var OLD_LENS_TO_PURPOSE = { news: "inform", stem: "understand", humanities: "understand", fiction: "immerse" };
+  function migrateLensSettings(settings) {
+    if (OLD_LENS_TO_PURPOSE[settings.sentenceLabelsLens]) {
+      settings.sentenceLabelsLens = OLD_LENS_TO_PURPOSE[settings.sentenceLabelsLens];
+    }
+    const VALID = /* @__PURE__ */ new Set(["inform", "understand", "evaluate", "immerse"]);
+    if (!VALID.has(settings.sentenceLabelsLens)) settings.sentenceLabelsLens = "inform";
+  }
   function applyPresetActions(actions) {
     if (actions?.autoOpenReaderMode === true) {
       openImmersiveReader();
@@ -2747,6 +2627,7 @@
     if (activePreset?.settings) {
       state.settings = { ...state.settings, ...activePreset.settings };
     }
+    migrateLensSettings(state.settings);
     if (data.draWordLists) {
       state.wordLists = { ...state.wordLists, ...data.draWordLists };
     } else {

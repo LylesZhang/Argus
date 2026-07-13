@@ -3,7 +3,7 @@
 // once during development and stored here to avoid live API calls at preview time.
 
 export const SAMPLE_ARTICLES = {
-  news: {
+  inform: {
     title: 'City Council Approves New Climate Action Plan',
     imagePlaceholders: [{ caption: 'City Council Meeting', position: 1 }],
     blocks: [
@@ -31,20 +31,16 @@ export const SAMPLE_ARTICLES = {
       { word: 'confident',            context: 'remain con',         category: 'emotion-positive' },
     ],
     aiSentenceLabels: [
-      { index: 0, type: 'core-fact' },
-      { index: 1, type: 'context' },
-      { index: 2, type: 'context' },
-      { index: 3, type: 'quote' },
-      { index: 4, type: 'quote' },
-      { index: 5, type: 'context' },
-      { index: 6, type: 'context' },
-      { index: 7, type: 'context' },
-      { index: 8, type: 'context' },
-      { index: 9, type: 'context' },
+      { index: 0, type: 'key-point' },
+      { index: 1, type: 'core-detail' },
+      { index: 2, type: 'key-point' },
+      { index: 3, type: 'core-detail' },
+      { index: 6, type: 'core-detail' },
+      { index: 8, type: 'core-detail' },
     ],
   },
 
-  stem: {
+  understand: {
     title: 'Neural Networks Learn to Predict Protein Folding',
     imagePlaceholders: [{ caption: 'Protein Structure Diagram', position: 1 }],
     blocks: [
@@ -63,16 +59,17 @@ export const SAMPLE_ARTICLES = {
     ],
     aiSentenceLabels: [
       { index: 0, type: 'concept' },
-      { index: 2, type: 'mechanism' },
-      { index: 3, type: 'mechanism' },
-      { index: 4, type: 'mechanism' },
-      { index: 5, type: 'constraint' },
-      { index: 6, type: 'constraint' },
-      { index: 8, type: 'concept' },
+      { index: 2, type: 'reasoning' },
+      { index: 3, type: 'reasoning' },
+      { index: 4, type: 'reasoning' },
+      { index: 6, type: 'reasoning' },
+      { index: 7, type: 'takeaway' },
+      { index: 8, type: 'takeaway' },
+      { index: 9, type: 'takeaway' },
     ],
   },
 
-  humanities: {
+  evaluate: {
     title: 'The Role of Silence in Modernist Literature',
     imagePlaceholders: [{ caption: 'Virginia Woolf, 1902', position: 0 }],
     blocks: [
@@ -90,18 +87,17 @@ export const SAMPLE_ARTICLES = {
       { word: 'resisting',    context: 'course, r', category: 'emotion-complex' },
     ],
     aiSentenceLabels: [
-      { index: 0, type: 'thesis' },
-      { index: 1, type: 'explanation' },
+      { index: 0, type: 'claim' },
+      { index: 1, type: 'evidence' },
       { index: 2, type: 'evidence' },
-      { index: 3, type: 'explanation' },
-      { index: 4, type: 'explanation' },
-      { index: 5, type: 'explanation' },
+      { index: 4, type: 'claim' },
+      { index: 5, type: 'claim' },
       { index: 6, type: 'evidence' },
-      { index: 7, type: 'thesis' },
+      { index: 7, type: 'claim' },
     ],
   },
 
-  fiction: {
+  immerse: {
     title: 'The Last Garden',
     imagePlaceholders: [{ caption: 'The overgrown garden at dusk', position: 2 }],
     blocks: [
@@ -119,17 +115,14 @@ export const SAMPLE_ARTICLES = {
       { word: 'sorry',         context: "I'm sorr", category: 'emotion-negative' },
     ],
     aiSentenceLabels: [
-      { index: 0,  type: 'dialogue' },
-      { index: 1,  type: 'setting' },
-      { index: 2,  type: 'setting' },
-      { index: 3,  type: 'setting' },
-      { index: 4,  type: 'setting' },
-      { index: 5,  type: 'plot-turn' },
-      { index: 6,  type: 'dialogue' },
-      { index: 7,  type: 'dialogue' },
-      { index: 8,  type: 'setting' },
-      { index: 9,  type: 'setting' },
-      { index: 10, type: 'setting' },
+      { index: 0,  type: 'character' },
+      { index: 1,  type: 'character' },
+      { index: 5,  type: 'turning-point' },
+      { index: 6,  type: 'character' },
+      { index: 7,  type: 'character' },
+      { index: 8,  type: 'character' },
+      { index: 9,  type: 'turning-point' },
+      { index: 10, type: 'character' },
     ],
   },
 };

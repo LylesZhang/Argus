@@ -1,5 +1,4 @@
 import { splitSentences } from '../utils.js';
-import { LENS_RULES } from './labels.js';
 import { matchEmotionWords } from './emotions.js';
 import { DEFAULT_TRANSITION_WORDS } from './transitions.js';
 import { applyBionicToText } from './bionic.js';
@@ -10,18 +9,6 @@ function escapeHTML(text) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
-}
-
-export function getSentenceLabels(blocks, lens) {
-  const rules = LENS_RULES[lens] ?? LENS_RULES.news;
-  const allSentences = blocks.flatMap(b => splitSentences(b.trim()).filter(Boolean));
-  const labels = [];
-  allSentences.forEach((s, i) => {
-    for (const [type, patterns] of Object.entries(rules)) {
-      if (patterns.some(rx => rx.test(s))) { labels.push({ index: i, type }); break; }
-    }
-  });
-  return { allSentences, labels };
 }
 
 function renderSentenceText(sentence, settings, emotionHighlights, transitionWords) {
@@ -78,18 +65,11 @@ function renderSentenceText(sentence, settings, emotionHighlights, transitionWor
 // externalLabels/externalEmotions: pass AI-generated results to override local matching.
 export function renderPreviewArticle(article, settings, wordLists, { externalEmotions, externalLabels } = {}) {
   const { blocks } = article;
-  const lens = settings.sentenceLabelsLens ?? 'news';
 
-  const useAILabels = settings.readingAidsEnabled && settings.sentenceLabels
-    && settings.sentenceLabelsMode === 'ai' && externalLabels;
-  const useLocalLabels = settings.readingAidsEnabled && settings.sentenceLabels
-    && settings.sentenceLabelsMode !== 'ai';
-
-  const { allSentences, labels } = (useAILabels || useLocalLabels)
-    ? getSentenceLabels(blocks, lens)
-    : { allSentences: [], labels: [] };
-
-  const finalLabels = useAILabels ? externalLabels : labels;
+  // Lens is AI-only: preview uses the article's pre-computed static labels.
+  const finalLabels = (settings.readingAidsEnabled && settings.sentenceLabels && externalLabels)
+    ? externalLabels
+    : [];
 
   const useAIEmotion = settings.readingAidsEnabled && settings.emotionColor
     && settings.emotionMode === 'ai' && externalEmotions;
@@ -104,8 +84,8 @@ export function renderPreviewArticle(article, settings, wordLists, { externalEmo
     : [];
 
   const LABEL_TYPES = new Set([
-    'core-fact','context','quote','concept','mechanism','constraint',
-    'thesis','evidence','explanation','dialogue','plot-turn','setting',
+    'key-point','core-detail','concept','reasoning','takeaway',
+    'claim','evidence','counterpoint','turning-point','character',
   ]);
 
   let sIdx = 0;
@@ -180,18 +160,16 @@ export function applyPreviewStyles(container, settings, actions = {}) {
   container.style.setProperty('--dra-row-shading', s.rowShadingColor ?? '#bfb3d0');
 
   const labelColors = {
-    'core-fact':   s.labelCoreFactColor   ?? '#eab308',
-    'context':     s.labelContextColor    ?? '#3b82f6',
-    'quote':       s.labelQuoteColor      ?? '#ea580c',
-    'concept':     s.labelConceptColor    ?? '#9333ea',
-    'mechanism':   s.labelMechanismColor  ?? '#f97316',
-    'constraint':  s.labelConstraintColor ?? '#ef4444',
-    'thesis':      s.labelThesisColor     ?? '#ca8a04',
-    'evidence':    s.labelEvidenceColor   ?? '#22c55e',
-    'explanation': s.labelExplanationColor ?? '#6b7280',
-    'dialogue':    s.labelDialogueColor   ?? '#ec4899',
-    'plot-turn':   s.labelPlotTurnColor   ?? '#eab308',
-    'setting':     s.labelSettingColor    ?? '#9ca3af',
+    'key-point':     s.labelKeyPointColor    ?? '#eab308',
+    'core-detail':   s.labelCoreDetailColor  ?? '#3b82f6',
+    'concept':       s.labelConceptColor     ?? '#9333ea',
+    'reasoning':     s.labelReasoningColor   ?? '#f97316',
+    'takeaway':      s.labelTakeawayColor    ?? '#0d9488',
+    'claim':         s.labelClaimColor       ?? '#ca8a04',
+    'evidence':      s.labelEvidenceColor    ?? '#22c55e',
+    'counterpoint':  s.labelCounterpointColor ?? '#e11d48',
+    'turning-point': s.labelTurningPointColor ?? '#eab308',
+    'character':     s.labelCharacterColor   ?? '#ec4899',
   };
   for (const [key, val] of Object.entries(labelColors)) {
     container.style.setProperty(`--dra-label-${key}`, val);

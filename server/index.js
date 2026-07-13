@@ -202,71 +202,71 @@ app.post('/api/focus', async (req, res) => {
 
 // ── /api/label ─────────────────────────────────────────────────────────
 
+// Lenses are keyed by READING PURPOSE (not article genre). Each highlights the
+// sentence roles most useful for that purpose, regardless of the text's genre.
 const LENS_PROMPTS = {
-  news: (sentences) => `
-Classify sentences from this NEWS ARTICLE. Only include sentences you are confident about.
+  inform: (sentences) => `
+The reader wants to GET INFORMATION quickly from this text. Highlight only the sentences that carry the facts they need. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{ "labels": [{ "index": <n>, "type": "core-fact" | "context" | "quote" }] }
+{ "labels": [{ "index": <n>, "type": "key-point" | "core-detail" }] }
 
 Definitions:
-- "core-fact" — the 5W1H lead: who did what, when, where (the core breaking news)
-- "context"   — historical background or framing that explains why the event matters
-- "quote"     — a direct or reported statement from a named official, witness, or expert
+- "key-point"   — the main fact, answer, or bottom-line takeaway of the passage
+- "core-detail" — a specific supporting fact worth noting: a number, date, name, place, or amount
 `.trim(),
 
-  stem: (sentences) => `
-Classify sentences from this STEM/ACADEMIC text. Only include sentences you are confident about.
+  understand: (sentences) => `
+The reader wants to UNDERSTAND THE CONCEPTS AND LOGIC of this text — to build a mental model of the ideas and how they connect. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{ "labels": [{ "index": <n>, "type": "concept" | "mechanism" | "constraint" }] }
+{ "labels": [{ "index": <n>, "type": "concept" | "reasoning" | "takeaway" }] }
 
 Definitions:
-- "concept"    — defines or introduces a key term, phenomenon, or scientific principle
-- "mechanism"  — describes a causal chain or sequential process (how something works step by step)
-- "constraint" — states a limitation, exception, boundary condition, or caveat
+- "concept"   — defines or introduces a key term or idea (a "X is ..." definition; what something IS)
+- "reasoning" — the causal or logical connective tissue (how/why: because, therefore, leads to, this causes)
+- "takeaway"  — the author's central conclusion or main insight (a "so ... / this means ..." statement; NOT a definition)
 `.trim(),
 
-  humanities: (sentences) => `
-Classify sentences from this HUMANITIES/SOCIAL SCIENCE text. Only include sentences you are confident about.
+  evaluate: (sentences) => `
+The reader wants to EVALUATE THE ARGUMENT of this text — to judge whether the case holds up. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{ "labels": [{ "index": <n>, "type": "thesis" | "evidence" | "explanation" }] }
+{ "labels": [{ "index": <n>, "type": "claim" | "evidence" | "counterpoint" }] }
 
 Definitions:
-- "thesis"      — the author's central claim, argument, or critical position
-- "evidence"    — cited sources, archival data, statistics, or quoted scholarly works
-- "explanation" — how the author connects evidence to thesis, or rebuts counter-arguments
+- "claim"        — an assertion or position the author is arguing for
+- "evidence"     — data, citations, examples, or facts offered to support a claim
+- "counterpoint" — a concession, limitation, caveat, or opposing view the author acknowledges
 `.trim(),
 
-  fiction: (sentences) => `
-Classify sentences from this FICTION/NARRATIVE text. Only include sentences you are confident about.
+  immerse: (sentences) => `
+The reader wants to IMMERSE in this narrative — to follow the story and experience it. Only include sentences you are confident about.
 
 Sentences:
 ${sentences.map((s, i) => `${i}. ${s}`).join('\n')}
 
 Return ONLY this JSON:
-{ "labels": [{ "index": <n>, "type": "dialogue" | "plot-turn" | "setting" }] }
+{ "labels": [{ "index": <n>, "type": "turning-point" | "character" }] }
 
 Definitions:
-- "dialogue"   — a character speaks or a line of dialogue is reported
-- "plot-turn"  — a key event, revelation, or dramatic turning point that advances the story
-- "setting"    — describes environment, atmosphere, or interior monologue that does not advance plot
+- "turning-point" — a key event, revelation, or dramatic beat that advances the story
+- "character"     — a moment of a character's decision, feeling, or interpersonal interaction
 `.trim(),
 };
 
-async function fetchSentenceLabelsFromGemini(sentences, articleLens) {
+async function fetchSentenceLabelsFromGemini(sentences, lensPurpose) {
   const apiKey   = process.env.GEMINI_API_KEY;
-  const promptFn = LENS_PROMPTS[articleLens] ?? LENS_PROMPTS['news'];
+  const promptFn = LENS_PROMPTS[lensPurpose] ?? LENS_PROMPTS['inform'];
   const CHUNK    = 40;
 
   const processChunk = async (chunk, offset) => {
@@ -303,7 +303,7 @@ async function fetchSentenceLabelsFromGemini(sentences, articleLens) {
 }
 
 app.post('/api/label', async (req, res) => {
-  const { sentences, articleLens } = req.body;
+  const { sentences, lensPurpose, articleLens } = req.body;
   if (!Array.isArray(sentences) || sentences.length === 0) {
     return res.status(400).json({ error: 'sentences array required' });
   }
@@ -311,7 +311,8 @@ app.post('/api/label', async (req, res) => {
   if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not set' });
 
   try {
-    const { labels, success } = await fetchSentenceLabelsFromGemini(sentences, articleLens ?? 'news');
+    // Accept `lensPurpose` (new) with `articleLens` fallback for older clients.
+    const { labels, success } = await fetchSentenceLabelsFromGemini(sentences, lensPurpose ?? articleLens ?? 'inform');
     res.json({ labels, success });
   } catch (err) {
     console.error('Label error:', err);

@@ -16,20 +16,17 @@ const DEFAULT_SETTINGS = {
   rowShadingColor:       '#bfb3d0',
   transitionAnimation:   false,
   sentenceLabels:        false,
-  sentenceLabelsMode:    'local',
-  sentenceLabelsLens:    'news',
-  labelCoreFactColor:    '#eab308',
-  labelContextColor:     '#3b82f6',
-  labelQuoteColor:       '#ea580c',
-  labelConceptColor:     '#9333ea',
-  labelMechanismColor:   '#f97316',
-  labelConstraintColor:  '#ef4444',
-  labelThesisColor:      '#ca8a04',
-  labelEvidenceColor:    '#22c55e',
-  labelExplanationColor: '#6b7280',
-  labelDialogueColor:    '#ec4899',
-  labelPlotTurnColor:    '#eab308',
-  labelSettingColor:     '#9ca3af',
+  sentenceLabelsLens:    'inform',
+  labelKeyPointColor:     '#eab308',
+  labelCoreDetailColor:   '#3b82f6',
+  labelConceptColor:      '#9333ea',
+  labelReasoningColor:    '#f97316',
+  labelTakeawayColor:     '#0d9488',
+  labelClaimColor:        '#ca8a04',
+  labelEvidenceColor:     '#22c55e',
+  labelCounterpointColor: '#e11d48',
+  labelTurningPointColor: '#eab308',
+  labelCharacterColor:    '#ec4899',
   topicFocusMode:        'local',
   fontSize:             18,
   lineHeight:           1.8,
@@ -56,11 +53,11 @@ const PRESET_SETTING_KEYS = [
   'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation',
   'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
   'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
-  'sentenceLabels', 'sentenceLabelsMode', 'sentenceLabelsLens',
-  'labelCoreFactColor', 'labelContextColor', 'labelQuoteColor',
-  'labelConceptColor', 'labelMechanismColor', 'labelConstraintColor',
-  'labelThesisColor', 'labelEvidenceColor', 'labelExplanationColor',
-  'labelDialogueColor', 'labelPlotTurnColor', 'labelSettingColor',
+  'sentenceLabels', 'sentenceLabelsLens',
+  'labelKeyPointColor', 'labelCoreDetailColor',
+  'labelConceptColor', 'labelReasoningColor', 'labelTakeawayColor',
+  'labelClaimColor', 'labelEvidenceColor', 'labelCounterpointColor',
+  'labelTurningPointColor', 'labelCharacterColor',
   'panelSize',
 ];
 const PRESET_SETTING_KEY_SET = new Set(PRESET_SETTING_KEYS);
@@ -79,7 +76,6 @@ const EFFECT_WARNING_KEYS = new Set([
   'emotionColor',
   'emotionMode',
   'sentenceLabels',
-  'sentenceLabelsMode',
   'rulerActive',
   'autoScrollActive',
 ]);
@@ -254,9 +250,9 @@ function updateAIStatus(feature, status) {
 
 // ── Lens legend switcher ───────────────────────────────────────────────
 
-function switchLensLegend(lens) {
-  ['news', 'stem', 'humanities', 'fiction'].forEach(l => {
-    document.getElementById(`legend-${l}`).style.display = l === lens ? '' : 'none';
+function switchLensLegend(purpose) {
+  ['inform', 'understand', 'evaluate', 'immerse'].forEach(p => {
+    document.getElementById(`legend-${p}`).style.display = p === purpose ? '' : 'none';
   });
 }
 
@@ -304,20 +300,18 @@ function syncUI() {
   document.getElementById('emotion-positive-color').value = settings.emotionPositiveColor;
   document.getElementById('emotion-negative-color').value = settings.emotionNegativeColor;
   document.getElementById('emotion-complex-color').value = settings.emotionComplexColor;
-  document.getElementById('label-core-fact-color').value  = settings.labelCoreFactColor;
-  document.getElementById('label-context-color').value    = settings.labelContextColor;
-  document.getElementById('label-quote-color').value      = settings.labelQuoteColor;
-  document.getElementById('label-concept-color').value    = settings.labelConceptColor;
-  document.getElementById('label-mechanism-color').value  = settings.labelMechanismColor;
-  document.getElementById('label-constraint-color').value = settings.labelConstraintColor;
-  document.getElementById('label-thesis-color').value     = settings.labelThesisColor;
-  document.getElementById('label-evidence-color').value      = settings.labelEvidenceColor;
-  document.getElementById('label-explanation-color').value   = settings.labelExplanationColor;
-  document.getElementById('label-dialogue-color').value      = settings.labelDialogueColor;
-  document.getElementById('label-plot-turn-color').value    = settings.labelPlotTurnColor;
-  document.getElementById('label-setting-color').value      = settings.labelSettingColor;
-  document.getElementById('label-lens-select').value = settings.sentenceLabelsLens ?? 'news';
-  switchLensLegend(settings.sentenceLabelsLens ?? 'news');
+  document.getElementById('label-key-point-color').value    = settings.labelKeyPointColor;
+  document.getElementById('label-core-detail-color').value  = settings.labelCoreDetailColor;
+  document.getElementById('label-concept-color').value      = settings.labelConceptColor;
+  document.getElementById('label-reasoning-color').value    = settings.labelReasoningColor;
+  document.getElementById('label-takeaway-color').value     = settings.labelTakeawayColor;
+  document.getElementById('label-claim-color').value        = settings.labelClaimColor;
+  document.getElementById('label-evidence-color').value     = settings.labelEvidenceColor;
+  document.getElementById('label-counterpoint-color').value = settings.labelCounterpointColor;
+  document.getElementById('label-turning-point-color').value = settings.labelTurningPointColor;
+  document.getElementById('label-character-color').value    = settings.labelCharacterColor;
+  document.getElementById('label-lens-select').value = settings.sentenceLabelsLens ?? 'inform';
+  switchLensLegend(settings.sentenceLabelsLens ?? 'inform');
   document.getElementById('ruler-size-slider').value  = settings.rulerWindowLines;
   document.getElementById('ruler-size-value').textContent = settings.rulerWindowLines.toFixed(1) + ' lines';
   const autoScrollSpeed = clampAutoScrollSpeed(settings.autoScrollSpeed);
@@ -333,15 +327,16 @@ function syncUI() {
   document.getElementById('sentence-label-colors').classList.toggle('active', settings.sentenceLabels);
   document.getElementById('toggle-labels').checked = settings.sentenceLabels;
 
-  // Sync mode pills to stored settings
-  [['emotion', settings.emotionMode], ['sentenceLabels', settings.sentenceLabelsMode], ['topicFocus', settings.topicFocusMode]].forEach(([feature, mode]) => {
+  // Sync mode pills to stored settings (emotion + topicFocus; Lens is AI-only, no pill)
+  [['emotion', settings.emotionMode], ['topicFocus', settings.topicFocusMode]].forEach(([feature, mode]) => {
     document.querySelectorAll(`[data-feature="${feature}"]`).forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === mode);
     });
   });
 
   document.getElementById('emotion-ai-row').classList.toggle('hidden', !settings.emotionColor || settings.emotionMode !== 'ai');
-  document.getElementById('labels-ai-row').classList.toggle('hidden', !settings.sentenceLabels || settings.sentenceLabelsMode !== 'ai');
+  // Lens is AI-only: status/retry row shows whenever Lens is on
+  document.getElementById('labels-ai-row').classList.toggle('hidden', !settings.sentenceLabels);
 }
 
 // ── Wire up all controls ───────────────────────────────────────────────
@@ -459,7 +454,7 @@ function init() {
     enableReadingAidIfNeeded(e.target.checked);
     broadcast({ sentenceLabels: e.target.checked });
     document.getElementById('sentence-label-colors').classList.toggle('active', e.target.checked);
-    document.getElementById('labels-ai-row').classList.toggle('hidden', !e.target.checked || settings.sentenceLabelsMode !== 'ai');
+    document.getElementById('labels-ai-row').classList.toggle('hidden', !e.target.checked);
   });
 
   document.getElementById('toggle-ruler').addEventListener('change', e => {
@@ -643,18 +638,16 @@ function init() {
   });
 
   const labelColorMap = {
-    'label-core-fact-color':   'labelCoreFactColor',
-    'label-context-color':     'labelContextColor',
-    'label-quote-color':       'labelQuoteColor',
-    'label-concept-color':     'labelConceptColor',
-    'label-mechanism-color':   'labelMechanismColor',
-    'label-constraint-color':  'labelConstraintColor',
-    'label-thesis-color':      'labelThesisColor',
-    'label-evidence-color':    'labelEvidenceColor',
-    'label-explanation-color': 'labelExplanationColor',
-    'label-dialogue-color':    'labelDialogueColor',
-    'label-plot-turn-color':   'labelPlotTurnColor',
-    'label-setting-color':     'labelSettingColor',
+    'label-key-point-color':    'labelKeyPointColor',
+    'label-core-detail-color':  'labelCoreDetailColor',
+    'label-concept-color':      'labelConceptColor',
+    'label-reasoning-color':    'labelReasoningColor',
+    'label-takeaway-color':     'labelTakeawayColor',
+    'label-claim-color':        'labelClaimColor',
+    'label-evidence-color':     'labelEvidenceColor',
+    'label-counterpoint-color': 'labelCounterpointColor',
+    'label-turning-point-color': 'labelTurningPointColor',
+    'label-character-color':    'labelCharacterColor',
   };
   Object.entries(labelColorMap).forEach(([id, key]) => {
     document.getElementById(id).addEventListener('input', e => {
@@ -662,9 +655,9 @@ function init() {
     });
   });
 
-  // Mode pills (AI / Local) for emotion and sentenceLabels
-  const STATUS_FEATURE = { emotion: 'emotion', sentenceLabels: 'labels', topicFocus: 'focus' };
-  const AI_ROW_ID      = { emotion: 'emotion-ai-row', sentenceLabels: 'labels-ai-row' };
+  // Mode pills (AI / Local) for emotion + topicFocus (Lens is AI-only, no pill)
+  const STATUS_FEATURE = { emotion: 'emotion', topicFocus: 'focus' };
+  const AI_ROW_ID      = { emotion: 'emotion-ai-row' };
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const feature = btn.dataset.feature;
@@ -1080,7 +1073,7 @@ chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'PRESETS_CHANGED') {
     chrome.storage.sync.get(['draPresets', 'draSettings'], d => {
       localPresets = d.draPresets ?? { byId: {}, order: [], activeId: null };
-      if (d.draSettings) { settings = { ...DEFAULT_SETTINGS, ...d.draSettings }; syncUI(); }
+      if (d.draSettings) { settings = { ...DEFAULT_SETTINGS, ...d.draSettings }; migrateLensSettings(settings); syncUI(); }
       renderPresetList();
     });
   }
@@ -1088,8 +1081,16 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 // ── Boot ───────────────────────────────────────────────────────────────
 
+// Migrate old genre-based lens values to reading-purpose lens ids.
+const OLD_LENS_TO_PURPOSE = { news: 'inform', stem: 'understand', humanities: 'understand', fiction: 'immerse' };
+function migrateLensSettings(s) {
+  if (OLD_LENS_TO_PURPOSE[s.sentenceLabelsLens]) s.sentenceLabelsLens = OLD_LENS_TO_PURPOSE[s.sentenceLabelsLens];
+  if (!['inform', 'understand', 'evaluate', 'immerse'].includes(s.sentenceLabelsLens)) s.sentenceLabelsLens = 'inform';
+}
+
 chrome.storage.sync.get('draSettings', (data) => {
   if (data.draSettings) settings = { ...DEFAULT_SETTINGS, ...data.draSettings };
+  migrateLensSettings(settings);
   syncUI();
   init();
   initWordListEditor();

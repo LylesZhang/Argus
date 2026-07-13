@@ -5,7 +5,7 @@ import { injectOpenDyslexicFont } from './features/typography.js';
 import { applyBionicToText } from './features/bionic.js';
 import { generateEmotionHighlights, requestEmotionAnalysis } from './features/emotions.js';
 import { generateTransitionHighlights } from './features/transitions.js';
-import { extractAllSentences, generateSentenceLabels, requestSentenceLabels } from './features/labels.js';
+import { extractAllSentences, requestSentenceLabels } from './features/labels.js';
 import { setupRuler, teardownRuler } from './features/ruler.js';
 import { setupAutoScroll, teardownAutoScroll } from './features/autoScroll.js';
 import { applyFocusMask, applyFocusMaskByPrefixes } from './features/topicFocus.js';
@@ -71,10 +71,10 @@ function buildParagraphHTML(plainText) {
   const sentences = splitSentences(plainText.trim());
 
   const VALID_LABEL_TYPES = new Set([
-    'core-fact', 'context', 'quote',
-    'concept', 'mechanism', 'constraint',
-    'thesis', 'evidence', 'explanation',
-    'dialogue', 'plot-turn', 'setting',
+    'key-point', 'core-detail',
+    'concept', 'reasoning', 'takeaway',
+    'claim', 'evidence', 'counterpoint',
+    'turning-point', 'character',
   ]);
 
   const sentenceLabelClass = (s) => {
@@ -174,18 +174,16 @@ function applyTransformations() {
   document.documentElement.style.setProperty('--dra-negative', state.settings.emotionNegativeColor);
   document.documentElement.style.setProperty('--dra-complex',  state.settings.emotionComplexColor);
   document.documentElement.style.setProperty('--dra-row-shading', state.settings.rowShadingColor);
-  document.documentElement.style.setProperty('--dra-label-core-fact',   state.settings.labelCoreFactColor);
-  document.documentElement.style.setProperty('--dra-label-context',     state.settings.labelContextColor);
-  document.documentElement.style.setProperty('--dra-label-quote',       state.settings.labelQuoteColor);
-  document.documentElement.style.setProperty('--dra-label-concept',     state.settings.labelConceptColor);
-  document.documentElement.style.setProperty('--dra-label-mechanism',   state.settings.labelMechanismColor);
-  document.documentElement.style.setProperty('--dra-label-constraint',  state.settings.labelConstraintColor);
-  document.documentElement.style.setProperty('--dra-label-thesis',      state.settings.labelThesisColor);
+  document.documentElement.style.setProperty('--dra-label-key-point',    state.settings.labelKeyPointColor);
+  document.documentElement.style.setProperty('--dra-label-core-detail',  state.settings.labelCoreDetailColor);
+  document.documentElement.style.setProperty('--dra-label-concept',      state.settings.labelConceptColor);
+  document.documentElement.style.setProperty('--dra-label-reasoning',    state.settings.labelReasoningColor);
+  document.documentElement.style.setProperty('--dra-label-takeaway',     state.settings.labelTakeawayColor);
+  document.documentElement.style.setProperty('--dra-label-claim',        state.settings.labelClaimColor);
   document.documentElement.style.setProperty('--dra-label-evidence',     state.settings.labelEvidenceColor);
-  document.documentElement.style.setProperty('--dra-label-explanation',  state.settings.labelExplanationColor);
-  document.documentElement.style.setProperty('--dra-label-dialogue',     state.settings.labelDialogueColor);
-  document.documentElement.style.setProperty('--dra-label-plot-turn',    state.settings.labelPlotTurnColor);
-  document.documentElement.style.setProperty('--dra-label-setting',      state.settings.labelSettingColor);
+  document.documentElement.style.setProperty('--dra-label-counterpoint', state.settings.labelCounterpointColor);
+  document.documentElement.style.setProperty('--dra-label-turning-point', state.settings.labelTurningPointColor);
+  document.documentElement.style.setProperty('--dra-label-character',    state.settings.labelCharacterColor);
 
   // Apply per-element styles (child elements often override contentArea-level styles)
   state.contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
@@ -266,17 +264,12 @@ export function render() {
 
     if (state.settings.sentenceLabels) {
       state.allSentences = extractAllSentences();
-      if (state.settings.sentenceLabelsMode === 'local') {
-        state.sentenceLabels = generateSentenceLabels();
-      } else {
-        state.sentenceLabels = state.aiSentenceLabels;
-      }
+      state.sentenceLabels = state.aiSentenceLabels;  // Lens is AI-only
     }
 
-    const needsEmotionAI = state.settings.emotionColor  && state.settings.emotionMode       === 'ai';
-    const needsLabelsAI  = state.settings.sentenceLabels && state.settings.sentenceLabelsMode === 'ai';
+    const needsEmotionAI = state.settings.emotionColor  && state.settings.emotionMode === 'ai';
     if (needsEmotionAI) requestEmotionAnalysis();
-    if (needsLabelsAI)  requestSentenceLabels();
+    if (state.settings.sentenceLabels) requestSentenceLabels();
   }
 
   if (state.settings.typographyEnabled || state.settings.readingAidsEnabled ||

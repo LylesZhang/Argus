@@ -76,11 +76,11 @@ const PRESET_KEYS = [
   'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation',
   'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
   'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
-  'sentenceLabels', 'sentenceLabelsMode', 'sentenceLabelsLens',
-  'labelCoreFactColor', 'labelContextColor', 'labelQuoteColor',
-  'labelConceptColor', 'labelMechanismColor', 'labelConstraintColor',
-  'labelThesisColor', 'labelEvidenceColor', 'labelExplanationColor',
-  'labelDialogueColor', 'labelPlotTurnColor', 'labelSettingColor',
+  'sentenceLabels', 'sentenceLabelsLens',
+  'labelKeyPointColor', 'labelCoreDetailColor',
+  'labelConceptColor', 'labelReasoningColor', 'labelTakeawayColor',
+  'labelClaimColor', 'labelEvidenceColor', 'labelCounterpointColor',
+  'labelTurningPointColor', 'labelCharacterColor',
   'panelSize',
 ];
 
@@ -114,19 +114,19 @@ function refreshPreview() {
   const root = document.getElementById(EDITOR_ID);
   if (!root || !draft) return;
   const s = draft.settings;
-  const lens    = s.sentenceLabelsLens ?? 'news';
-  const article = SAMPLE_ARTICLES[lens] ?? SAMPLE_ARTICLES.news;
+  const lens    = s.sentenceLabelsLens ?? 'inform';
+  const article = SAMPLE_ARTICLES[lens] ?? SAMPLE_ARTICLES.inform;
   const previewBody = root.querySelector('.dra-pe-preview-body');
   if (!previewBody) return;
 
   // AI results come from pre-computed static data in sampleArticles.js — no live API calls.
   const html = renderPreviewArticle(article, s, state.wordLists, {
     externalEmotions: s.emotionMode === 'ai' ? (article.aiEmotionHighlights ?? null) : null,
-    externalLabels:   s.sentenceLabelsMode === 'ai' ? (article.aiSentenceLabels ?? null) : null,
+    externalLabels:   s.sentenceLabels ? (article.aiSentenceLabels ?? null) : null,
   });
 
   previewBody.innerHTML = `
-    <div class="dra-pe-preview-meta">Previewing: ${lens.charAt(0).toUpperCase() + lens.slice(1)} article</div>
+    <div class="dra-pe-preview-meta">Previewing: ${({inform:'Get Information',understand:'Understand',evaluate:'Evaluate',immerse:'Immerse'})[lens] ?? lens} sample</div>
     <h3 class="dra-pe-preview-title">${escHTML(article.title)}</h3>
     <div class="dra-pe-article" style="position:relative">${html}</div>`;
 
@@ -245,36 +245,33 @@ function buildFormHTML() {
     colorInput('pe-emotion-positive', 'emotionPositiveColor', 'Positive Color'),
     colorInput('pe-emotion-negative', 'emotionNegativeColor', 'Negative Color'),
     colorInput('pe-emotion-complex',  'emotionComplexColor',  'Complex Color'),
-    // Sentence Labels
-    `<div class="dra-pe-row dra-pe-ai-row">
-      ${toggle('pe-toggle-labels', 'sentenceLabels', 'Sentence Labels')}
-      ${modePill('pe-labels-mode-pill', 'sentenceLabels', 'sentenceLabelsMode')}
+    // Lens (AI-only, no mode pill)
+    `<div class="dra-pe-row">
+      ${toggle('pe-toggle-labels', 'sentenceLabels', 'Lens')}
     </div>`,
-    selectInput('pe-label-lens', 'sentenceLabelsLens', 'Article Type (sets preview article)', [
-      ['news','News'],['stem','Academic – STEM'],
-      ['humanities','Academic – Humanities'],['fiction','Fiction'],
+    selectInput('pe-label-lens', 'sentenceLabelsLens', 'Reading Purpose (sets preview article)', [
+      ['inform','Get Information'],['understand','Understand'],
+      ['evaluate','Evaluate'],['immerse','Immerse'],
     ]),
-    // Label colors grouped by lens; only the active lens group is shown
+    // Label colors grouped by purpose; only the active purpose group is shown
     `<div id="pe-label-colors" class="dra-pe-label-colors">
-      <div data-pe-lens="news">
-        ${colorInput('pe-lc-core-fact', 'labelCoreFactColor', 'Core Fact')}
-        ${colorInput('pe-lc-context',   'labelContextColor',  'Context')}
-        ${colorInput('pe-lc-quote',     'labelQuoteColor',    'Quote')}
+      <div data-pe-lens="inform">
+        ${colorInput('pe-lc-key-point',   'labelKeyPointColor',   'Key Point')}
+        ${colorInput('pe-lc-core-detail', 'labelCoreDetailColor', 'Core Detail')}
       </div>
-      <div data-pe-lens="stem">
+      <div data-pe-lens="understand">
         ${colorInput('pe-lc-concept',   'labelConceptColor',   'Concept')}
-        ${colorInput('pe-lc-mechanism', 'labelMechanismColor', 'Mechanism')}
-        ${colorInput('pe-lc-constraint','labelConstraintColor','Constraint')}
+        ${colorInput('pe-lc-reasoning', 'labelReasoningColor', 'Reasoning')}
+        ${colorInput('pe-lc-takeaway',  'labelTakeawayColor',  'Takeaway')}
       </div>
-      <div data-pe-lens="humanities">
-        ${colorInput('pe-lc-thesis',      'labelThesisColor',     'Thesis')}
-        ${colorInput('pe-lc-evidence',    'labelEvidenceColor',   'Evidence')}
-        ${colorInput('pe-lc-explanation', 'labelExplanationColor','Explanation')}
+      <div data-pe-lens="evaluate">
+        ${colorInput('pe-lc-claim',        'labelClaimColor',        'Claim')}
+        ${colorInput('pe-lc-evidence',     'labelEvidenceColor',     'Evidence')}
+        ${colorInput('pe-lc-counterpoint', 'labelCounterpointColor', 'Counterpoint')}
       </div>
-      <div data-pe-lens="fiction">
-        ${colorInput('pe-lc-dialogue',  'labelDialogueColor', 'Dialogue')}
-        ${colorInput('pe-lc-plot-turn', 'labelPlotTurnColor', 'Plot Turn')}
-        ${colorInput('pe-lc-setting',   'labelSettingColor',  'Setting')}
+      <div data-pe-lens="immerse">
+        ${colorInput('pe-lc-turning-point', 'labelTurningPointColor', 'Turning Point')}
+        ${colorInput('pe-lc-character',     'labelCharacterColor',    'Character')}
       </div>
     </div>`,
   ].join('');
@@ -370,12 +367,11 @@ function wireForm(root) {
       'pe-emotion-positive': 'emotionPositiveColor',
       'pe-emotion-negative': 'emotionNegativeColor',
       'pe-emotion-complex':  'emotionComplexColor',
-      'pe-lc-core-fact': 'labelCoreFactColor', 'pe-lc-context': 'labelContextColor',
-      'pe-lc-quote': 'labelQuoteColor', 'pe-lc-concept': 'labelConceptColor',
-      'pe-lc-mechanism': 'labelMechanismColor', 'pe-lc-constraint': 'labelConstraintColor',
-      'pe-lc-thesis': 'labelThesisColor', 'pe-lc-evidence': 'labelEvidenceColor',
-      'pe-lc-explanation': 'labelExplanationColor', 'pe-lc-dialogue': 'labelDialogueColor',
-      'pe-lc-plot-turn': 'labelPlotTurnColor', 'pe-lc-setting': 'labelSettingColor',
+      'pe-lc-key-point': 'labelKeyPointColor', 'pe-lc-core-detail': 'labelCoreDetailColor',
+      'pe-lc-concept': 'labelConceptColor', 'pe-lc-reasoning': 'labelReasoningColor',
+      'pe-lc-takeaway': 'labelTakeawayColor', 'pe-lc-claim': 'labelClaimColor',
+      'pe-lc-evidence': 'labelEvidenceColor', 'pe-lc-counterpoint': 'labelCounterpointColor',
+      'pe-lc-turning-point': 'labelTurningPointColor', 'pe-lc-character': 'labelCharacterColor',
     };
     if (numKeys[el.id]) {
       const v = parseFloat(el.value);
@@ -393,7 +389,7 @@ function wireForm(root) {
     if (btn) {
       const feature = btn.dataset.peFeature;
       const mode    = btn.dataset.peMode;
-      const keyMap  = { emotion: 'emotionMode', sentenceLabels: 'sentenceLabelsMode' };
+      const keyMap  = { emotion: 'emotionMode' };
       const key     = keyMap[feature];
       if (key) {
         update(key, mode);

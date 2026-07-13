@@ -8,10 +8,10 @@ const READER_ID = 'dra-immersive-reader';
 const MIN_BLOCK_LENGTH = 40;
 
 const LABEL_TYPES = new Set([
-  'core-fact', 'context', 'quote',
-  'concept', 'mechanism', 'constraint',
-  'thesis', 'evidence', 'explanation',
-  'dialogue', 'plot-turn', 'setting',
+  'key-point', 'core-detail',
+  'concept', 'reasoning', 'takeaway',
+  'claim', 'evidence', 'counterpoint',
+  'turning-point', 'character',
 ]);
 
 let readerState = { theme: 'warm' };
@@ -436,18 +436,16 @@ function applyReaderStyle(root) {
   root.style.setProperty('--dra-negative', state.settings.emotionNegativeColor);
   root.style.setProperty('--dra-complex', state.settings.emotionComplexColor);
   root.style.setProperty('--dra-row-shading', state.settings.rowShadingColor);
-  root.style.setProperty('--dra-label-core-fact', state.settings.labelCoreFactColor);
-  root.style.setProperty('--dra-label-context', state.settings.labelContextColor);
-  root.style.setProperty('--dra-label-quote', state.settings.labelQuoteColor);
+  root.style.setProperty('--dra-label-key-point', state.settings.labelKeyPointColor);
+  root.style.setProperty('--dra-label-core-detail', state.settings.labelCoreDetailColor);
   root.style.setProperty('--dra-label-concept', state.settings.labelConceptColor);
-  root.style.setProperty('--dra-label-mechanism', state.settings.labelMechanismColor);
-  root.style.setProperty('--dra-label-constraint', state.settings.labelConstraintColor);
-  root.style.setProperty('--dra-label-thesis', state.settings.labelThesisColor);
+  root.style.setProperty('--dra-label-reasoning', state.settings.labelReasoningColor);
+  root.style.setProperty('--dra-label-takeaway', state.settings.labelTakeawayColor);
+  root.style.setProperty('--dra-label-claim', state.settings.labelClaimColor);
   root.style.setProperty('--dra-label-evidence', state.settings.labelEvidenceColor);
-  root.style.setProperty('--dra-label-explanation', state.settings.labelExplanationColor);
-  root.style.setProperty('--dra-label-dialogue', state.settings.labelDialogueColor);
-  root.style.setProperty('--dra-label-plot-turn', state.settings.labelPlotTurnColor);
-  root.style.setProperty('--dra-label-setting', state.settings.labelSettingColor);
+  root.style.setProperty('--dra-label-counterpoint', state.settings.labelCounterpointColor);
+  root.style.setProperty('--dra-label-turning-point', state.settings.labelTurningPointColor);
+  root.style.setProperty('--dra-label-character', state.settings.labelCharacterColor);
 
   article.style.fontSize = state.settings.typographyEnabled && state.settings.fontSize ? `${state.settings.fontSize}px` : '';
   article.style.lineHeight = state.settings.typographyEnabled && state.settings.lineHeight ? String(state.settings.lineHeight) : '';

@@ -8,21 +8,18 @@ export const DEFAULT_SETTINGS = {
   gradientRows:          false,
   rowShadingColor:       '#bfb3d0',
   transitionAnimation:   false,
-  sentenceLabels:        false,
-  sentenceLabelsMode:    'local', // 'ai' | 'local'
-  sentenceLabelsLens:    'news',  // 'news' | 'stem' | 'humanities' | 'fiction'
-  labelCoreFactColor:    '#eab308',
-  labelContextColor:     '#3b82f6',
-  labelQuoteColor:       '#ea580c',
-  labelConceptColor:     '#9333ea',
-  labelMechanismColor:   '#f97316',
-  labelConstraintColor:  '#ef4444',
-  labelThesisColor:      '#ca8a04',
-  labelEvidenceColor:    '#22c55e',
-  labelExplanationColor: '#6b7280',
-  labelDialogueColor:    '#ec4899',
-  labelPlotTurnColor:    '#eab308',
-  labelSettingColor:     '#9ca3af',
+  sentenceLabels:        false,   // Lens on/off
+  sentenceLabelsLens:    'inform', // reading purpose: inform|understand|evaluate|immerse
+  labelKeyPointColor:     '#eab308',
+  labelCoreDetailColor:   '#3b82f6',
+  labelConceptColor:      '#9333ea',
+  labelReasoningColor:    '#f97316',
+  labelTakeawayColor:     '#0d9488',
+  labelClaimColor:        '#ca8a04',
+  labelEvidenceColor:     '#22c55e',
+  labelCounterpointColor: '#e11d48',
+  labelTurningPointColor: '#eab308',
+  labelCharacterColor:    '#ec4899',
   topicFocusMode:        'local', // 'ai' | 'local'
   fontSize:             null,
   lineHeight:           null,
