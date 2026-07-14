@@ -101,7 +101,6 @@ function escapeRegex(text) {
 }
 
 function collectMatches(text) {
-  if (!state.settings.readingAidsEnabled) return [];
   const matches = [];
   const featureSets = [];
   if (state.settings.emotionColor) {
@@ -170,7 +169,7 @@ function renderInlineHighlights(text) {
 }
 
 function labelClassForSentence(sentence) {
-  if (!state.settings.readingAidsEnabled || !state.settings.sentenceLabels) return '';
+  if (!state.settings.sentenceLabels) return '';
   const trimmed = sentence.trim();
   const sentenceIndex = state.allSentences.findIndex(as => as.slice(0, 25) === trimmed.slice(0, 25));
   const label = state.sentenceLabels.find(l => l.index === sentenceIndex);
@@ -444,15 +443,15 @@ function applyReaderStyle(root) {
   root.style.setProperty('--dra-label-evidence', state.settings.labelEvidenceColor);
   root.style.setProperty('--dra-label-counterpoint', state.settings.labelCounterpointColor);
 
-  article.style.fontSize = state.settings.typographyEnabled && state.settings.fontSize ? `${state.settings.fontSize}px` : '';
-  article.style.lineHeight = state.settings.typographyEnabled && state.settings.lineHeight ? String(state.settings.lineHeight) : '';
-  article.style.fontFamily = state.settings.typographyEnabled && state.settings.fontFamily ? state.settings.fontFamily : '';
-  article.style.wordSpacing = state.settings.typographyEnabled && state.settings.wordSpacing ? `${state.settings.wordSpacing}em` : '';
-  article.style.letterSpacing = state.settings.typographyEnabled && state.settings.letterSpacing ? `${state.settings.letterSpacing}em` : '';
+  article.style.fontSize = state.settings.fontSize ? `${state.settings.fontSize}px` : '';
+  article.style.lineHeight = state.settings.lineHeight ? String(state.settings.lineHeight) : '';
+  article.style.fontFamily = state.settings.fontFamily ? state.settings.fontFamily : '';
+  article.style.wordSpacing = state.settings.wordSpacing ? `${state.settings.wordSpacing}em` : '';
+  article.style.letterSpacing = state.settings.letterSpacing ? `${state.settings.letterSpacing}em` : '';
   article.style.color = '';
   article.style.background = '';
-  root.classList.toggle('dra-reader-row-shading', Boolean(state.settings.readingAidsEnabled && state.settings.gradientRows));
-  root.classList.toggle('dra-reader-ruler-active', Boolean(state.settings.readingAidsEnabled && state.settings.rulerActive));
+  root.classList.toggle('dra-reader-row-shading', Boolean(state.settings.gradientRows));
+  root.classList.toggle('dra-reader-ruler-active', Boolean(state.settings.rulerActive));
 
   root.querySelectorAll('[data-reader-theme]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.readerTheme === readerState.theme);
@@ -488,7 +487,7 @@ function stopReaderAutoScroll() {
 function updateReaderAutoScroll(root) {
   stopReaderAutoScroll();
   if (tw) return;
-  if (!state.settings.readingAidsEnabled || !state.settings.autoScrollActive) return;
+  if (!state.settings.autoScrollActive) return;
   const scrollEl = root.querySelector('.dra-reader-scroll');
   const speed = speedLevelToPixelsPerSecond(state.settings.autoScrollSpeed);
   const tick = timestamp => {

@@ -70,10 +70,10 @@ function initDraft(mode, { currentSettings, preset } = {}) {
 }
 
 const PRESET_KEYS = [
-  'typographyEnabled', 'fontFamily', 'boldBeginning', 'fontSize', 'lineHeight',
+  'fontFamily', 'boldBeginning', 'fontSize', 'lineHeight',
   'wordSpacing', 'letterSpacing', 'fontColor', 'bgColor',
   'typewriterSpeed',
-  'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation',
+  'gradientRows', 'rowShadingColor', 'transitionAnimation',
   'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
   'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
   'sentenceLabels', 'sentenceLabelsLens', 'sentenceLabelsDensity',
@@ -87,7 +87,6 @@ const PRESET_KEYS = [
 // by the onboarding draft and are not written to draSettings unless the user
 // explicitly saves the draft as a preset.
 const ONBOARDING_PREVIEW_SETTINGS = {
-  typographyEnabled: true,
   fontFamily: '',
   boldBeginning: true,
   fontSize: 18,
@@ -96,7 +95,6 @@ const ONBOARDING_PREVIEW_SETTINGS = {
   letterSpacing: 0,
   fontColor: '#2c2c2c',
   bgColor: '#ffffff',
-  readingAidsEnabled: true,
   gradientRows: true,
   rowShadingColor: '#d8d1e2',
   transitionAnimation: true,
@@ -135,7 +133,7 @@ function refreshPreview() {
   filterLabelColors(root, lens);
 
   // Position ruler: use last mouse position, fall back to center on first render
-  if (s.readingAidsEnabled && s.rulerActive) {
+  if (s.rulerActive) {
     const fontPx  = Number(s.fontSize) || 15;
     const lineH   = Number(s.lineHeight) || 1.7;
     const halfWin = Math.round(fontPx * lineH * (s.rulerWindowLines ?? 1.5) / 2);
@@ -219,8 +217,7 @@ function buildFormHTML() {
     colorInput('pe-font-color', 'fontColor', 'Text Color'),
     colorInput('pe-bg-color', 'bgColor', 'Background'),
   ].join('');
-  const typography = toggle('pe-toggle-typography', 'typographyEnabled', 'Enable Typography')
-    + `<div class="pe-sub-items" id="pe-typo-sub">${typographySub}</div>`;
+  const typography = `<div class="pe-sub-items" id="pe-typo-sub">${typographySub}</div>`;
 
   const openReaderChecked = draft.actions?.autoOpenReaderMode ? 'checked' : '';
   const readerMode = [
@@ -275,8 +272,7 @@ function buildFormHTML() {
       </div>
     </div>`,
   ].join('');
-  const aids = toggle('pe-toggle-reading-aids', 'readingAidsEnabled', 'Enable Reading Aids')
-    + `<div class="pe-sub-items" id="pe-aids-sub">${aidsSub}</div>`;
+  const aids = `<div class="pe-sub-items" id="pe-aids-sub">${aidsSub}</div>`;
 
   const panelSz = draft.settings.panelSize ?? 'comfortable';
   const panelDisplay = `<div class="dra-pe-row">
@@ -325,18 +321,8 @@ function wireForm(root) {
     const el = e.target;
     if (!el.id?.startsWith('pe-')) return;
     switch (el.id) {
-      case 'pe-toggle-typography': {
-        update('typographyEnabled', el.checked);
-        root.querySelector('#pe-typo-sub').style.display = el.checked ? '' : 'none';
-        break;
-      }
       case 'pe-toggle-bold':         update('boldBeginning',     el.checked); break;
       case 'pe-font-family':         update('fontFamily',        el.value);   break;
-      case 'pe-toggle-reading-aids': {
-        update('readingAidsEnabled', el.checked);
-        root.querySelector('#pe-aids-sub').style.display = el.checked ? '' : 'none';
-        break;
-      }
       case 'pe-toggle-gradient':     update('gradientRows',      el.checked); break;
       case 'pe-toggle-transition':   update('transitionAnimation', el.checked); break;
       case 'pe-toggle-ruler':        update('rulerActive',       el.checked); break;
@@ -463,10 +449,7 @@ function setupRulerTracking(root) {
   if (_rulerTrackingCleanup) { _rulerTrackingCleanup(); _rulerTrackingCleanup = null; }
   const body = root.querySelector('.dra-pe-preview-body');
   if (!body) return;
-  const isRulerActive = () => {
-    const s = draft?.settings;
-    return s?.readingAidsEnabled && s?.rulerActive;
-  };
+  const isRulerActive = () => Boolean(draft?.settings?.rulerActive);
   const syncTransform = () => {
     if (!isRulerActive()) return;
     const wrap = body.querySelector('.dra-pe-ruler-wrap');
@@ -555,9 +538,7 @@ function mountEditor(root, title) {
   root.innerHTML = buildEditorHTML(title, { onboarding: isOnboarding });
   root.querySelector('.dra-pe-form').innerHTML = buildFormHTML();
   wireForm(root);
-  // Sync initial sub-item visibility based on draft settings
-  root.querySelector('#pe-typo-sub').style.display = draft.settings.typographyEnabled ? '' : 'none';
-  root.querySelector('#pe-aids-sub').style.display = draft.settings.readingAidsEnabled ? '' : 'none';
+  // Sub-items are always visible now (no parent toggles)
   syncColorInputsDisabled(root, draft.actions?.autoOpenReaderMode ?? false);
   refreshPreview();
   setupRulerTracking(root);

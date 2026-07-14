@@ -244,9 +244,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'EMOTION_RESULT') {
     if (msg.requestId !== state.emotionRequestId) return;
-    if (!state.settings.readingAidsEnabled ||
-        !state.settings.emotionColor ||
-        state.settings.emotionMode !== 'ai') {
+    if (!state.settings.emotionColor || state.settings.emotionMode !== 'ai') {
       state.emotionAIInProgress = false;
       return;
     }
@@ -268,9 +266,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     state.emotionAIInProgress = false;
     state.emotionLoaded = false;
     state.emotionRequestFailed = true;
-    if (!state.settings.readingAidsEnabled ||
-        !state.settings.emotionColor ||
-        state.settings.emotionMode !== 'ai') return;
+    if (!state.settings.emotionColor || state.settings.emotionMode !== 'ai') return;
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'error' });
   }
 

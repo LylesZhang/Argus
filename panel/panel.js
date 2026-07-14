@@ -7,8 +7,7 @@
 
 const DEFAULT_SETTINGS = {
   panelSize:             'comfortable',
-  typographyEnabled:     false,
-  readingAidsEnabled:    false,
+  masterEnabled:         true,
   boldBeginning:         false,
   emotionColor:          false,
   emotionMode:           'local',
@@ -47,10 +46,10 @@ const DEFAULT_SETTINGS = {
 };
 
 const PRESET_SETTING_KEYS = [
-  'typographyEnabled', 'fontFamily', 'boldBeginning', 'fontSize', 'lineHeight',
+  'masterEnabled', 'fontFamily', 'boldBeginning', 'fontSize', 'lineHeight',
   'wordSpacing', 'letterSpacing', 'fontColor', 'bgColor',
   'typewriterSpeed',
-  'readingAidsEnabled', 'gradientRows', 'rowShadingColor', 'transitionAnimation', 'sentenceSimplify',
+  'gradientRows', 'rowShadingColor', 'transitionAnimation', 'sentenceSimplify',
   'rulerActive', 'rulerWindowLines', 'autoScrollSpeed',
   'emotionColor', 'emotionMode', 'emotionPositiveColor', 'emotionNegativeColor', 'emotionComplexColor',
   'sentenceLabels', 'sentenceLabelsLens', 'sentenceLabelsDensity',
@@ -68,9 +67,7 @@ let effectsWarningDisabled = false;
 
 const EFFECT_WARNING_THRESHOLD = 7;
 const EFFECT_WARNING_KEYS = new Set([
-  'typographyEnabled',
   'boldBeginning',
-  'readingAidsEnabled',
   'gradientRows',
   'transitionAnimation',
   'emotionColor',
@@ -126,18 +123,13 @@ function savePanelSize(size) {
 
 function calculateActiveEffectScore(nextSettings = settings) {
   let score = 0;
-  if (nextSettings.typographyEnabled) score += 1;
   if (nextSettings.boldBeginning) score += 1;
-  if (nextSettings.readingAidsEnabled && nextSettings.gradientRows) score += 2;
-  if (nextSettings.readingAidsEnabled && nextSettings.transitionAnimation) score += 1;
-  if (nextSettings.readingAidsEnabled && nextSettings.emotionColor) {
-    score += 3;
-  }
-  if (nextSettings.readingAidsEnabled && nextSettings.sentenceLabels) {
-    score += 3;
-  }
-  if (nextSettings.readingAidsEnabled && nextSettings.rulerActive) score += 2;
-  if (nextSettings.readingAidsEnabled && nextSettings.autoScrollActive) score += 2;
+  if (nextSettings.gradientRows) score += 2;
+  if (nextSettings.transitionAnimation) score += 1;
+  if (nextSettings.emotionColor) score += 3;
+  if (nextSettings.sentenceLabels) score += 3;
+  if (nextSettings.rulerActive) score += 2;
+  if (nextSettings.autoScrollActive) score += 2;
   return score;
 }
 
@@ -293,8 +285,9 @@ function broadcast(changed) {
 
 function syncUI() {
   applyPanelSize(settings.panelSize);
-  document.getElementById('toggle-typography').checked   = settings.typographyEnabled;
-  document.getElementById('toggle-reading-aids').checked = settings.readingAidsEnabled;
+  const masterToggle = document.getElementById('toggle-master');
+  if (masterToggle) masterToggle.checked = settings.masterEnabled;
+  document.querySelector('.tab-panels')?.classList.toggle('master-off', !settings.masterEnabled);
   document.getElementById('toggle-bold').checked      = settings.boldBeginning;
   document.getElementById('toggle-emotion').checked   = settings.emotionColor;
   document.getElementById('toggle-gradient').checked  = settings.gradientRows;
@@ -390,109 +383,47 @@ function init() {
     });
   });
 
-  // Section switches
-  document.getElementById('toggle-typography').addEventListener('change', e => {
-    const enabled = e.target.checked;
-    if (!enabled) {
-      document.getElementById('font-family').value                  = '';
-      document.getElementById('font-size-slider').value             = 18;
-      document.getElementById('font-size-value').value              = '18';
-      document.getElementById('line-height-slider').value           = 1.8;
-      document.getElementById('line-height-value').value            = '1.8';
-      document.getElementById('word-spacing-slider').value          = 0;
-      document.getElementById('word-spacing-value').value           = '0.00';
-      document.getElementById('letter-spacing-slider').value        = 0;
-      document.getElementById('letter-spacing-value').value         = '0.00';
-      document.getElementById('font-color').value                   = '#2c2c2c';
-      document.getElementById('bg-color').value                     = '#ffffff';
-      document.getElementById('toggle-bold').checked                = false;
-      broadcast({
-        typographyEnabled: false,
-        boldBeginning: false,
-        fontSize: null, lineHeight: null, fontFamily: null,
-        wordSpacing: 0, letterSpacing: 0,
-        fontColor: '#2c2c2c', bgColor: '#ffffff',
-      });
-    } else {
-      broadcast({ typographyEnabled: true });
-    }
+  // Master switch
+  document.getElementById('toggle-master')?.addEventListener('change', e => {
+    broadcast({ masterEnabled: e.target.checked });
+    document.querySelector('.tab-panels')?.classList.toggle('master-off', !e.target.checked);
   });
-
-  document.getElementById('toggle-reading-aids').addEventListener('change', e => {
-    const enabled = e.target.checked;
-    if (!enabled) {
-      document.getElementById('toggle-emotion').checked    = false;
-      document.getElementById('toggle-gradient').checked   = false;
-      document.getElementById('toggle-transition').checked = false;
-      document.getElementById('toggle-labels').checked     = false;
-      document.getElementById('toggle-ruler').checked      = false;
-      document.getElementById('toggle-auto-scroll').checked = false;
-      document.getElementById('emotion-colors').classList.remove('active');
-      document.getElementById('sentence-label-colors').classList.remove('active');
-      document.getElementById('row-shading-color').classList.remove('active');
-      broadcast({
-        readingAidsEnabled: false,
-        emotionColor: false,
-        gradientRows: false,  transitionAnimation: false,
-        sentenceLabels: false, rulerActive: false,
-        autoScrollActive: false,
-      });
-    } else {
-      broadcast({ readingAidsEnabled: true });
-    }
-  });
-
-  // Reading aid toggles — auto-enable parent if child is turned on while parent is off
-  function enableReadingAidIfNeeded(on) {
-    if (on && !settings.readingAidsEnabled) {
-      document.getElementById('toggle-reading-aids').checked = true;
-      broadcast({ readingAidsEnabled: true });
-    }
-  }
 
   document.getElementById('toggle-bold').addEventListener('change', e => {
-    enableTypographyIfNeeded();
     broadcast({ boldBeginning: e.target.checked });
   });
 
   document.getElementById('toggle-emotion').addEventListener('change', e => {
-    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ emotionColor: e.target.checked });
     document.getElementById('emotion-colors').classList.toggle('active', e.target.checked);
     document.getElementById('emotion-ai-row').classList.toggle('hidden', !e.target.checked || settings.emotionMode !== 'ai');
   });
 
   document.getElementById('toggle-gradient').addEventListener('change', e => {
-    enableReadingAidIfNeeded(e.target.checked);
     document.getElementById('row-shading-color').classList.toggle('active', e.target.checked);
     broadcast({ gradientRows: e.target.checked });
   });
 
   document.getElementById('toggle-transition').addEventListener('change', e => {
-    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ transitionAnimation: e.target.checked });
   });
 
   document.getElementById('toggle-simplify').addEventListener('change', e => {
-    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ sentenceSimplify: e.target.checked });
   });
 
   document.getElementById('toggle-labels').addEventListener('change', e => {
-    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ sentenceLabels: e.target.checked });
     document.getElementById('sentence-label-colors').classList.toggle('active', e.target.checked);
     document.getElementById('labels-ai-row').classList.toggle('hidden', !e.target.checked);
   });
 
   document.getElementById('toggle-ruler').addEventListener('change', e => {
-    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ rulerActive: e.target.checked });
     document.getElementById('ruler-size-control').classList.toggle('active', e.target.checked);
   });
 
   document.getElementById('toggle-auto-scroll').addEventListener('change', e => {
-    enableReadingAidIfNeeded(e.target.checked);
     broadcast({ autoScrollActive: e.target.checked });
   });
 
@@ -526,59 +457,8 @@ function init() {
     }
   }
 
-  function bindTypographyNumberInput({ inputId, sliderId, settingKey, fallback, min, max, step, decimals }) {
-    const input = document.getElementById(inputId);
-    const slider = document.getElementById(sliderId);
-    const format = value => Number(value).toFixed(decimals);
-    const normalize = value => {
-      const clamped = Math.min(max, Math.max(min, value));
-      const stepped = min + Math.round((clamped - min) / step) * step;
-      return Number(stepped.toFixed(decimals));
-    };
-
-    input.addEventListener('input', () => {
-      const raw = Number(input.value);
-      if (input.value === '' || !Number.isFinite(raw)) return;
-      const value = normalize(raw);
-      enableTypographyIfNeeded();
-      slider.value = value;
-      broadcast({ [settingKey]: value });
-    });
-
-    input.addEventListener('change', () => {
-      const raw = Number(input.value);
-      const value = input.value === '' || !Number.isFinite(raw)
-        ? normalize(numericSetting(settingKey, fallback))
-        : normalize(raw);
-      input.value = format(value);
-      slider.value = value;
-      if (value !== numericSetting(settingKey, fallback)) {
-        enableTypographyIfNeeded();
-        broadcast({ [settingKey]: value });
-      }
-    });
-  }
-
-  bindTypographyNumberInput({
-    inputId: 'font-size-value', sliderId: 'font-size-slider', settingKey: 'fontSize',
-    fallback: 18, min: 14, max: 28, step: 1, decimals: 0,
-  });
-  bindTypographyNumberInput({
-    inputId: 'line-height-value', sliderId: 'line-height-slider', settingKey: 'lineHeight',
-    fallback: 1.8, min: 1.4, max: 2.4, step: 0.1, decimals: 1,
-  });
-  bindTypographyNumberInput({
-    inputId: 'word-spacing-value', sliderId: 'word-spacing-slider', settingKey: 'wordSpacing',
-    fallback: 0, min: 0, max: 0.5, step: 0.05, decimals: 2,
-  });
-  bindTypographyNumberInput({
-    inputId: 'letter-spacing-value', sliderId: 'letter-spacing-slider', settingKey: 'letterSpacing',
-    fallback: 0, min: 0, max: 0.1, step: 0.01, decimals: 2,
-  });
-
   // Font family
   document.getElementById('font-family').addEventListener('change', e => {
-    enableTypographyIfNeeded();
     broadcast({ fontFamily: e.target.value });
   });
 
@@ -586,7 +466,6 @@ function init() {
   document.getElementById('font-size-dec').addEventListener('click', () => {
     const current = numericSetting('fontSize', 18);
     if (current <= 14) return;
-    enableTypographyIfNeeded();
     const v = current - 1;
     document.getElementById('font-size-slider').value = v;
     document.getElementById('font-size-value').value = v;
@@ -595,14 +474,12 @@ function init() {
   document.getElementById('font-size-inc').addEventListener('click', () => {
     const current = numericSetting('fontSize', 18);
     if (current >= 28) return;
-    enableTypographyIfNeeded();
     const v = current + 1;
     document.getElementById('font-size-slider').value = v;
     document.getElementById('font-size-value').value = v;
     broadcast({ fontSize: v });
   });
   document.getElementById('font-size-slider').addEventListener('input', e => {
-    enableTypographyIfNeeded();
     const v = parseInt(e.target.value);
     document.getElementById('font-size-value').value = v;
     broadcast({ fontSize: v });
@@ -612,7 +489,6 @@ function init() {
   document.getElementById('line-height-dec').addEventListener('click', () => {
     const current = numericSetting('lineHeight', 1.8);
     if (current <= 1.4) return;
-    enableTypographyIfNeeded();
     const v = Math.round((current - 0.1) * 10) / 10;
     document.getElementById('line-height-slider').value = v;
     document.getElementById('line-height-value').value = v.toFixed(1);
@@ -621,14 +497,12 @@ function init() {
   document.getElementById('line-height-inc').addEventListener('click', () => {
     const current = numericSetting('lineHeight', 1.8);
     if (current >= 2.4) return;
-    enableTypographyIfNeeded();
     const v = Math.round((current + 0.1) * 10) / 10;
     document.getElementById('line-height-slider').value = v;
     document.getElementById('line-height-value').value = v.toFixed(1);
     broadcast({ lineHeight: v });
   });
   document.getElementById('line-height-slider').addEventListener('input', e => {
-    enableTypographyIfNeeded();
     const v = Math.round(parseFloat(e.target.value) * 10) / 10;
     document.getElementById('line-height-value').value = v.toFixed(1);
     broadcast({ lineHeight: v });
@@ -638,7 +512,6 @@ function init() {
   document.getElementById('word-spacing-dec').addEventListener('click', () => {
     const current = numericSetting('wordSpacing', 0);
     if (current <= 0) return;
-    enableTypographyIfNeeded();
     const v = Math.max(0, Math.round((current - 0.05) * 100) / 100);
     document.getElementById('word-spacing-slider').value = v;
     document.getElementById('word-spacing-value').value = v.toFixed(2);
@@ -647,14 +520,12 @@ function init() {
   document.getElementById('word-spacing-inc').addEventListener('click', () => {
     const current = numericSetting('wordSpacing', 0);
     if (current >= 0.5) return;
-    enableTypographyIfNeeded();
     const v = Math.min(0.5, Math.round((current + 0.05) * 100) / 100);
     document.getElementById('word-spacing-slider').value = v;
     document.getElementById('word-spacing-value').value = v.toFixed(2);
     broadcast({ wordSpacing: v });
   });
   document.getElementById('word-spacing-slider').addEventListener('input', e => {
-    enableTypographyIfNeeded();
     const v = parseFloat(e.target.value);
     document.getElementById('word-spacing-value').value = v.toFixed(2);
     broadcast({ wordSpacing: v });
@@ -664,7 +535,6 @@ function init() {
   document.getElementById('letter-spacing-dec').addEventListener('click', () => {
     const current = numericSetting('letterSpacing', 0);
     if (current <= 0) return;
-    enableTypographyIfNeeded();
     const v = Math.max(0, Math.round((current - 0.01) * 1000) / 1000);
     document.getElementById('letter-spacing-slider').value = v;
     document.getElementById('letter-spacing-value').value = v.toFixed(2);
@@ -673,14 +543,12 @@ function init() {
   document.getElementById('letter-spacing-inc').addEventListener('click', () => {
     const current = numericSetting('letterSpacing', 0);
     if (current >= 0.1) return;
-    enableTypographyIfNeeded();
     const v = Math.min(0.1, Math.round((current + 0.01) * 1000) / 1000);
     document.getElementById('letter-spacing-slider').value = v;
     document.getElementById('letter-spacing-value').value = v.toFixed(2);
     broadcast({ letterSpacing: v });
   });
   document.getElementById('letter-spacing-slider').addEventListener('input', e => {
-    enableTypographyIfNeeded();
     const v = parseFloat(e.target.value);
     document.getElementById('letter-spacing-value').value = v.toFixed(2);
     broadcast({ letterSpacing: v });
@@ -688,15 +556,12 @@ function init() {
 
   // Colors
   document.getElementById('font-color').addEventListener('input', e => {
-    enableTypographyIfNeeded();
     broadcast({ fontColor: e.target.value });
   });
   document.getElementById('bg-color').addEventListener('input', e => {
-    enableTypographyIfNeeded();
     broadcast({ bgColor: e.target.value });
   });
   document.getElementById('row-shading-color').addEventListener('input', e => {
-    enableReadingAidIfNeeded(true);
     document.getElementById('toggle-gradient').checked = true;
     document.getElementById('row-shading-color').classList.add('active');
     broadcast({ gradientRows: true, rowShadingColor: e.target.value });

@@ -81,6 +81,29 @@ body {
   margin: 0 auto;
 }
 
+/* ── Master switch ───────────────────────────────────────────────────── */
+
+.master-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.master-label {
+  font-weight: 700;
+  color: var(--navy);
+  font-size: var(--section-font-size);
+  letter-spacing: 0.04em;
+}
+
+.master-off {
+  opacity: 0.45;
+  pointer-events: none;
+  user-select: none;
+}
+
 /* ── Section label ───────────────────────────────────────────────────── */
 
 .section-label {

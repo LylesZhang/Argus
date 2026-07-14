@@ -12,10 +12,6 @@ function escapeHTML(text) {
 }
 
 function renderSentenceText(sentence, settings, emotionHighlights, transitionWords) {
-  if (!settings.readingAidsEnabled) {
-    return settings.boldBeginning ? applyBionicToText(sentence) : escapeHTML(sentence);
-  }
-
   const lower = sentence.toLowerCase();
   const spans = [];
 
@@ -67,19 +63,16 @@ export function renderPreviewArticle(article, settings, wordLists, { externalEmo
   const { blocks } = article;
 
   // Lens is AI-only: preview uses the article's pre-computed static labels.
-  const finalLabels = (settings.readingAidsEnabled && settings.sentenceLabels && externalLabels)
-    ? externalLabels
-    : [];
+  const finalLabels = (settings.sentenceLabels && externalLabels) ? externalLabels : [];
 
-  const useAIEmotion = settings.readingAidsEnabled && settings.emotionColor
-    && settings.emotionMode === 'ai' && externalEmotions;
+  const useAIEmotion = settings.emotionColor && settings.emotionMode === 'ai' && externalEmotions;
   const emotionHighlights = useAIEmotion
     ? externalEmotions
-    : (settings.readingAidsEnabled && settings.emotionColor)
+    : settings.emotionColor
       ? matchEmotionWords(blocks.join(' '), wordLists)
       : [];
 
-  const transitionWords = (settings.readingAidsEnabled && settings.transitionAnimation)
+  const transitionWords = settings.transitionAnimation
     ? (wordLists.transition ?? DEFAULT_TRANSITION_WORDS)
     : [];
 
@@ -177,24 +170,24 @@ export function applyPreviewStyles(container, settings, actions = {}) {
   if (!article) return;
 
   // Typography
-  if (s.typographyEnabled && s.fontFamily?.includes('OpenDyslexic')) {
+  if (s.fontFamily?.includes('OpenDyslexic')) {
     injectOpenDyslexicFont();
   }
-  article.style.fontFamily   = (s.typographyEnabled && s.fontFamily)    ? s.fontFamily         : '';
-  article.style.fontSize     = (s.typographyEnabled && s.fontSize)      ? `${s.fontSize}px`    : '';
-  article.style.lineHeight   = (s.typographyEnabled && s.lineHeight)    ? String(s.lineHeight) : '';
-  article.style.wordSpacing  = (s.typographyEnabled && s.wordSpacing)   ? `${s.wordSpacing}em` : '';
-  article.style.letterSpacing= (s.typographyEnabled && s.letterSpacing) ? `${s.letterSpacing}em` : '';
+  article.style.fontFamily    = s.fontFamily    ? s.fontFamily         : '';
+  article.style.fontSize      = s.fontSize      ? `${s.fontSize}px`    : '';
+  article.style.lineHeight    = s.lineHeight    ? String(s.lineHeight) : '';
+  article.style.wordSpacing   = s.wordSpacing   ? `${s.wordSpacing}em` : '';
+  article.style.letterSpacing = s.letterSpacing ? `${s.letterSpacing}em` : '';
   // Reader Mode overrides typography color and background
   const isReaderMode = Boolean(actions?.autoOpenReaderMode);
-  article.style.color        = (s.typographyEnabled && s.fontColor && !isReaderMode) ? s.fontColor : '';
-  article.style.background   = (s.typographyEnabled && s.bgColor   && !isReaderMode) ? s.bgColor   : '';
+  article.style.color      = (s.fontColor && !isReaderMode) ? s.fontColor : '';
+  article.style.background = (s.bgColor   && !isReaderMode) ? s.bgColor   : '';
 
   // Row shading
-  container.classList.toggle('dra-pe-row-shading', Boolean(s.readingAidsEnabled && s.gradientRows));
+  container.classList.toggle('dra-pe-row-shading', Boolean(s.gradientRows));
 
   // Reading ruler: only manage visibility here; position is handled by presetEditor
-  updateRulerOverlay(container, Boolean(s.readingAidsEnabled && s.rulerActive));
+  updateRulerOverlay(container, Boolean(s.rulerActive));
 
   // Reader Mode preview: hide image placeholders, change background
   container.classList.toggle('dra-pe-reader-mode-on', isReaderMode);
