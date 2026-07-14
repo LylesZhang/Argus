@@ -280,7 +280,6 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 
   if (msg.type === 'AI_RETRY') {
-    console.log('[AI] AI_RETRY received in content →', msg.feature);
     if (msg.feature === 'emotion') {
       state.aiEmotionHighlights = [];
       state.emotionLoaded = false;

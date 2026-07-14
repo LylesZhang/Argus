@@ -311,31 +311,36 @@
 
             <div class="feature-detail-words">
               <div class="feature-detail-words-head">
-                <span>Word Lists</span>
+                <button class="words-toggle" type="button">
+                  <span>Word Lists</span>
+                  <span class="feature-row-chevron"></span>
+                </button>
                 <button type="button" id="wl-reset-emotion" class="section-reset-btn">Reset</button>
               </div>
-              <div class="wordlist-section">
-                <div class="wordlist-category-label">Positive</div>
-                <div class="wordlist-chips" id="wl-emotion-positive"></div>
-                <div class="wordlist-add">
-                  <input type="text" id="wl-add-positive" placeholder="Add word…">
-                  <button id="wl-add-positive-btn">Add</button>
+              <div class="feature-detail-words-body">
+                <div class="wordlist-section">
+                  <div class="wordlist-category-label">Positive</div>
+                  <div class="wordlist-chips" id="wl-emotion-positive"></div>
+                  <div class="wordlist-add">
+                    <input type="text" id="wl-add-positive" placeholder="Add word…">
+                    <button id="wl-add-positive-btn">Add</button>
+                  </div>
                 </div>
-              </div>
-              <div class="wordlist-section">
-                <div class="wordlist-category-label">Negative</div>
-                <div class="wordlist-chips" id="wl-emotion-negative"></div>
-                <div class="wordlist-add">
-                  <input type="text" id="wl-add-negative" placeholder="Add word…">
-                  <button id="wl-add-negative-btn">Add</button>
+                <div class="wordlist-section">
+                  <div class="wordlist-category-label">Negative</div>
+                  <div class="wordlist-chips" id="wl-emotion-negative"></div>
+                  <div class="wordlist-add">
+                    <input type="text" id="wl-add-negative" placeholder="Add word…">
+                    <button id="wl-add-negative-btn">Add</button>
+                  </div>
                 </div>
-              </div>
-              <div class="wordlist-section">
-                <div class="wordlist-category-label">Complex</div>
-                <div class="wordlist-chips" id="wl-emotion-complex"></div>
-                <div class="wordlist-add">
-                  <input type="text" id="wl-add-complex" placeholder="Add word…">
-                  <button id="wl-add-complex-btn">Add</button>
+                <div class="wordlist-section">
+                  <div class="wordlist-category-label">Complex</div>
+                  <div class="wordlist-chips" id="wl-emotion-complex"></div>
+                  <div class="wordlist-add">
+                    <input type="text" id="wl-add-complex" placeholder="Add word…">
+                    <button id="wl-add-complex-btn">Add</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -440,14 +445,19 @@
           <div class="feature-detail">
             <div class="feature-detail-words">
               <div class="feature-detail-words-head">
-                <span>Phrase List</span>
+                <button class="words-toggle" type="button">
+                  <span>Phrase List</span>
+                  <span class="feature-row-chevron"></span>
+                </button>
                 <button type="button" id="wl-reset-transition" class="section-reset-btn">Reset</button>
               </div>
-              <div class="wordlist-section">
-                <div class="wordlist-chips" id="wl-transition"></div>
-                <div class="wordlist-add">
-                  <input type="text" id="wl-add-transition" placeholder="Add phrase…">
-                  <button id="wl-add-transition-btn">Add</button>
+              <div class="feature-detail-words-body">
+                <div class="wordlist-section">
+                  <div class="wordlist-chips" id="wl-transition"></div>
+                  <div class="wordlist-add">
+                    <input type="text" id="wl-add-transition" placeholder="Add phrase…">
+                    <button id="wl-add-transition-btn">Add</button>
+                  </div>
                 </div>
               </div>
             </div>

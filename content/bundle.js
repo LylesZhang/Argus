@@ -447,7 +447,6 @@
   }
   function requestEmotionAnalysis() {
     if (!state.settings.emotionColor || state.settings.emotionMode !== "ai") {
-      console.log("[EMO] request blocked by guard | emotionColor:", state.settings.emotionColor, "| mode:", state.settings.emotionMode);
       state.emotionAIInProgress = false;
       return;
     }
@@ -468,7 +467,6 @@
     state.emotionRequestId = requestId;
     chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "loading" });
     const area = findContentArea();
-    console.log("[EMO] sending EMOTION_REQUEST \u2192", requestId);
     chrome.runtime.sendMessage({
       type: "EMOTION_REQUEST",
       requestId,
@@ -621,7 +619,6 @@
     const requestId = `${state.requestSessionId}:labels:${Date.now()}:${Math.random().toString(36).slice(2)}`;
     state.sentenceLabelsRequestId = requestId;
     state.allSentences = extractAllSentences();
-    console.log("[LENS] sending LABEL_REQUEST \u2192", requestId, "| sentences:", state.allSentences.length);
     chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "loading" });
     chrome.runtime.sendMessage({
       type: "LABEL_REQUEST",
@@ -2280,6 +2277,22 @@
     </div>
   </div>`;
   }
+  function stepper(id, key, label, min, max, step, unit = "") {
+    const raw = draft.settings[key] ?? DEFAULT_SETTINGS[key] ?? min;
+    const val = Number(raw).toFixed(step < 1 ? step < 0.05 ? 2 : 1 : 0);
+    const unitSpan = unit ? `<span class="stepper-unit">${unit}</span>` : "";
+    return `<div class="dra-pe-row">
+    <span class="dra-pe-label">${label}</span>
+    <div class="stepper">
+      <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="-1">-</button>
+      <div class="stepper-center">
+        <input type="number" id="${id}" class="stepper-num" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${label}">
+        ${unitSpan}
+      </div>
+      <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="1">+</button>
+    </div>
+  </div>`;
+  }
   function colorInput(id, key, label) {
     const val = draft.settings[key] ?? DEFAULT_SETTINGS[key];
     return `<div class="dra-pe-row dra-pe-color-row">
@@ -2302,15 +2315,15 @@
     <button class="mode-btn${cur === "ai" ? " active" : ""}" data-pe-feature="${feature}" data-pe-mode="ai">AI</button>
   </div>`;
   }
-  function section(title, content) {
-    return `<div class="dra-pe-section">
-    <div class="dra-pe-section-title">${title}</div>
-    <div class="dra-pe-section-body">${content}</div>
+  function group(title, content) {
+    return `<div class="dra-pe-group">
+    <div class="dra-pe-group-title">${title}</div>
+    <div class="dra-pe-group-body">${content}</div>
   </div>`;
   }
   function buildFormHTML() {
-    const s = draft.settings;
-    const typographySub = [
+    const openReaderChecked = draft.actions?.autoOpenReaderMode ? "checked" : "";
+    const readability = [
       selectInput("pe-font-family", "fontFamily", "Font Family", [
         ["", "System Default"],
         ["Georgia", "Georgia"],
@@ -2319,29 +2332,26 @@
         ["OpenDyslexic, sans-serif", "OpenDyslexic"]
       ]),
       toggle("pe-toggle-bold", "boldBeginning", "Bionic Effect"),
-      slider("pe-font-size", "fontSize", "Font Size", 14, 28, 1, "px"),
-      slider("pe-line-height", "lineHeight", "Line Height", 1.4, 2.4, 0.1),
-      slider("pe-word-spacing", "wordSpacing", "Word Space", 0, 0.5, 0.05, "em"),
-      slider("pe-letter-spacing", "letterSpacing", "Letter Space", 0, 0.1, 0.01, "em"),
+      stepper("pe-font-size", "fontSize", "Font Size", 14, 28, 1, "px"),
+      stepper("pe-line-height", "lineHeight", "Line Height", 1.4, 2.4, 0.1),
+      stepper("pe-word-spacing", "wordSpacing", "Word Space", 0, 0.5, 0.05, "em"),
+      stepper("pe-letter-spacing", "letterSpacing", "Letter Space", 0, 0.1, 0.01, "em"),
       colorInput("pe-font-color", "fontColor", "Text Color"),
-      colorInput("pe-bg-color", "bgColor", "Background")
+      colorInput("pe-bg-color", "bgColor", "Background"),
+      toggle("pe-toggle-gradient", "gradientRows", "Row Shading"),
+      colorInput("pe-row-shading-color", "rowShadingColor", "Row Shading Color")
     ].join("");
-    const typography = `<div class="pe-sub-items" id="pe-typo-sub">${typographySub}</div>`;
-    const openReaderChecked = draft.actions?.autoOpenReaderMode ? "checked" : "";
-    const readerMode = [
+    const focusNav = [
       `<label class="dra-pe-toggle-row">
       <label class="toggle-switch"><input type="checkbox" id="pe-action-open-reader" ${openReaderChecked}><span class="track"></span></label>
       <span class="dra-pe-toggle-label">Auto-open Reader Mode when applied</span>
     </label>`,
-      slider("pe-typewriter-speed", "typewriterSpeed", "Typewriter Speed", 1, 10, 1)
-    ].join("");
-    const aidsSub = [
-      toggle("pe-toggle-gradient", "gradientRows", "Row Shading"),
-      colorInput("pe-row-shading-color", "rowShadingColor", "Row Shading Color"),
-      toggle("pe-toggle-transition", "transitionAnimation", "Transition Words"),
+      slider("pe-typewriter-speed", "typewriterSpeed", "Typewriter Speed", 1, 10, 1),
       toggle("pe-toggle-ruler", "rulerActive", "Reading Ruler"),
       slider("pe-ruler-size", "rulerWindowLines", "Ruler Width", 1, 10, 0.5, " lines"),
-      slider("pe-auto-scroll-speed", "autoScrollSpeed", "Auto Scroll Speed", 1, 10, 1),
+      slider("pe-auto-scroll-speed", "autoScrollSpeed", "Auto Scroll Speed", 1, 10, 1)
+    ].join("");
+    const comprehension = [
       // Emotion Colors
       `<div class="dra-pe-row dra-pe-ai-row">
       ${toggle("pe-toggle-emotion", "emotionColor", "Emotion Colors")}
@@ -2380,11 +2390,11 @@
         ${colorInput("pe-lc-evidence", "labelEvidenceColor", "Evidence")}
         ${colorInput("pe-lc-counterpoint", "labelCounterpointColor", "Counterpoint")}
       </div>
-    </div>`
+    </div>`,
+      toggle("pe-toggle-transition", "transitionAnimation", "Transition Words")
     ].join("");
-    const aids = `<div class="pe-sub-items" id="pe-aids-sub">${aidsSub}</div>`;
     const panelSz = draft.settings.panelSize ?? "comfortable";
-    const panelDisplay = `<div class="dra-pe-row">
+    const display = `<div class="dra-pe-row">
     <span class="dra-pe-label">Panel Size</span>
     <div class="panel-size-pill dra-pe-panel-size">
       ${["compact", "comfortable", "large"].map(
@@ -2393,10 +2403,10 @@
     </div>
   </div>`;
     return [
-      section("Typography", typography),
-      section("Reader Mode", readerMode),
-      section("Reading Aids", aids),
-      section("Panel Display", panelDisplay)
+      group("Readability", readability),
+      group("Focus &amp; Navigation", focusNav),
+      group("Comprehension", comprehension),
+      group("Display", display)
     ].join("");
   }
   function filterLabelColors(root, lens) {
@@ -2487,6 +2497,7 @@
       };
       if (numKeys[el.id]) {
         const v = parseFloat(el.value);
+        if (!Number.isFinite(v)) return;
         update(numKeys[el.id], v);
         const display = root.querySelector(`#${el.id}-val`);
         if (display) display.textContent = el.value;
@@ -2494,7 +2505,25 @@
         update(colorKeys[el.id], el.value);
       }
     });
+    const STEP_KEY = {
+      "pe-font-size": "fontSize",
+      "pe-line-height": "lineHeight",
+      "pe-word-spacing": "wordSpacing",
+      "pe-letter-spacing": "letterSpacing"
+    };
     container.addEventListener("click", (e) => {
+      const stepBtn = e.target.closest("[data-pe-step]");
+      if (stepBtn) {
+        const input = root.querySelector("#" + stepBtn.dataset.peStep);
+        if (input) {
+          const step = Number(input.step), min = Number(input.min), max = Number(input.max);
+          let v = Number(input.value) + Number(stepBtn.dataset.peDir) * step;
+          v = Math.min(max, Math.max(min, Math.round(v / step) * step));
+          input.value = step < 1 ? v.toFixed(step < 0.05 ? 2 : 1) : String(v);
+          update(STEP_KEY[stepBtn.dataset.peStep], Number(input.value));
+        }
+        return;
+      }
       const btn = e.target.closest("[data-pe-mode]");
       if (btn) {
         const feature = btn.dataset.peFeature;
@@ -2942,7 +2971,6 @@
       showSimplifyError(msg.requestId);
     }
     if (msg.type === "AI_RETRY") {
-      console.log("[AI] AI_RETRY received in content \u2192", msg.feature);
       if (msg.feature === "emotion") {
         state.aiEmotionHighlights = [];
         state.emotionLoaded = false;

@@ -561,6 +561,30 @@ body {
   padding-bottom: 6px;
 }
 
+/* Collapsible word-list block (nested second-level toggle) */
+.words-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+.words-toggle:hover { color: var(--navy); }
+
+.feature-detail-words-body { display: none; }
+.feature-detail-words.expanded > .feature-detail-words-body { display: block; }
+
+.feature-detail-words.expanded .feature-row-chevron::before {
+  transform: rotate(-135deg);
+  top: 5px;
+}
+
 /* Slider + value shown inline within a detail panel */
 .slider-row {
   display: flex;

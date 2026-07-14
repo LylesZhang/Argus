@@ -251,6 +251,13 @@ function initFeatureRows() {
       });
     }
   });
+
+  // Nested word-list blocks collapse independently, starting collapsed.
+  document.querySelectorAll('.words-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.closest('.feature-detail-words')?.classList.toggle('expanded');
+    });
+  });
 }
 
 // ── AI status indicator ────────────────────────────────────────────────
