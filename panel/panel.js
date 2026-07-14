@@ -185,6 +185,7 @@ function getSectionContent(label) {
 
 function applySectionCollapse(label, collapsed) {
   const button = label.querySelector('.collapse-btn');
+  const title = label.querySelector(':scope > span');
   label.classList.toggle('section-label-collapsed', collapsed);
   getSectionContent(label).forEach(el => {
     el.hidden = collapsed;
@@ -195,6 +196,7 @@ function applySectionCollapse(label, collapsed) {
     button.setAttribute('aria-expanded', String(!collapsed));
     button.setAttribute('aria-label', collapsed ? `Expand ${getSectionTitle(label)}` : `Collapse ${getSectionTitle(label)}`);
   }
+  title?.setAttribute('aria-expanded', String(!collapsed));
 }
 
 function initSectionCollapse() {
@@ -204,6 +206,13 @@ function initSectionCollapse() {
     .filter(section => section.content.length > 0);
 
   collapsible.forEach(({ label }) => {
+    const title = label.querySelector(':scope > span');
+    label.classList.add('section-label-collapsible');
+    if (title) {
+      title.classList.add('section-title-toggle');
+      title.setAttribute('role', 'button');
+      title.setAttribute('tabindex', '0');
+    }
     if (label.querySelector('.collapse-btn')) return;
     const button = document.createElement('button');
     button.type = 'button';
@@ -214,12 +223,20 @@ function initSectionCollapse() {
   chrome.storage.local.get('panelSectionCollapse', data => {
     sectionCollapseState = data.panelSectionCollapse || {};
     collapsible.forEach(({ label, id }) => {
-      applySectionCollapse(label, Boolean(sectionCollapseState[id]));
-      label.querySelector('.collapse-btn')?.addEventListener('click', () => {
+      const toggleSection = () => {
         const collapsed = !sectionCollapseState[id];
         sectionCollapseState = { ...sectionCollapseState, [id]: collapsed };
         chrome.storage.local.set({ panelSectionCollapse: sectionCollapseState });
         applySectionCollapse(label, collapsed);
+      };
+      const title = label.querySelector(':scope > .section-title-toggle');
+      applySectionCollapse(label, Boolean(sectionCollapseState[id]));
+      label.querySelector('.collapse-btn')?.addEventListener('click', toggleSection);
+      title?.addEventListener('click', toggleSection);
+      title?.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        toggleSection();
       });
     });
   });
@@ -292,13 +309,13 @@ function syncUI() {
   const wordSpacing = numericSetting('wordSpacing', 0);
   const letterSpacing = numericSetting('letterSpacing', 0);
   document.getElementById('font-size-slider').value   = fontSize;
-  document.getElementById('font-size-value').textContent = fontSize;
+  document.getElementById('font-size-value').value = fontSize;
   document.getElementById('line-height-slider').value = lineHeight;
-  document.getElementById('line-height-value').textContent = lineHeight.toFixed(1);
+  document.getElementById('line-height-value').value = lineHeight.toFixed(1);
   document.getElementById('word-spacing-slider').value   = wordSpacing;
-  document.getElementById('word-spacing-value').textContent = wordSpacing.toFixed(2);
+  document.getElementById('word-spacing-value').value = wordSpacing.toFixed(2);
   document.getElementById('letter-spacing-slider').value = letterSpacing;
-  document.getElementById('letter-spacing-value').textContent = letterSpacing.toFixed(2);
+  document.getElementById('letter-spacing-value').value = letterSpacing.toFixed(2);
 
   document.getElementById('font-color').value         = settings.fontColor;
   document.getElementById('bg-color').value           = settings.bgColor;
@@ -379,13 +396,13 @@ function init() {
     if (!enabled) {
       document.getElementById('font-family').value                  = '';
       document.getElementById('font-size-slider').value             = 18;
-      document.getElementById('font-size-value').textContent        = '18';
+      document.getElementById('font-size-value').value              = '18';
       document.getElementById('line-height-slider').value           = 1.8;
-      document.getElementById('line-height-value').textContent      = '1.8';
+      document.getElementById('line-height-value').value            = '1.8';
       document.getElementById('word-spacing-slider').value          = 0;
-      document.getElementById('word-spacing-value').textContent     = '0.00';
+      document.getElementById('word-spacing-value').value           = '0.00';
       document.getElementById('letter-spacing-slider').value        = 0;
-      document.getElementById('letter-spacing-value').textContent   = '0.00';
+      document.getElementById('letter-spacing-value').value         = '0.00';
       document.getElementById('font-color').value                   = '#2c2c2c';
       document.getElementById('bg-color').value                     = '#ffffff';
       document.getElementById('toggle-bold').checked                = false;
@@ -509,6 +526,56 @@ function init() {
     }
   }
 
+  function bindTypographyNumberInput({ inputId, sliderId, settingKey, fallback, min, max, step, decimals }) {
+    const input = document.getElementById(inputId);
+    const slider = document.getElementById(sliderId);
+    const format = value => Number(value).toFixed(decimals);
+    const normalize = value => {
+      const clamped = Math.min(max, Math.max(min, value));
+      const stepped = min + Math.round((clamped - min) / step) * step;
+      return Number(stepped.toFixed(decimals));
+    };
+
+    input.addEventListener('input', () => {
+      const raw = Number(input.value);
+      if (input.value === '' || !Number.isFinite(raw)) return;
+      const value = normalize(raw);
+      enableTypographyIfNeeded();
+      slider.value = value;
+      broadcast({ [settingKey]: value });
+    });
+
+    input.addEventListener('change', () => {
+      const raw = Number(input.value);
+      const value = input.value === '' || !Number.isFinite(raw)
+        ? normalize(numericSetting(settingKey, fallback))
+        : normalize(raw);
+      input.value = format(value);
+      slider.value = value;
+      if (value !== numericSetting(settingKey, fallback)) {
+        enableTypographyIfNeeded();
+        broadcast({ [settingKey]: value });
+      }
+    });
+  }
+
+  bindTypographyNumberInput({
+    inputId: 'font-size-value', sliderId: 'font-size-slider', settingKey: 'fontSize',
+    fallback: 18, min: 14, max: 28, step: 1, decimals: 0,
+  });
+  bindTypographyNumberInput({
+    inputId: 'line-height-value', sliderId: 'line-height-slider', settingKey: 'lineHeight',
+    fallback: 1.8, min: 1.4, max: 2.4, step: 0.1, decimals: 1,
+  });
+  bindTypographyNumberInput({
+    inputId: 'word-spacing-value', sliderId: 'word-spacing-slider', settingKey: 'wordSpacing',
+    fallback: 0, min: 0, max: 0.5, step: 0.05, decimals: 2,
+  });
+  bindTypographyNumberInput({
+    inputId: 'letter-spacing-value', sliderId: 'letter-spacing-slider', settingKey: 'letterSpacing',
+    fallback: 0, min: 0, max: 0.1, step: 0.01, decimals: 2,
+  });
+
   // Font family
   document.getElementById('font-family').addEventListener('change', e => {
     enableTypographyIfNeeded();
@@ -522,7 +589,7 @@ function init() {
     enableTypographyIfNeeded();
     const v = current - 1;
     document.getElementById('font-size-slider').value = v;
-    document.getElementById('font-size-value').textContent = v;
+    document.getElementById('font-size-value').value = v;
     broadcast({ fontSize: v });
   });
   document.getElementById('font-size-inc').addEventListener('click', () => {
@@ -531,13 +598,13 @@ function init() {
     enableTypographyIfNeeded();
     const v = current + 1;
     document.getElementById('font-size-slider').value = v;
-    document.getElementById('font-size-value').textContent = v;
+    document.getElementById('font-size-value').value = v;
     broadcast({ fontSize: v });
   });
   document.getElementById('font-size-slider').addEventListener('input', e => {
     enableTypographyIfNeeded();
     const v = parseInt(e.target.value);
-    document.getElementById('font-size-value').textContent = v;
+    document.getElementById('font-size-value').value = v;
     broadcast({ fontSize: v });
   });
 
@@ -548,7 +615,7 @@ function init() {
     enableTypographyIfNeeded();
     const v = Math.round((current - 0.1) * 10) / 10;
     document.getElementById('line-height-slider').value = v;
-    document.getElementById('line-height-value').textContent = v.toFixed(1);
+    document.getElementById('line-height-value').value = v.toFixed(1);
     broadcast({ lineHeight: v });
   });
   document.getElementById('line-height-inc').addEventListener('click', () => {
@@ -557,13 +624,13 @@ function init() {
     enableTypographyIfNeeded();
     const v = Math.round((current + 0.1) * 10) / 10;
     document.getElementById('line-height-slider').value = v;
-    document.getElementById('line-height-value').textContent = v.toFixed(1);
+    document.getElementById('line-height-value').value = v.toFixed(1);
     broadcast({ lineHeight: v });
   });
   document.getElementById('line-height-slider').addEventListener('input', e => {
     enableTypographyIfNeeded();
     const v = Math.round(parseFloat(e.target.value) * 10) / 10;
-    document.getElementById('line-height-value').textContent = v.toFixed(1);
+    document.getElementById('line-height-value').value = v.toFixed(1);
     broadcast({ lineHeight: v });
   });
 
@@ -574,7 +641,7 @@ function init() {
     enableTypographyIfNeeded();
     const v = Math.max(0, Math.round((current - 0.05) * 100) / 100);
     document.getElementById('word-spacing-slider').value = v;
-    document.getElementById('word-spacing-value').textContent = v.toFixed(2);
+    document.getElementById('word-spacing-value').value = v.toFixed(2);
     broadcast({ wordSpacing: v });
   });
   document.getElementById('word-spacing-inc').addEventListener('click', () => {
@@ -583,13 +650,13 @@ function init() {
     enableTypographyIfNeeded();
     const v = Math.min(0.5, Math.round((current + 0.05) * 100) / 100);
     document.getElementById('word-spacing-slider').value = v;
-    document.getElementById('word-spacing-value').textContent = v.toFixed(2);
+    document.getElementById('word-spacing-value').value = v.toFixed(2);
     broadcast({ wordSpacing: v });
   });
   document.getElementById('word-spacing-slider').addEventListener('input', e => {
     enableTypographyIfNeeded();
     const v = parseFloat(e.target.value);
-    document.getElementById('word-spacing-value').textContent = v.toFixed(2);
+    document.getElementById('word-spacing-value').value = v.toFixed(2);
     broadcast({ wordSpacing: v });
   });
 
@@ -600,7 +667,7 @@ function init() {
     enableTypographyIfNeeded();
     const v = Math.max(0, Math.round((current - 0.01) * 1000) / 1000);
     document.getElementById('letter-spacing-slider').value = v;
-    document.getElementById('letter-spacing-value').textContent = v.toFixed(2);
+    document.getElementById('letter-spacing-value').value = v.toFixed(2);
     broadcast({ letterSpacing: v });
   });
   document.getElementById('letter-spacing-inc').addEventListener('click', () => {
@@ -609,13 +676,13 @@ function init() {
     enableTypographyIfNeeded();
     const v = Math.min(0.1, Math.round((current + 0.01) * 1000) / 1000);
     document.getElementById('letter-spacing-slider').value = v;
-    document.getElementById('letter-spacing-value').textContent = v.toFixed(2);
+    document.getElementById('letter-spacing-value').value = v.toFixed(2);
     broadcast({ letterSpacing: v });
   });
   document.getElementById('letter-spacing-slider').addEventListener('input', e => {
     enableTypographyIfNeeded();
     const v = parseFloat(e.target.value);
-    document.getElementById('letter-spacing-value').textContent = v.toFixed(2);
+    document.getElementById('letter-spacing-value').value = v.toFixed(2);
     broadcast({ letterSpacing: v });
   });
 
