@@ -10,6 +10,11 @@
   --bg:     #f1f0f8;
   --border: #e0e0ea;
   --muted:  #9899ab;
+  --navy-hover:     #2d2a63;
+  --surface-hover:  #eae9f2;
+  --border-strong:  #c8c6da;
+  --ctl-radius:     8px;
+  --ctl-radius-sm:  6px;
   --panel-max-width: 340px;
   --panel-font-size: 13px;
   --section-font-size: 13px;
@@ -105,23 +110,24 @@ body {
 .reset-defaults-btn {
   margin-left: auto;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: rgba(255,255,255,0.85);
+  border-radius: var(--ctl-radius);
+  background: #fff;
   color: var(--muted);
   font-size: var(--small-font-size);
   font-weight: 600;
-  padding: 3px 10px;
+  padding: 4px 11px;
   min-height: 24px;
   cursor: pointer;
   letter-spacing: 0;
   text-transform: none;
   flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .reset-defaults-btn:hover {
   color: var(--navy);
-  border-color: #c0bdd8;
-  background: #fff;
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
 }
 
 .master-off {
@@ -191,23 +197,25 @@ body {
 }
 
 .section-reset-btn {
-  border: 1px solid rgba(60, 231, 217, 0.28);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.85);
-  color: #5aaea9;
+  border: 1px solid var(--border);
+  border-radius: var(--ctl-radius);
+  background: #fff;
+  color: var(--muted);
   cursor: pointer;
   flex-shrink: 0;
   font-size: var(--small-font-size);
-  font-weight: 700;
+  font-weight: 600;
   min-height: 24px;
-  padding: 3px 8px;
+  padding: 4px 11px;
   text-transform: none;
   letter-spacing: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 .section-reset-btn:hover {
-  background: #edf5f4dc;
-  border-color: #43d6cc5c;
+  color: var(--navy);
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
 }
 
 .collapse-btn:hover {
@@ -256,7 +264,7 @@ body {
 .panel-size-pill {
   display: flex;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--ctl-radius);
   overflow: hidden;
   background: #fff;
   flex-shrink: 0;
@@ -275,7 +283,7 @@ body {
 }
 
 .panel-size-btn:last-child { border-right: none; }
-.panel-size-btn:hover:not(.active) { background: #f4f4f9; }
+.panel-size-btn:hover:not(.active) { background: var(--surface-hover); }
 .panel-size-btn.active { background: var(--teal); color: #fff; }
 
 /* ── Control blocks ──────────────────────────────────────────────────── */
@@ -339,7 +347,7 @@ body {
   width: 100%;
   padding: 8px 28px 8px 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--ctl-radius);
   background: #fff;
   font-size: var(--control-font-size);
   color: #333;
@@ -356,7 +364,7 @@ body {
   display: flex;
   align-items: stretch;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--ctl-radius);
   overflow: hidden;
   background: #fff;
   height: var(--control-height);
@@ -375,8 +383,8 @@ body {
   flex-shrink: 0;
   transition: background 0.15s;
 }
-.stepper-btn:hover  { background: #f4f4f9; }
-.stepper-btn:active { background: #eaeaf2; }
+.stepper-btn:hover  { background: var(--surface-hover); }
+.stepper-btn:active { background: #e2e0ee; }
 
 .stepper-center {
   flex: 1;
@@ -435,7 +443,7 @@ body {
   width: 100%;
   height: var(--control-height);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--ctl-radius);
   cursor: pointer;
   padding: 3px 4px;
   background: #fff;
@@ -717,7 +725,7 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   min-width: 0;
   font-size: var(--small-font-size);
   border: 1px solid var(--border);
-  border-radius: 5px;
+  border-radius: var(--ctl-radius-sm);
   padding: 3px 6px;
   background: #fff;
   cursor: pointer;
@@ -774,7 +782,7 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   margin-left: auto;
   display: flex;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--ctl-radius);
   overflow: hidden;
   flex-shrink: 0;
   background: #fff;
@@ -791,7 +799,7 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   transition: background 0.15s, color 0.15s;
 }
 
-.mode-btn:hover:not(.active) { background: #f4f4f9; }
+.mode-btn:hover:not(.active) { background: var(--surface-hover); }
 .mode-btn.active { background: var(--teal); color: #fff; }
 
 /* ── AI controls wrapper (mode-pill + status dot) ───────────────────── */
@@ -855,28 +863,28 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 
 .ai-retry-btn {
   margin-left: 4px;
-  padding: 1px 7px;
+  padding: 3px 9px;
   font-size: var(--label-font-size);
-  font-weight: 500;
-  border: 1px solid #9ca3af;
-  border-radius: 4px;
-  background: transparent;
-  color: #6b7280;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: var(--ctl-radius-sm);
+  background: #fff;
+  color: var(--muted);
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
   text-transform: none;
   letter-spacing: normal;
 }
-.ai-retry-btn:hover { background: #f3f4f6; }
+.ai-retry-btn:hover { background: var(--surface-hover); color: var(--navy); border-color: var(--border-strong); }
 .ai-retry-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-.ai-retry-btn:disabled:hover { background: transparent; }
+.ai-retry-btn:disabled:hover { background: #fff; color: var(--muted); border-color: var(--border); }
 
 .ai-status-row:has([data-state="error"]) .ai-retry-btn:not(:disabled) {
   border-color: #b91c1c;
   color: #b91c1c;
 }
 .ai-status-row:has([data-state="error"]) .ai-retry-btn:not(:disabled):hover {
-  background: #fee2e2;
+  background: #fdecec;
 }
 
 /* ── Topic Focus area ────────────────────────────────────────────────── */
@@ -898,7 +906,7 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   min-width: 0;
   padding: 9px 12px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--ctl-radius);
   font-size: var(--control-font-size);
   outline: none;
   color: #333;
@@ -909,20 +917,20 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 
 .topic-focus-area button {
   flex: 0 0 auto;
-  padding: 9px 12px;
-  border-radius: 10px;
+  padding: 9px 14px;
+  border-radius: var(--ctl-radius);
   font-size: var(--control-font-size);
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   border: 1px solid var(--border);
   background: #fff;
-  color: #333;
-  transition: background 0.15s;
+  color: var(--muted);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 #topic-apply { background: var(--navy); color: #fff; border-color: var(--navy); }
-#topic-apply:hover { background: #2d2a63; }
-#topic-clear:hover { background: #eaeaf2; }
+#topic-apply:hover { background: var(--navy-hover); border-color: var(--navy-hover); }
+#topic-clear:hover { color: var(--navy); background: var(--surface-hover); border-color: var(--border-strong); }
 
 /* ── Tab navigation ──────────────────────────────────────────────────── */
 
@@ -1027,15 +1035,16 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 
 .wordlist-add button {
   padding: 6px 12px;
-  border: none;
-  border-radius: 8px;
+  border: 1px solid var(--navy);
+  border-radius: var(--ctl-radius);
   background: var(--navy);
   color: #fff;
   font-size: calc(var(--control-font-size) - 1px);
   font-weight: 600;
   cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
 }
-.wordlist-add button:hover { background: #2d2a63; }
+.wordlist-add button:hover { background: var(--navy-hover); border-color: var(--navy-hover); }
 
 /* ── Effects warning modal ──────────────────────────────────────────── */
 
@@ -1080,12 +1089,13 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 }
 
 .effects-warning-actions button {
-  border-radius: 7px;
+  border-radius: var(--ctl-radius);
   cursor: pointer;
   font-size: var(--small-font-size);
-  font-weight: 700;
+  font-weight: 600;
   min-height: 30px;
-  padding: 6px 10px;
+  padding: 6px 12px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 
 #effects-warning-keep {
@@ -1094,7 +1104,7 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   color: #fff;
 }
 
-#effects-warning-keep:hover { background: #2d2a63; }
+#effects-warning-keep:hover { background: var(--navy-hover); border-color: var(--navy-hover); }
 
 #effects-warning-disable {
   border: none;
