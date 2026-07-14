@@ -37,7 +37,7 @@ async function fetchEmotionAnalysis(text, url) {
     try {
       const response = await fetchWithAbortTimeout(`${API_BASE}/api/analyze`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-argus-version': '0.4.0' },
         body:    JSON.stringify({ text }),
       });
       if (!response.ok) return null;
@@ -89,7 +89,7 @@ async function fetchSentenceLabels(sentences, url, lensPurpose = 'inform', minIm
       try {
         const response = await fetchWithAbortTimeout(`${API_BASE}/api/label`, {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'x-argus-version': '0.4.0' },
           body:    JSON.stringify({ sentences, lensPurpose, minImportance: threshold }),
         });
         if (!response.ok) return null;
@@ -151,7 +151,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     if (msg.type === 'SIMPLIFY_REQUEST') {
       fetchWithAbortTimeout(`${API_BASE}/api/simplify`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-argus-version': '0.4.0' },
         body:    JSON.stringify({ text: msg.text }),
       })
         .then(r => r.ok ? r.json() : null)
@@ -169,7 +169,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     if (msg.type === 'FOCUS_ANALYZE') {
       fetchWithAbortTimeout(`${API_BASE}/api/focus`, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-argus-version': '0.4.0' },
         body:    JSON.stringify({ text: msg.text, topic: msg.topic }),
       })
         .then(r => r.ok ? r.json() : null)

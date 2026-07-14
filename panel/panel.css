@@ -70,7 +70,9 @@ body {
   background: var(--bg);
   color: #333;
   height: 100vh;
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .panel {
@@ -89,6 +91,8 @@ body {
   gap: 10px;
   padding: 10px 16px 8px;
   border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--bg);
 }
 
 .master-label {
@@ -98,10 +102,40 @@ body {
   letter-spacing: 0.04em;
 }
 
+.reset-defaults-btn {
+  margin-left: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.85);
+  color: var(--muted);
+  font-size: var(--small-font-size);
+  font-weight: 600;
+  padding: 3px 10px;
+  min-height: 24px;
+  cursor: pointer;
+  letter-spacing: 0;
+  text-transform: none;
+  flex-shrink: 0;
+}
+
+.reset-defaults-btn:hover {
+  color: var(--navy);
+  border-color: #c0bdd8;
+  background: #fff;
+}
+
 .master-off {
   opacity: 0.45;
   pointer-events: none;
   user-select: none;
+}
+
+/* ── Tab content scroll area ─────────────────────────────────────────── */
+
+.tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* ── Section label ───────────────────────────────────────────────────── */

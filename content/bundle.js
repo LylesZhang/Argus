@@ -445,35 +445,6 @@
     const area = findContentArea();
     return matchEmotionWords(area.innerText, state.wordLists);
   }
-  function requestEmotionAnalysis() {
-    if (!state.settings.emotionColor || state.settings.emotionMode !== "ai") {
-      state.emotionAIInProgress = false;
-      return;
-    }
-    if (state.emotionAIInProgress) {
-      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "loading" });
-      return;
-    }
-    if (state.emotionLoaded) {
-      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "success" });
-      return;
-    }
-    if (state.emotionRequestFailed) {
-      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "error" });
-      return;
-    }
-    state.emotionAIInProgress = true;
-    const requestId = `${state.requestSessionId}:emotion:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-    state.emotionRequestId = requestId;
-    chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "loading" });
-    const area = findContentArea();
-    chrome.runtime.sendMessage({
-      type: "EMOTION_REQUEST",
-      requestId,
-      url: window.location.href,
-      text: area.innerText.trim()
-    });
-  }
 
   // content/features/transitions.js
   var DEFAULT_TRANSITION_WORDS = [
@@ -597,36 +568,9 @@
   }
 
   // content/features/labels.js
-  var DENSITY_THRESHOLDS = { low: 85, medium: 75, high: 65 };
   function extractAllSentences() {
     const area = findContentArea();
     return area.innerText.split(/\n+/).filter((p) => p.trim().length > 20).flatMap((p) => splitSentences(p.trim()).filter((s) => s.trim()));
-  }
-  function requestSentenceLabels() {
-    if (state.sentenceLabelsInProgress) {
-      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "loading" });
-      return;
-    }
-    if (state.sentenceLabelsLoaded) {
-      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "success" });
-      return;
-    }
-    if (state.sentenceLabelsRequestFailed) {
-      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "error" });
-      return;
-    }
-    state.sentenceLabelsInProgress = true;
-    const requestId = `${state.requestSessionId}:labels:${Date.now()}:${Math.random().toString(36).slice(2)}`;
-    state.sentenceLabelsRequestId = requestId;
-    state.allSentences = extractAllSentences();
-    chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "loading" });
-    chrome.runtime.sendMessage({
-      type: "LABEL_REQUEST",
-      requestId,
-      sentences: state.allSentences,
-      lensPurpose: state.settings.sentenceLabelsLens ?? "inform",
-      minImportance: DENSITY_THRESHOLDS[state.settings.sentenceLabelsDensity] ?? 75
-    });
   }
 
   // content/features/ruler.js
@@ -1856,12 +1800,14 @@
     });
     state.contentArea.style.background = "";
     teardownRuler();
+    teardownAutoScroll();
   }
   function render() {
     if (!state.settings.masterEnabled) {
       removeTransformations();
       teardownSelectionMenu();
       teardownSimplify();
+      closeImmersiveReader();
       return;
     }
     removeTransformations();
@@ -1874,9 +1820,6 @@
       if (state.allSentences.length === 0) state.allSentences = extractAllSentences();
       state.sentenceLabels = state.aiSentenceLabels;
     }
-    const needsEmotionAI = state.settings.emotionColor && state.settings.emotionMode === "ai";
-    if (needsEmotionAI) requestEmotionAnalysis();
-    if (state.settings.sentenceLabels) requestSentenceLabels();
     applyTransformations();
     if (state.topicFocusKeywords) {
       applyFocusMask(state.topicFocusKeywords);

@@ -3,14 +3,15 @@ import { findContentArea } from './detect.js';
 import { splitSentences } from './utils.js';
 import { injectOpenDyslexicFont } from './features/typography.js';
 import { applyBionicToText } from './features/bionic.js';
-import { generateEmotionHighlights, requestEmotionAnalysis } from './features/emotions.js';
+import { generateEmotionHighlights } from './features/emotions.js';
 import { generateTransitionHighlights } from './features/transitions.js';
-import { extractAllSentences, requestSentenceLabels } from './features/labels.js';
+import { extractAllSentences } from './features/labels.js';
 import { setupRuler, teardownRuler } from './features/ruler.js';
 import { setupAutoScroll, teardownAutoScroll } from './features/autoScroll.js';
 import { applyFocusMask, applyFocusMaskByPrefixes } from './features/topicFocus.js';
 import { setupSelectionMenu, teardownSelectionMenu } from './features/selectionMenu.js';
 import { setupSimplify, teardownSimplify } from './features/simplify.js';
+import { closeImmersiveReader } from './features/immersiveReader.js';
 
 // ── Sentence rendering ─────────────────────────────────────────────────
 
@@ -247,6 +248,7 @@ function removeTransformations() {
 
   state.contentArea.style.background = '';
   teardownRuler();
+  teardownAutoScroll();
 }
 
 // ── Render coordinator ─────────────────────────────────────────────────
@@ -256,6 +258,7 @@ export function render() {
     removeTransformations();
     teardownSelectionMenu();
     teardownSimplify();
+    closeImmersiveReader();
     return;
   }
 
@@ -277,10 +280,6 @@ export function render() {
     if (state.allSentences.length === 0) state.allSentences = extractAllSentences();
     state.sentenceLabels = state.aiSentenceLabels;  // Lens is AI-only
   }
-
-  const needsEmotionAI = state.settings.emotionColor && state.settings.emotionMode === 'ai';
-  if (needsEmotionAI) requestEmotionAnalysis();
-  if (state.settings.sentenceLabels) requestSentenceLabels();
 
   applyTransformations();
 

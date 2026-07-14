@@ -14,7 +14,10 @@
       <span class="track"></span>
     </label>
     <span class="master-label">Argus</span>
+    <button id="btn-reset-defaults" class="reset-defaults-btn">Reset</button>
   </div>
+
+  <div class="tab-content">
 
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="effects">Effects</button>
@@ -195,7 +198,7 @@
           </div>
           <div class="ai-status-row hidden" id="emotion-ai-row">
             <span class="ai-status-dot hidden" id="emotion-ai-status"></span>
-            <button class="ai-retry-btn" data-feature="emotion">Retry</button>
+            <button class="ai-retry-btn" data-feature="emotion">Analyze</button>
           </div>
         </div>
       </div>
@@ -224,7 +227,7 @@
         <div class="ai-controls">
           <div class="ai-status-row hidden" id="labels-ai-row">
             <span class="ai-status-dot hidden" id="labels-ai-status"></span>
-            <button class="ai-retry-btn" data-feature="labels">Retry</button>
+            <button class="ai-retry-btn" data-feature="labels">Analyze</button>
           </div>
         </div>
       </div>
@@ -404,6 +407,8 @@
       </div>
     </div>
   </div>
+
+  </div><!-- /.tab-content -->
 
   <script src="panel.js"></script>
 </body>

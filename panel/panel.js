@@ -246,7 +246,7 @@ function updateAIStatus(feature, status) {
     el.classList.add('hidden');
     el.removeAttribute('data-state');
     el.textContent = '';
-    if (retryBtn) retryBtn.disabled = false;
+    if (retryBtn) { retryBtn.disabled = false; retryBtn.textContent = 'Analyze'; }
     return;
   }
   el.classList.remove('hidden');
@@ -254,7 +254,11 @@ function updateAIStatus(feature, status) {
   el.textContent = status === 'loading' ? ''
                  : status === 'success' ? '✓'
                  : '✕';
-  if (retryBtn) retryBtn.disabled = (status === 'loading');
+  if (retryBtn) {
+    retryBtn.disabled = (status === 'loading');
+    if (status === 'error')   retryBtn.textContent = 'Retry';
+    if (status === 'success') retryBtn.textContent = 'Analyze';
+  }
 }
 
 // ── Lens legend switcher ───────────────────────────────────────────────
@@ -287,7 +291,7 @@ function syncUI() {
   applyPanelSize(settings.panelSize);
   const masterToggle = document.getElementById('toggle-master');
   if (masterToggle) masterToggle.checked = settings.masterEnabled;
-  document.querySelector('.tab-panels')?.classList.toggle('master-off', !settings.masterEnabled);
+  document.querySelector('.tab-content')?.classList.toggle('master-off', !settings.masterEnabled);
   document.getElementById('toggle-bold').checked      = settings.boldBeginning;
   document.getElementById('toggle-emotion').checked   = settings.emotionColor;
   document.getElementById('toggle-gradient').checked  = settings.gradientRows;
@@ -386,7 +390,20 @@ function init() {
   // Master switch
   document.getElementById('toggle-master')?.addEventListener('change', e => {
     broadcast({ masterEnabled: e.target.checked });
-    document.querySelector('.tab-panels')?.classList.toggle('master-off', !e.target.checked);
+    document.querySelector('.tab-content')?.classList.toggle('master-off', !e.target.checked);
+  });
+
+  // Reset to defaults
+  document.getElementById('btn-reset-defaults')?.addEventListener('click', () => {
+    settings = { ...DEFAULT_SETTINGS };
+    settingsRevision += 1;
+    chrome.storage.sync.set({ draSettings: settings });
+    chrome.runtime.sendMessage({
+      type: 'SETTINGS_CHANGED',
+      payload: { ...settings, settingsRevision },
+    });
+    clearActivePreset();
+    syncUI();
   });
 
   document.getElementById('toggle-bold').addEventListener('change', e => {
