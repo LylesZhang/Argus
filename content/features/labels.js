@@ -31,6 +31,7 @@ export function requestSentenceLabels() {
   const requestId = `${state.requestSessionId}:labels:${Date.now()}:${Math.random().toString(36).slice(2)}`;
   state.sentenceLabelsRequestId = requestId;
   state.allSentences = extractAllSentences();
+  console.log('[LENS] sending LABEL_REQUEST →', requestId, '| sentences:', state.allSentences.length);
   chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'labels', status: 'loading' });
   chrome.runtime.sendMessage({
     type:        'LABEL_REQUEST',

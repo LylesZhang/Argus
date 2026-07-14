@@ -451,6 +451,129 @@ body {
   pointer-events: none;
 }
 
+/* ── Feature groups & rows (Effects tab) ─────────────────────────────── */
+
+.feature-group {
+  border-top: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+.feature-group:first-child { border-top: none; }
+
+.feature-group-title {
+  font-size: var(--label-font-size);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--muted);
+  padding: 12px 16px 4px;
+}
+
+.feature-row { margin: 0 6px; border-radius: 8px; }
+
+.feature-row-head {
+  display: flex;
+  align-items: center;
+  gap: var(--row-gap);
+  padding: var(--row-padding-y) 10px;
+  min-height: var(--control-height);
+}
+
+/* Clickable expand target fills the remaining row width */
+.feature-row-expand {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  min-height: 22px;
+  text-align: left;
+}
+
+.feature-row-name { font-size: var(--control-font-size); color: #333; }
+
+.feature-row-chevron {
+  width: 14px;
+  height: 14px;
+  position: relative;
+  flex-shrink: 0;
+}
+.feature-row-chevron::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  transition: transform 0.2s, top 0.2s;
+}
+.feature-row.expanded .feature-row-chevron::before {
+  transform: rotate(-135deg);
+  top: 5px;
+}
+.feature-row-expand:hover .feature-row-name { color: var(--navy); }
+.feature-row-expand:hover .feature-row-chevron::before { border-color: var(--navy); }
+
+/* Detail panel — hidden until the row is expanded */
+.feature-detail {
+  display: none;
+  padding: 0 10px 12px 10px;
+}
+.feature-row.expanded > .feature-detail {
+  display: block;
+  animation: featureDetailIn 0.18s ease;
+}
+@keyframes featureDetailIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Normalize spacing of reused control classes inside a detail panel */
+.feature-detail .control-block { padding: 8px 0; }
+.feature-detail .control-row   { padding: 0; }
+.feature-detail .ai-controls {
+  margin: 0 0 8px 0;
+  justify-content: flex-start;
+}
+.feature-detail .ai-controls .mode-pill { margin-left: 0; }
+
+/* Word-list block nested inside a feature detail */
+.feature-detail-words {
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+.feature-detail-words-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--label-font-size);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--muted);
+  padding-bottom: 6px;
+}
+
+/* Slider + value shown inline within a detail panel */
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.slider-row .slider { flex: 1; }
+.slider-row .slider-value {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Toggle switch ───────────────────────────────────────────────────── */
 
 .toggle-switch { flex-shrink: 0; cursor: pointer; }
@@ -540,18 +663,14 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 
 /* ── Reading aid color sub-panels ────────────────────────────────────── */
 
+/* Visibility is now gated by the enclosing .feature-detail (expand/collapse),
+   so these color panels are always fully shown when their row is open. */
 .emotion-colors,
 .sentence-label-colors {
-  padding: 4px 16px 10px 70px;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  opacity: 0.3;
-  pointer-events: none;
-  transition: opacity 0.2s;
 }
-.emotion-colors.active,
-.sentence-label-colors.active { opacity: 1; pointer-events: auto; }
 
 .color-row {
   display: flex;

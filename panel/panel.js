@@ -234,6 +234,25 @@ function initSectionCollapse() {
   });
 }
 
+// ── Feature-row expand/collapse (Effects tab) ──────────────────────────
+
+function initFeatureRows() {
+  document.querySelectorAll('#tab-effects .feature-row').forEach(row => {
+    const detail    = row.querySelector(':scope > .feature-detail');
+    const expandBtn = row.querySelector(':scope > .feature-row-head > .feature-row-expand');
+    if (detail && expandBtn) {
+      expandBtn.addEventListener('click', () => row.classList.toggle('expanded'));
+    }
+    // Turning a feature on auto-expands its row so its settings are visible.
+    const toggle = row.querySelector(':scope > .feature-row-head input[type="checkbox"]');
+    if (detail && toggle) {
+      toggle.addEventListener('change', () => {
+        if (toggle.checked) row.classList.add('expanded');
+      });
+    }
+  });
+}
+
 // ── AI status indicator ────────────────────────────────────────────────
 
 function updateAIStatus(feature, status) {
@@ -305,13 +324,9 @@ function syncUI() {
   const lineHeight = numericSetting('lineHeight', 1.8);
   const wordSpacing = numericSetting('wordSpacing', 0);
   const letterSpacing = numericSetting('letterSpacing', 0);
-  document.getElementById('font-size-slider').value   = fontSize;
   document.getElementById('font-size-value').value = fontSize;
-  document.getElementById('line-height-slider').value = lineHeight;
   document.getElementById('line-height-value').value = lineHeight.toFixed(1);
-  document.getElementById('word-spacing-slider').value   = wordSpacing;
   document.getElementById('word-spacing-value').value = wordSpacing.toFixed(2);
-  document.getElementById('letter-spacing-slider').value = letterSpacing;
   document.getElementById('letter-spacing-value').value = letterSpacing.toFixed(2);
 
   document.getElementById('font-color').value         = settings.fontColor;
@@ -343,8 +358,6 @@ function syncUI() {
   document.getElementById('typewriter-speed-slider').value = typewriterSpeed;
   document.getElementById('typewriter-speed-value').textContent = formatTypewriterSpeed(typewriterSpeed);
 
-  document.getElementById('emotion-colors').classList.toggle('active', settings.emotionColor);
-  document.getElementById('sentence-label-colors').classList.toggle('active', settings.sentenceLabels);
   document.getElementById('toggle-labels').checked = settings.sentenceLabels;
 
   // Sync mode pills to stored settings (emotion + topicFocus; Lens is AI-only, no pill)
@@ -363,6 +376,7 @@ function syncUI() {
 
 function init() {
   initSectionCollapse();
+  initFeatureRows();
 
   document.getElementById('effects-warning-keep')?.addEventListener('click', hideEffectsWarning);
   document.getElementById('effects-warning-disable')?.addEventListener('click', () => {
@@ -467,13 +481,6 @@ function init() {
   });
 
   // Typography controls — auto-enable parent if any control is adjusted while parent is off
-  function enableTypographyIfNeeded() {
-    if (!settings.typographyEnabled) {
-      document.getElementById('toggle-typography').checked = true;
-      broadcast({ typographyEnabled: true });
-    }
-  }
-
   // Font family
   document.getElementById('font-family').addEventListener('change', e => {
     broadcast({ fontFamily: e.target.value });
@@ -484,7 +491,6 @@ function init() {
     const current = numericSetting('fontSize', 18);
     if (current <= 14) return;
     const v = current - 1;
-    document.getElementById('font-size-slider').value = v;
     document.getElementById('font-size-value').value = v;
     broadcast({ fontSize: v });
   });
@@ -492,12 +498,6 @@ function init() {
     const current = numericSetting('fontSize', 18);
     if (current >= 28) return;
     const v = current + 1;
-    document.getElementById('font-size-slider').value = v;
-    document.getElementById('font-size-value').value = v;
-    broadcast({ fontSize: v });
-  });
-  document.getElementById('font-size-slider').addEventListener('input', e => {
-    const v = parseInt(e.target.value);
     document.getElementById('font-size-value').value = v;
     broadcast({ fontSize: v });
   });
@@ -507,7 +507,6 @@ function init() {
     const current = numericSetting('lineHeight', 1.8);
     if (current <= 1.4) return;
     const v = Math.round((current - 0.1) * 10) / 10;
-    document.getElementById('line-height-slider').value = v;
     document.getElementById('line-height-value').value = v.toFixed(1);
     broadcast({ lineHeight: v });
   });
@@ -515,22 +514,15 @@ function init() {
     const current = numericSetting('lineHeight', 1.8);
     if (current >= 2.4) return;
     const v = Math.round((current + 0.1) * 10) / 10;
-    document.getElementById('line-height-slider').value = v;
-    document.getElementById('line-height-value').value = v.toFixed(1);
-    broadcast({ lineHeight: v });
-  });
-  document.getElementById('line-height-slider').addEventListener('input', e => {
-    const v = Math.round(parseFloat(e.target.value) * 10) / 10;
     document.getElementById('line-height-value').value = v.toFixed(1);
     broadcast({ lineHeight: v });
   });
 
-  // Word spacing — stepper + slider
+  // Word spacing — stepper
   document.getElementById('word-spacing-dec').addEventListener('click', () => {
     const current = numericSetting('wordSpacing', 0);
     if (current <= 0) return;
     const v = Math.max(0, Math.round((current - 0.05) * 100) / 100);
-    document.getElementById('word-spacing-slider').value = v;
     document.getElementById('word-spacing-value').value = v.toFixed(2);
     broadcast({ wordSpacing: v });
   });
@@ -538,22 +530,15 @@ function init() {
     const current = numericSetting('wordSpacing', 0);
     if (current >= 0.5) return;
     const v = Math.min(0.5, Math.round((current + 0.05) * 100) / 100);
-    document.getElementById('word-spacing-slider').value = v;
-    document.getElementById('word-spacing-value').value = v.toFixed(2);
-    broadcast({ wordSpacing: v });
-  });
-  document.getElementById('word-spacing-slider').addEventListener('input', e => {
-    const v = parseFloat(e.target.value);
     document.getElementById('word-spacing-value').value = v.toFixed(2);
     broadcast({ wordSpacing: v });
   });
 
-  // Letter spacing — stepper + slider
+  // Letter spacing — stepper
   document.getElementById('letter-spacing-dec').addEventListener('click', () => {
     const current = numericSetting('letterSpacing', 0);
     if (current <= 0) return;
     const v = Math.max(0, Math.round((current - 0.01) * 1000) / 1000);
-    document.getElementById('letter-spacing-slider').value = v;
     document.getElementById('letter-spacing-value').value = v.toFixed(2);
     broadcast({ letterSpacing: v });
   });
@@ -561,12 +546,6 @@ function init() {
     const current = numericSetting('letterSpacing', 0);
     if (current >= 0.1) return;
     const v = Math.min(0.1, Math.round((current + 0.01) * 1000) / 1000);
-    document.getElementById('letter-spacing-slider').value = v;
-    document.getElementById('letter-spacing-value').value = v.toFixed(2);
-    broadcast({ letterSpacing: v });
-  });
-  document.getElementById('letter-spacing-slider').addEventListener('input', e => {
-    const v = parseFloat(e.target.value);
     document.getElementById('letter-spacing-value').value = v.toFixed(2);
     broadcast({ letterSpacing: v });
   });

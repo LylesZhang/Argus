@@ -79,6 +79,7 @@ export function requestEmotionAnalysis() {
   // analysis unless the AI Emotion feature is currently enabled.
   if (!state.settings.emotionColor ||
       state.settings.emotionMode !== 'ai') {
+    console.log('[EMO] request blocked by guard | emotionColor:', state.settings.emotionColor, '| mode:', state.settings.emotionMode);
     state.emotionAIInProgress = false;
     return;
   }
@@ -99,6 +100,7 @@ export function requestEmotionAnalysis() {
   state.emotionRequestId = requestId;
   chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'loading' });
   const area = findContentArea();
+  console.log('[EMO] sending EMOTION_REQUEST →', requestId);
   chrome.runtime.sendMessage({
     type: 'EMOTION_REQUEST',
     requestId,

@@ -445,6 +445,37 @@
     const area = findContentArea();
     return matchEmotionWords(area.innerText, state.wordLists);
   }
+  function requestEmotionAnalysis() {
+    if (!state.settings.emotionColor || state.settings.emotionMode !== "ai") {
+      console.log("[EMO] request blocked by guard | emotionColor:", state.settings.emotionColor, "| mode:", state.settings.emotionMode);
+      state.emotionAIInProgress = false;
+      return;
+    }
+    if (state.emotionAIInProgress) {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "loading" });
+      return;
+    }
+    if (state.emotionLoaded) {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "success" });
+      return;
+    }
+    if (state.emotionRequestFailed) {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "error" });
+      return;
+    }
+    state.emotionAIInProgress = true;
+    const requestId = `${state.requestSessionId}:emotion:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    state.emotionRequestId = requestId;
+    chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "loading" });
+    const area = findContentArea();
+    console.log("[EMO] sending EMOTION_REQUEST \u2192", requestId);
+    chrome.runtime.sendMessage({
+      type: "EMOTION_REQUEST",
+      requestId,
+      url: window.location.href,
+      text: area.innerText.trim()
+    });
+  }
 
   // content/features/transitions.js
   var DEFAULT_TRANSITION_WORDS = [
@@ -568,9 +599,37 @@
   }
 
   // content/features/labels.js
+  var DENSITY_THRESHOLDS = { low: 85, medium: 75, high: 65 };
   function extractAllSentences() {
     const area = findContentArea();
     return area.innerText.split(/\n+/).filter((p) => p.trim().length > 20).flatMap((p) => splitSentences(p.trim()).filter((s) => s.trim()));
+  }
+  function requestSentenceLabels() {
+    if (state.sentenceLabelsInProgress) {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "loading" });
+      return;
+    }
+    if (state.sentenceLabelsLoaded) {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "success" });
+      return;
+    }
+    if (state.sentenceLabelsRequestFailed) {
+      chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "error" });
+      return;
+    }
+    state.sentenceLabelsInProgress = true;
+    const requestId = `${state.requestSessionId}:labels:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    state.sentenceLabelsRequestId = requestId;
+    state.allSentences = extractAllSentences();
+    console.log("[LENS] sending LABEL_REQUEST \u2192", requestId, "| sentences:", state.allSentences.length);
+    chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "labels", status: "loading" });
+    chrome.runtime.sendMessage({
+      type: "LABEL_REQUEST",
+      requestId,
+      sentences: state.allSentences,
+      lensPurpose: state.settings.sentenceLabelsLens ?? "inform",
+      minImportance: DENSITY_THRESHOLDS[state.settings.sentenceLabelsDensity] ?? 75
+    });
   }
 
   // content/features/ruler.js
@@ -2883,12 +2942,14 @@
       showSimplifyError(msg.requestId);
     }
     if (msg.type === "AI_RETRY") {
+      console.log("[AI] AI_RETRY received in content \u2192", msg.feature);
       if (msg.feature === "emotion") {
         state.aiEmotionHighlights = [];
         state.emotionLoaded = false;
         state.emotionRequestFailed = false;
         state.emotionAIInProgress = false;
         state.emotionRequestId = null;
+        requestEmotionAnalysis();
       }
       if (msg.feature === "labels") {
         state.aiSentenceLabels = [];
@@ -2898,6 +2959,7 @@
         state.sentenceLabelsLoaded = false;
         state.sentenceLabelsRequestFailed = false;
         state.sentenceLabelsRequestId = null;
+        requestSentenceLabels();
       }
       render();
     }
