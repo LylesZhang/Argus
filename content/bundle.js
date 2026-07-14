@@ -1570,6 +1570,7 @@
     const popup = getPopup();
     if (!popup) return;
     popup.innerHTML = "";
+    popup.classList.add("dra-has-result");
     const header = document.createElement("div");
     header.className = "dra-simplify-header";
     const label = document.createElement("span");
@@ -1589,7 +1590,13 @@
     const body = document.createElement("div");
     body.className = "dra-simplify-result";
     body.textContent = simplified;
+    if (state.settings.fontSize) body.style.fontSize = state.settings.fontSize + "px";
     popup.appendChild(body);
+    popup.style.width = "auto";
+    const h1 = popup.scrollHeight;
+    popup.style.width = Math.min(480, h1 * 1.5) + "px";
+    const h2 = popup.scrollHeight;
+    popup.style.width = Math.min(480, h2 * 1.5) + "px";
     if (currentRect) positionPopup(popup, currentRect);
   }
   function showSimplifyError(requestId) {

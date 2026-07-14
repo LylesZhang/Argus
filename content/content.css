@@ -220,6 +220,12 @@
 }
 .dra-simplify-close-btn:hover { color: rgba(255, 255, 255, 0.85); }
 
+#dra-simplify-popup.dra-has-result {
+  display: flex;
+  flex-direction: column;
+  max-width: 480px;
+}
+
 .dra-simplify-result {
   color: rgba(255, 255, 255, 0.92);
   line-height: 1.55;
