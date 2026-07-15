@@ -10,19 +10,26 @@
   <div id="app" data-theme="warm">
     <div class="dra-reader-shell">
       <header class="dra-reader-topbar">
-        <div class="dra-reader-brand">Argus Reader</div>
+        <div>
+          <div class="dra-reader-brand">Argus Reader</div>
+          <div id="reader-meta" class="dra-reader-meta"></div>
+        </div>
         <div class="dra-reader-actions">
-          <button class="dra-reader-theme-light" data-theme="light">Light</button>
-          <button class="dra-reader-theme-warm active" data-theme="warm">Warm</button>
-          <button class="dra-reader-theme-dark" data-theme="dark">Dark</button>
+          <button class="dra-reader-theme-btn dra-reader-theme-light" data-reader-theme="light">Light</button>
+          <button class="dra-reader-theme-btn dra-reader-theme-warm active" data-reader-theme="warm">Warm</button>
+          <button class="dra-reader-theme-btn dra-reader-theme-dark" data-reader-theme="dark">Dark</button>
           <button class="dra-reader-close" id="close-reader" aria-label="Close">×</button>
         </div>
-        <div id="progress" class="dra-reader-progress" aria-hidden="true"><i></i></div>
+        <div class="dra-reader-progress" aria-hidden="true"></div>
       </header>
       <main id="scroll" class="dra-reader-scroll">
-        <article id="article" class="dra-reader-article" aria-live="polite"><p class="status">Loading PDF…</p></article>
+        <article id="article" class="dra-reader-article" aria-live="polite">
+          <p class="dra-reader-status">Loading PDF…</p>
+        </article>
       </main>
-      <div id="ruler-top" class="ruler"></div><div id="ruler-bottom" class="ruler"></div>
+      <div class="dra-reader-ruler-top" aria-hidden="true"></div>
+      <div class="dra-reader-ruler-window" aria-hidden="true"></div>
+      <div class="dra-reader-ruler-bottom" aria-hidden="true"></div>
     </div>
   </div>
   <script src="reader.bundle.js"></script>

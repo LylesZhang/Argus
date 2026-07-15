@@ -1,3 +1,8 @@
+// Pure helpers for turning PDF.js text items into reflowed document blocks.
+// Kept dependency-free so they can be unit-tested under Node.
+
+// Group text items into lines by their vertical (Y) position. Items whose Y
+// differs by more than 4px from the previous item start a new line.
 export function normalizeLines(items) {
   const lines = [];
   let line = [];
@@ -15,8 +20,8 @@ export function normalizeLines(items) {
   return lines;
 }
 
-// Page headers and footers that repeat on three or more pages are usually
-// navigation noise, not article text. Keep short one-off labels out as well.
+// Flatten pages into readable blocks. Drops repeated headers/footers (a line
+// appearing on 3+ pages) and very short lines; retains source-page mapping.
 export function blocksFromPages(pages) {
   const repeated = new Map();
   pages.forEach(page => page.lines.forEach(line => {

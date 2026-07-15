@@ -14,19 +14,27 @@ const labelCache     = new Map();
 const labelPending   = new Map(); // in-flight label promises, prevents concurrent duplicate fetches
 const CACHE_TTL_MS   = 30 * 60 * 1000; // 30 minutes
 const FETCH_TIMEOUT_MS = 90_000;
-const readerTabs = new Map(); // tabId -> 'web' | 'pdf'
 
+// tabId -> 'pdf'. Tracks which tabs are standalone PDF Reader pages so Side Panel
+// actions and Reader status can be routed to them (they are extension pages and
+// do not receive chrome.tabs.sendMessage the way content scripts do).
+const readerTabs = new Map();
+
+// PDF Reader pages receive messages via runtime broadcast + a targetPdfTabId filter.
 function broadcastToPdfTab(tabId, msg) {
   chrome.runtime.sendMessage({ ...msg, targetPdfTabId: tabId }).catch(() => {});
 }
 
+// Tell the Side Panel whether the active tab is a Reader (web or PDF) so it can
+// enable/disable the Reader Mode + Typewriter controls.
 function publishActiveReaderStatus() {
-  chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs[0];
+    const kind = tab ? readerTabs.get(tab.id) ?? null : null;
     chrome.runtime.sendMessage({
       type: 'IMMERSIVE_READER_STATUS',
-      active: Boolean(tab && readerTabs.has(tab.id)),
-      readerKind: tab ? readerTabs.get(tab.id) ?? null : null,
+      active: Boolean(kind),
+      readerKind: kind,
       tabId: tab?.id ?? null,
       source: 'background',
     }).catch(() => {});
@@ -132,46 +140,8 @@ async function fetchSentenceLabels(sentences, url, lensPurpose = 'inform', minIm
 // ── Message relay & analysis handler ──────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (msg.source === 'background') return;
   // Messages from content scripts (sender.tab exists)
-  if (sender.tab || msg.tabId) {
-    const senderTabId = sender.tab?.id ?? msg.tabId;
-    if (msg.type === 'IMMERSIVE_READER_STATUS' || msg.type === 'PDF_READER_STATUS') {
-      if (msg.active) readerTabs.set(senderTabId, msg.type === 'PDF_READER_STATUS' ? 'pdf' : 'web');
-      else readerTabs.delete(senderTabId);
-      publishActiveReaderStatus();
-      return;
-    }
-
-    if (msg.type === 'PDF_EMOTION_REQUEST') {
-      fetchEmotionAnalysis(msg.text, `pdf:${msg.fingerprint}:${msg.chunk ?? 0}`).then(result => {
-        broadcastToPdfTab(senderTabId, result
-          ? { type: 'PDF_EMOTION_RESULT', requestId: msg.requestId, chunk: msg.chunk, highlights: result.highlights }
-          : { type: 'PDF_EMOTION_ERROR', requestId: msg.requestId, chunk: msg.chunk });
-      });
-      return;
-    }
-
-    if (msg.type === 'PDF_LABEL_REQUEST') {
-      fetchSentenceLabels(msg.sentences, `pdf:${msg.fingerprint}:${msg.batchStart ?? 0}`, msg.lensPurpose, msg.minImportance).then(result => {
-        broadcastToPdfTab(senderTabId, result
-          ? { type: 'PDF_LABEL_RESULT', requestId: msg.requestId, batchStart: msg.batchStart ?? 0, labels: result.labels, scoredLabels: result.scoredLabels }
-          : { type: 'PDF_LABEL_ERROR', requestId: msg.requestId, batchStart: msg.batchStart ?? 0 });
-      });
-      return;
-    }
-
-    if (msg.type === 'PDF_FOCUS_ANALYZE') {
-      fetchWithAbortTimeout(`${API_BASE}/api/focus`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: msg.text, topic: msg.topic }),
-      }).then(r => r.ok ? r.json() : null).catch(() => null).then(result => {
-        broadcastToPdfTab(senderTabId, result?.relevant
-          ? { type: 'PDF_FOCUS_RESULT', requestId: msg.requestId, relevant: result.relevant }
-          : { type: 'PDF_FOCUS_ERROR', requestId: msg.requestId });
-      });
-      return;
-    }
+  if (sender.tab) {
     if (msg.type === 'EMOTION_REQUEST') {
       fetchEmotionAnalysis(msg.text, msg.url).then(result => {
         const type = result ? 'EMOTION_RESULT' : 'EMOTION_ERROR';
@@ -238,11 +208,67 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
         });
     }
 
+    // ── PDF Reader page requests (extension page in a tab) ──────────────
+    if (msg.type === 'PDF_READER_STATUS') {
+      if (msg.active) readerTabs.set(sender.tab.id, 'pdf');
+      else readerTabs.delete(sender.tab.id);
+      publishActiveReaderStatus();
+    }
+
+    if (msg.type === 'PDF_EMOTION_REQUEST') {
+      fetchEmotionAnalysis(msg.text, `pdf:${msg.fingerprint}`).then(result => {
+        const type = result ? 'PDF_EMOTION_RESULT' : 'PDF_EMOTION_ERROR';
+        broadcastToPdfTab(sender.tab.id, result
+          ? { type, ...result, requestId: msg.requestId }
+          : { type, requestId: msg.requestId });
+      });
+    }
+
+    if (msg.type === 'PDF_LABEL_REQUEST') {
+      fetchSentenceLabels(
+        msg.sentences,
+        `pdf:${msg.fingerprint}`,
+        msg.lensPurpose,
+        msg.minImportance,
+      ).then(result => {
+        const ok = Array.isArray(result?.labels) && Array.isArray(result?.scoredLabels);
+        const type = ok ? 'PDF_LABEL_RESULT' : 'PDF_LABEL_ERROR';
+        const ctx = {
+          lensPurpose: msg.lensPurpose ?? 'inform',
+          minImportance: normalizeMinImportance(msg.minImportance),
+          requestId: msg.requestId,
+        };
+        broadcastToPdfTab(sender.tab.id, ok
+          ? { type, labels: result.labels, scoredLabels: result.scoredLabels, ...ctx }
+          : { type, ...ctx });
+      });
+    }
+
+    if (msg.type === 'PDF_FOCUS_ANALYZE') {
+      fetchWithAbortTimeout(`${API_BASE}/api/focus`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'x-argus-version': '0.4.0' },
+        body:    JSON.stringify({ text: msg.text, topic: msg.topic }),
+      })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+        .then(result => {
+          const type = result?.relevant ? 'PDF_FOCUS_RESULT' : 'PDF_FOCUS_ERROR';
+          broadcastToPdfTab(sender.tab.id, result?.relevant
+            ? { type, relevant: result.relevant, requestId: msg.requestId }
+            : { type, requestId: msg.requestId });
+        });
+    }
+
     if (msg.type === 'WORDLISTS_CHANGED') {
       chrome.runtime.sendMessage(msg).catch(() => {});
     }
 
     if (msg.type === 'AI_STATUS') {
+      chrome.runtime.sendMessage(msg).catch(() => {});
+    }
+
+    if (msg.type === 'IMMERSIVE_READER_STATUS') {
       chrome.runtime.sendMessage(msg).catch(() => {});
     }
 
@@ -253,19 +279,25 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     return;
   }
 
-  // Messages from Side Panel / Popup — forward to active tab
+  // Messages from Side Panel / Popup — forward to active tab.
+  // When the active tab is a standalone PDF Reader page, route via runtime
+  // broadcast (+ targetPdfTabId) because it is an extension page, not a content
+  // script; Topic Focus commands are converted to their PDF_* equivalents.
+  const PDF_FOCUS_TYPE = {
+    FOCUS_APPLY: 'PDF_FOCUS_APPLY',
+    FOCUS_CLEAR: 'PDF_FOCUS_CLEAR',
+    FOCUS_AI_REQUEST: 'PDF_FOCUS_REQUEST',
+  };
   const forwardToActiveTab = () => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs[0]) return;
-      if (readerTabs.get(tabs[0].id) === 'pdf') {
-        const type = msg.type === 'FOCUS_APPLY' ? 'PDF_FOCUS_APPLY'
-          : msg.type === 'FOCUS_CLEAR' ? 'PDF_FOCUS_CLEAR'
-          : msg.type === 'FOCUS_AI_REQUEST' ? 'PDF_FOCUS_REQUEST'
-          : msg.type;
-        broadcastToPdfTab(tabs[0].id, { ...msg, type });
-        return;
+      const tab = tabs[0];
+      if (!tab) return;
+      if (readerTabs.get(tab.id) === 'pdf') {
+        const type = PDF_FOCUS_TYPE[msg.type] ?? msg.type;
+        broadcastToPdfTab(tab.id, { ...msg, type });
+      } else {
+        chrome.tabs.sendMessage(tab.id, msg);
       }
-      chrome.tabs.sendMessage(tabs[0].id, msg);
     });
   };
 
@@ -276,12 +308,15 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === 'WORDLISTS_CHANGED')  forwardToActiveTab();
   if (msg.type === 'AI_RETRY') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (!tabs[0]) return;
-      if (readerTabs.get(tabs[0].id) === 'pdf') {
-        broadcastToPdfTab(tabs[0].id, msg);
+      const tab = tabs[0];
+      if (!tab) return;
+      if (readerTabs.get(tab.id) === 'pdf') {
+        // PDF caches are keyed by fingerprint; successes are stable and errors
+        // are never cached, so a retry safely re-fetches without cache busting.
+        broadcastToPdfTab(tab.id, msg);
         return;
       }
-      const url = tabs[0].url;
+      const url = tab.url;
       if (msg.feature === 'emotion') {
         emotionCache.delete(url);
         emotionPending.delete(url);
@@ -289,7 +324,7 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
         for (const key of [...labelCache.keys()])   if (key.startsWith(url + '|')) labelCache.delete(key);
         for (const key of [...labelPending.keys()]) if (key.startsWith(url + '|')) labelPending.delete(key);
       }
-      chrome.tabs.sendMessage(tabs[0].id, msg);
+      chrome.tabs.sendMessage(tab.id, msg);
     });
   }
   if (msg.type === 'OPEN_IMMERSIVE_READER')  forwardToActiveTab();
@@ -297,18 +332,20 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === 'OPEN_PRESET_EDITOR')     forwardToActiveTab();
   if (msg.type === 'APPLY_PRESET')           forwardToActiveTab();
 
+  if (msg.type === 'GET_ACTIVE_READER_STATUS') publishActiveReaderStatus();
+
   if (msg.type === 'OPEN_PDF_READER') {
     const params = new URLSearchParams();
     if (msg.sessionId) params.set('session', msg.sessionId);
     if (msg.sourceUrl) params.set('url', msg.sourceUrl);
-    if (msg.title) params.set('title', msg.title);
+    if (msg.title)     params.set('title', msg.title);
     chrome.tabs.create({ url: chrome.runtime.getURL(`pdf/reader.html?${params}`) })
-      .then(() => chrome.runtime.sendMessage({ type: 'PDF_READER_OPENED' }))
-      .catch(() => chrome.runtime.sendMessage({ type: 'PDF_READER_OPEN_FAILED' }));
+      .then(() => chrome.runtime.sendMessage({ type: 'PDF_READER_OPENED' }).catch(() => {}))
+      .catch(() => chrome.runtime.sendMessage({ type: 'PDF_READER_OPEN_FAILED' }).catch(() => {}));
   }
-  if (msg.type === 'GET_ACTIVE_READER_STATUS') publishActiveReaderStatus();
 });
 
+// Keep Reader status in sync as the user switches or closes tabs.
 chrome.tabs.onActivated.addListener(publishActiveReaderStatus);
 chrome.tabs.onRemoved.addListener(tabId => {
   readerTabs.delete(tabId);

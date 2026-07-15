@@ -714,11 +714,87 @@ function init() {
       type: e.target.checked ? 'OPEN_IMMERSIVE_READER' : 'CLOSE_IMMERSIVE_READER',
     });
   });
+
+  // PDF import
+  document.getElementById('pdf-file-input')?.addEventListener('change', async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setPdfStatus('Please choose a PDF file.', 'error');
+      return;
+    }
+    try {
+      setPdfStatus('Preparing PDF Reader…');
+      const sessionId = await savePdfSession(file);
+      chrome.runtime.sendMessage({ type: 'OPEN_PDF_READER', sessionId, title: file.name });
+      setPdfStatus('Opening PDF Reader…');
+    } catch {
+      setPdfStatus('Could not prepare this PDF.', 'error');
+    } finally {
+      event.target.value = '';
+    }
+  });
+  document.getElementById('pdf-url-open')?.addEventListener('click', openPdfUrl);
+  document.getElementById('pdf-url-input')?.addEventListener('keydown', event => {
+    if (event.key === 'Enter') openPdfUrl();
+  });
+
+  chrome.runtime.sendMessage({ type: 'GET_ACTIVE_READER_STATUS' });
+}
+
+// ── PDF import helpers ──────────────────────────────────────────────────
+
+// A File object cannot ride through extension JSON messaging, so the picked PDF
+// is stored briefly in extension IndexedDB and the Reader page retrieves it.
+function savePdfSession(file) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('argus-pdf', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('sessions');
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const id = crypto.randomUUID();
+      const tx = db.transaction('sessions', 'readwrite');
+      tx.objectStore('sessions').put({ file, title: file.name, createdAt: Date.now() }, id);
+      tx.oncomplete = () => { db.close(); resolve(id); };
+      tx.onerror = () => reject(tx.error);
+    };
+  });
+}
+
+function setPdfStatus(message, state = '') {
+  const status = document.getElementById('pdf-import-status');
+  if (!status) return;
+  status.textContent = message;
+  status.dataset.state = state;
+}
+
+async function openPdfUrl() {
+  const input = document.getElementById('pdf-url-input');
+  let url;
+  try { url = new URL(input.value.trim()); }
+  catch { setPdfStatus('Enter a valid PDF URL.', 'error'); return; }
+  if (!/^https?:$/.test(url.protocol)) {
+    setPdfStatus('Only HTTP(S) PDF links are supported.', 'error');
+    return;
+  }
+  setPdfStatus('Requesting access to this website…');
+  const granted = await chrome.permissions.request({ origins: [`${url.protocol}//${url.host}/*`] });
+  if (!granted) {
+    setPdfStatus('Website access was not granted.', 'error');
+    return;
+  }
+  chrome.runtime.sendMessage({
+    type: 'OPEN_PDF_READER',
+    sourceUrl: url.href,
+    title: url.pathname.split('/').pop() || 'PDF document',
+  });
+  setPdfStatus('Opening PDF Reader…');
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.type === 'PDF_READER_OPENED') {
-    setPdfStatus('PDF Reader opened successfully.', 'success');
+    setPdfStatus('PDF Reader opened.', 'success');
     return;
   }
   if (msg.type === 'PDF_READER_OPEN_FAILED') {

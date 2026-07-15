@@ -170,6 +170,27 @@
       <div class="feature-group">
         <div class="feature-group-title">Focus &amp; Navigation</div>
 
+        <!-- Open PDF -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Open PDF</span>
+              <span class="feature-row-chevron"></span>
+            </button>
+          </div>
+          <div class="feature-detail">
+            <div class="pdf-import">
+              <label class="pdf-file-button" for="pdf-file-input">Choose PDF file</label>
+              <input id="pdf-file-input" type="file" accept="application/pdf,.pdf" hidden>
+              <div class="pdf-url-row">
+                <input id="pdf-url-input" type="url" placeholder="https://example.com/doc.pdf" aria-label="PDF URL">
+                <button id="pdf-url-open" type="button">Open</button>
+              </div>
+              <p id="pdf-import-status" class="pdf-import-status" role="status"></p>
+            </div>
+          </div>
+        </div>
+
         <!-- Reader Mode -->
         <div class="feature-row">
           <div class="feature-row-head">

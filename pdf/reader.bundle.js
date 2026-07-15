@@ -3547,8 +3547,8 @@
           editor.show(visible);
         }
       }
-      const state = this.#showAllStates?.get(AnnotationEditorParamsType.HIGHLIGHT_SHOW_ALL) ?? true;
-      if (state !== visible) {
+      const state2 = this.#showAllStates?.get(AnnotationEditorParamsType.HIGHLIGHT_SHOW_ALL) ?? true;
+      if (state2 !== visible) {
         this.#dispatchUpdateUI([[AnnotationEditorParamsType.HIGHLIGHT_SHOW_ALL, visible]]);
       }
     }
@@ -6025,10 +6025,10 @@
         right
       } = this.getClientDimensions();
       const {
-        innerHeight: innerHeight2,
+        innerHeight,
         innerWidth
       } = window;
-      return left < innerWidth && right > 0 && top < innerHeight2 && bottom > 0;
+      return left < innerWidth && right > 0 && top < innerHeight && bottom > 0;
     }
     #addFocusListeners() {
       if (this.#focusAC || !this.div) {
@@ -13486,28 +13486,28 @@ fn fs_main(in : VertexOutput) -> @location(0) vec4<f32> {
       const operator = array[0];
       for (let i = 1; i < length; i++) {
         const element = array[i];
-        let state;
+        let state2;
         if (Array.isArray(element)) {
-          state = this.#evaluateVisibilityExpression(element);
+          state2 = this.#evaluateVisibilityExpression(element);
         } else if (this.#groups.has(element)) {
-          state = this.#groups.get(element).visible;
+          state2 = this.#groups.get(element).visible;
         } else {
           warn(`Optional content group not found: ${element}`);
           return true;
         }
         switch (operator) {
           case "And":
-            if (!state) {
+            if (!state2) {
               return false;
             }
             break;
           case "Or":
-            if (state) {
+            if (state2) {
               return true;
             }
             break;
           case "Not":
-            return !state;
+            return !state2;
           default:
             return true;
         }
@@ -13602,11 +13602,11 @@ fn fs_main(in : VertexOutput) -> @location(0) vec4<f32> {
       this.#cachedGetHash = null;
     }
     setOCGState({
-      state,
+      state: state2,
       preserveRB
     }) {
       let operator;
-      for (const elem of state) {
+      for (const elem of state2) {
         switch (elem) {
           case "ON":
           case "OFF":
@@ -26396,131 +26396,777 @@ fn fs_main(in : VertexOutput) -> @location(0) vec4<f32> {
     return pages.flatMap((page) => page.lines.filter((line) => line.length >= 25 && (repeated.get(line) || 0) < 3).map((text) => ({ text, pageStart: page.number, pageEnd: page.number })));
   }
 
+  // content/utils.js
+  var ABBR = /* @__PURE__ */ new Set([
+    "mr",
+    "mrs",
+    "ms",
+    "dr",
+    "prof",
+    "rev",
+    "sen",
+    "rep",
+    "gov",
+    "gen",
+    "lt",
+    "col",
+    "sgt",
+    "capt",
+    "adm",
+    "st",
+    "mt",
+    "ave",
+    "blvd",
+    "rd",
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dec",
+    "vs",
+    "etc",
+    "approx",
+    "no",
+    "vol"
+  ]);
+  function splitSentences(text) {
+    const result = [];
+    let start = 0;
+    for (const m of text.matchAll(/(?<=[.!?])(\s+)(?=[A-Z"'\[])/g)) {
+      const word = text.slice(0, m.index).match(/([a-zA-Z]+)[.!?]$/)?.[1] ?? "";
+      if (/^[A-Z]$/.test(word) || ABBR.has(word.toLowerCase())) continue;
+      result.push(text.slice(start, m.index));
+      start = m.index + m[1].length;
+    }
+    result.push(text.slice(start));
+    return result;
+  }
+
+  // content/settings.js
+  var DEFAULT_SETTINGS = {
+    panelSize: "comfortable",
+    masterEnabled: true,
+    boldBeginning: false,
+    emotionColor: false,
+    emotionMode: "local",
+    // 'ai' | 'local'
+    gradientRows: false,
+    rowShadingColor: "#bfb3d0",
+    transitionAnimation: false,
+    sentenceLabels: false,
+    // Lens on/off
+    sentenceLabelsLens: "inform",
+    // reading purpose: inform|understand|evaluate
+    sentenceLabelsDensity: "medium",
+    // low|medium|high importance threshold
+    labelKeyPointColor: "#eab308",
+    labelCoreDetailColor: "#3b82f6",
+    labelConceptColor: "#9333ea",
+    labelReasoningColor: "#f97316",
+    labelTakeawayColor: "#0d9488",
+    labelClaimColor: "#ca8a04",
+    labelEvidenceColor: "#22c55e",
+    labelCounterpointColor: "#e11d48",
+    sentenceSimplify: false,
+    topicFocusMode: "local",
+    // 'ai' | 'local'
+    fontSize: null,
+    lineHeight: null,
+    fontFamily: null,
+    wordSpacing: 0,
+    letterSpacing: 0,
+    emotionPositiveColor: "#27ae60",
+    emotionNegativeColor: "#e74c3c",
+    emotionComplexColor: "#8e44ad",
+    rulerActive: false,
+    rulerWindowLines: 1.5,
+    autoScrollActive: false,
+    autoScrollSpeed: 2,
+    typewriterActive: false,
+    typewriterSpeed: 5
+  };
+
+  // content/state.js
+  var state = {
+    requestSessionId: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    settings: { ...DEFAULT_SETTINGS },
+    lastSettingsRevision: 0,
+    originalHTML: /* @__PURE__ */ new WeakMap(),
+    contentArea: null,
+    lastRulerY: null,
+    emotionAIInProgress: false,
+    emotionLoaded: false,
+    emotionRequestFailed: false,
+    emotionRequestId: null,
+    sentenceLabelsInProgress: false,
+    sentenceLabelsLoaded: false,
+    sentenceLabelsRequestFailed: false,
+    sentenceLabelsRequestId: null,
+    aiEmotionHighlights: [],
+    aiSentenceLabels: [],
+    aiScoredSentenceLabels: [],
+    articleHighlights: [],
+    topicFocusKeywords: null,
+    topicFocusAIPrefixes: null,
+    wordLists: {
+      emotionPositive: null,
+      emotionNegative: null,
+      emotionComplex: null,
+      transition: null
+    },
+    sentenceLabels: [],
+    allSentences: []
+  };
+
+  // content/features/emotions.js
+  var DEFAULT_EMOTION_POSITIVE = [
+    // Joy / Happiness
+    "joy",
+    "delight",
+    "elation",
+    "bliss",
+    "euphoria",
+    "jubilation",
+    "glee",
+    "cheerful",
+    "merry",
+    "ecstatic",
+    // Love / Connection
+    "love",
+    "adore",
+    "cherish",
+    "embrace",
+    "compassion",
+    "empathy",
+    "kindness",
+    "warmth",
+    "tender",
+    "affection",
+    // Hope / Optimism
+    "hope",
+    "optimism",
+    "inspiration",
+    "aspire",
+    "dream",
+    "vision",
+    "faith",
+    "belief",
+    "confidence",
+    "promise",
+    // Admiration / Pride
+    "proud",
+    "admire",
+    "celebrate",
+    "triumph",
+    "honor",
+    "remarkable",
+    "extraordinary",
+    "magnificent",
+    "outstanding",
+    "brilliant",
+    // Growth / Success
+    "thrive",
+    "flourish",
+    "breakthrough",
+    "achieve",
+    "progress",
+    "succeed",
+    "innovate",
+    "discover",
+    "heal",
+    "unite",
+    // General positive
+    "wonderful",
+    "amazing",
+    "incredible",
+    "fantastic",
+    "excellent",
+    "beautiful",
+    "glorious",
+    "grateful",
+    "courage",
+    "strength"
+  ];
+  var DEFAULT_EMOTION_NEGATIVE = [
+    // Fear / Dread
+    "fear",
+    "dread",
+    "terror",
+    "horror",
+    "panic",
+    "fright",
+    "anxiety",
+    "nightmare",
+    "terrifying",
+    "horrific",
+    // Grief / Loss
+    "grief",
+    "sorrow",
+    "mourning",
+    "heartbreak",
+    "anguish",
+    "despair",
+    "desolate",
+    "tragic",
+    "tragedy",
+    "devastate",
+    // Anger / Hatred
+    "anger",
+    "rage",
+    "fury",
+    "hatred",
+    "hate",
+    "wrath",
+    "outrage",
+    "indignation",
+    "resentment",
+    "hostility",
+    // Pain / Suffering
+    "suffer",
+    "agony",
+    "torment",
+    "misery",
+    "pain",
+    "trauma",
+    "brutal",
+    "cruel",
+    "ruthless",
+    "savage",
+    // Violence / Destruction
+    "violence",
+    "destroy",
+    "collapse",
+    "ruin",
+    "catastrophe",
+    "disaster",
+    "crisis",
+    "devastation",
+    "atrocity",
+    "massacre",
+    // Injustice / Oppression
+    "abuse",
+    "betray",
+    "corrupt",
+    "injustice",
+    "oppression",
+    "discrimination",
+    "poverty",
+    "inequality",
+    "exploitation",
+    "shame",
+    // Loss / Failure
+    "loss",
+    "failure",
+    "defeat",
+    "hopeless",
+    "helpless",
+    "powerless",
+    "victim",
+    "casualty",
+    "threat",
+    "danger"
+  ];
+  var DEFAULT_EMOTION_COMPLEX = [
+    // Ambivalence
+    "bittersweet",
+    "ambivalent",
+    "conflicted",
+    "mixed",
+    "paradox",
+    "ironic",
+    "contradictory",
+    "ambiguous",
+    // Uncertainty / Anxiety
+    "uncertain",
+    "uneasy",
+    "anxious",
+    "apprehensive",
+    "troubled",
+    "unsettled",
+    "precarious",
+    "fragile",
+    "vulnerable",
+    // Nostalgia / Longing
+    "nostalgia",
+    "wistful",
+    "longing",
+    "melancholy",
+    "wistfulness",
+    "yearning",
+    "reminisce",
+    "haunted",
+    // Complexity
+    "nuanced",
+    "complicated",
+    "dilemma",
+    "tension",
+    "controversial",
+    "fraught",
+    "delicate",
+    "sensitive",
+    "paradoxical",
+    // Resignation / Cynicism
+    "resigned",
+    "cynical",
+    "skeptical",
+    "disillusioned",
+    "weary",
+    "exhausted",
+    "sacrifice",
+    "compromise",
+    // Disturbing / Unsettling
+    "disturbing",
+    "troubling",
+    "perplexing",
+    "unsettling",
+    "disconcerting",
+    "harrowing",
+    "sobering",
+    "chilling"
+  ];
+
+  // content/features/transitions.js
+  var DEFAULT_TRANSITION_WORDS = [
+    // Contrast / Opposition
+    "however",
+    "nevertheless",
+    "nonetheless",
+    "notwithstanding",
+    "conversely",
+    "on the other hand",
+    "on the contrary",
+    "in contrast",
+    "by contrast",
+    "that said",
+    "even so",
+    "be that as it may",
+    "then again",
+    "rather",
+    // Addition
+    "furthermore",
+    "moreover",
+    "additionally",
+    "likewise",
+    "in addition",
+    "by the same token",
+    "in like manner",
+    "in the same way",
+    "in the same fashion",
+    "coupled with",
+    "not to mention",
+    // Cause / Result
+    "therefore",
+    "thus",
+    "hence",
+    "consequently",
+    "accordingly",
+    "henceforth",
+    "as a result",
+    "for this reason",
+    "thereupon",
+    "in effect",
+    "owing to",
+    "as a consequence",
+    "due to",
+    "inasmuch as",
+    // Concession
+    "although",
+    "albeit",
+    "whereas",
+    "regardless",
+    "despite",
+    "in spite of",
+    "even though",
+    "even if",
+    "granted that",
+    // Conclusion / Summary
+    "in conclusion",
+    "in summary",
+    "in short",
+    "in brief",
+    "to summarize",
+    "overall",
+    "all in all",
+    "on balance",
+    "on the whole",
+    "by and large",
+    "in essence",
+    "to sum up",
+    "in the final analysis",
+    "given these points",
+    "all things considered",
+    "in a word",
+    "for the most part",
+    // Emphasis / Clarification
+    "in fact",
+    "indeed",
+    "notably",
+    "in other words",
+    "that is to say",
+    "to put it differently",
+    "to put it another way",
+    "namely",
+    "specifically",
+    "in particular",
+    "markedly",
+    "above all",
+    "most importantly",
+    // Example
+    "for example",
+    "for instance",
+    "to illustrate",
+    "as an illustration",
+    // Sequence / Time
+    "meanwhile",
+    "subsequently",
+    "eventually",
+    "formerly",
+    "in the meantime",
+    "sooner or later",
+    "in due time",
+    // Condition
+    "provided that",
+    "given that",
+    "in the event that",
+    "as long as",
+    "on the condition that"
+  ];
+
   // pdf/reader.js
   GlobalWorkerOptions.workerSrc = chrome.runtime.getURL("pdf/pdf.worker.mjs");
-  var DEFAULTS = { typographyEnabled: false, readingAidsEnabled: false, boldBeginning: false, emotionColor: false, emotionMode: "local", gradientRows: false, transitionAnimation: false, sentenceLabels: false, sentenceLabelsLens: "inform", sentenceLabelsDensity: "medium", rulerActive: false, rulerWindowLines: 1.5, autoScrollActive: false, autoScrollSpeed: 2, typewriterActive: false, typewriterSpeed: 5, fontSize: 18, lineHeight: 1.8, fontFamily: "", wordSpacing: 0, letterSpacing: 0, rowShadingColor: "#bfb3d0", emotionPositiveColor: "#27ae60", emotionNegativeColor: "#e74c3c", emotionComplexColor: "#8e44ad", labelKeyPointColor: "#eab308", labelCoreDetailColor: "#3b82f6", labelConceptColor: "#9333ea", labelReasoningColor: "#f97316", labelTakeawayColor: "#0d9488", labelClaimColor: "#ca8a04", labelEvidenceColor: "#22c55e", labelCounterpointColor: "#e11d48" };
-  var FALLBACK_WORDS = { emotionPositive: ["joy", "hope", "love", "success", "progress", "happy", "confidence"], emotionNegative: ["fear", "anger", "loss", "pain", "crisis", "danger", "failure"], emotionComplex: ["uncertain", "complex", "ambiguous", "tension", "controversial", "skeptical"], transition: ["however", "therefore", "moreover", "furthermore", "consequently", "although", "meanwhile", "for example", "in conclusion", "in summary", "in contrast", "because", "thus", "indeed"] };
-  var DENSITY = { low: 85, medium: 75, high: 65 };
-  var settings = { ...DEFAULTS };
-  var wordLists = { ...FALLBACK_WORDS };
-  var documentModel;
-  var ownTabId = null;
-  var labelBySentence = /* @__PURE__ */ new Map();
-  var emotionWords = [];
-  var focusKeywords = null;
-  var focusPrefixes = null;
-  var tw = null;
-  var typeTimer = null;
-  var typeInterval = 38;
-  var emotionPending = null;
-  var labelPending = null;
+  var LABEL_TYPES = /* @__PURE__ */ new Set([
+    "key-point",
+    "core-detail",
+    "concept",
+    "reasoning",
+    "takeaway",
+    "claim",
+    "evidence",
+    "counterpoint"
+  ]);
+  var DENSITY_THRESHOLDS = { low: 85, medium: 75, high: 65 };
+  var settings = { ...DEFAULT_SETTINGS };
+  var wordLists = {};
+  var readerContent = { title: "", blocks: [] };
+  var allSentences = [];
+  var fingerprint = "";
+  var myTabId = null;
+  var aiEmotionHighlights = [];
+  var emotionRequestId = null;
+  var sentenceLabels = [];
+  var labelsRequestId = null;
+  var topicFocusKeywords = null;
+  var topicFocusAIPrefixes = null;
   var focusRequestId = null;
-  var autoFrame;
-  var lastFrame;
-  var app = document.getElementById("app");
-  var article = document.getElementById("article");
-  var scroll = document.getElementById("scroll");
-  function escapeHTML(s) {
-    return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[c]);
+  var readerState = { theme: "warm" };
+  var scrollFrameId = null;
+  var scrollLastTime = null;
+  var tw = null;
+  var typeIntervalMs = speedLevelToTypeInterval(5);
+  var getRoot = () => document.getElementById("app");
+  function escapeHTML(text) {
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
-  function escapeRegex(s) {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  function escapeRegex(text) {
+    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
-  function splitSentences(text) {
-    return text.split(/(?<=[.!?])\s+(?=[A-Z"'])/).filter(Boolean);
+  function bionicN(len) {
+    if (len <= 3) return 1;
+    if (len <= 6) return 2;
+    if (len <= 9) return 3;
+    return 4;
   }
-  function allSentences() {
-    return documentModel?.blocks.flatMap((block) => splitSentences(block.text)) ?? [];
+  function bionicReaderText(text) {
+    return text.split(/(\s+)/).map((tok) => {
+      if (/^\s+$/.test(tok)) return tok;
+      const leading = tok.match(/^[^a-zA-Z]*/)[0];
+      const trailing = tok.match(/[^a-zA-Z]*$/)[0];
+      const body = tok.slice(leading.length, tok.length - trailing.length);
+      if (!body) return escapeHTML(tok);
+      const n = bionicN(body.length);
+      const anchor = body.slice(0, n);
+      const rest = body.slice(n);
+      const inner = rest.length <= 1 ? `<b>${escapeHTML(anchor)}</b>${escapeHTML(rest)}` : `<b>${escapeHTML(anchor)}</b><span class="dra-bionic-fade">${escapeHTML(rest[0])}</span>${escapeHTML(rest.slice(1))}`;
+      return `${escapeHTML(leading)}${inner}${escapeHTML(trailing)}`;
+    }).join("");
   }
-  function typeSpeed(level) {
-    return 70 - (Math.min(10, Math.max(1, Number(level) || 5)) - 1) * 60 / 9;
+  function wordsForCategory(category) {
+    if (category === "emotion-positive") return wordLists.emotionPositive ?? DEFAULT_EMOTION_POSITIVE;
+    if (category === "emotion-negative") return wordLists.emotionNegative ?? DEFAULT_EMOTION_NEGATIVE;
+    if (category === "emotion-complex") return wordLists.emotionComplex ?? DEFAULT_EMOTION_COMPLEX;
+    if (category === "transition") return wordLists.transition ?? DEFAULT_TRANSITION_WORDS;
+    return [];
   }
-  function bionic(text) {
-    return escapeHTML(text).replace(/\b([A-Za-z]{2,})(?=\b)/g, (word) => `<b>${word.slice(0, Math.min(4, Math.ceil(word.length / 2)))}</b>${word.slice(Math.min(4, Math.ceil(word.length / 2)))}`);
-  }
-  function words(category) {
-    return wordLists[category] ?? FALLBACK_WORDS[category] ?? [];
-  }
-  function wordClass(word) {
-    const lower = word.toLowerCase();
-    const ai = emotionWords.find((h) => h.word?.toLowerCase() === lower);
-    if (ai?.category) return ai.category.replace("emotion-", "");
-    if (words("emotionPositive").some((w) => w.toLowerCase() === lower)) return "positive";
-    if (words("emotionNegative").some((w) => w.toLowerCase() === lower)) return "negative";
-    if (words("emotionComplex").some((w) => w.toLowerCase() === lower)) return "complex";
-    return "";
-  }
-  function focused(text) {
-    if (focusKeywords) {
-      const low = text.toLowerCase();
-      return focusKeywords.some((k) => low.includes(k));
+  function collectMatches(text) {
+    const matches = [];
+    const featureSets = [];
+    if (settings.emotionColor) {
+      if (settings.emotionMode === "local") {
+        featureSets.push(["emotion-positive", wordsForCategory("emotion-positive")]);
+        featureSets.push(["emotion-negative", wordsForCategory("emotion-negative")]);
+        featureSets.push(["emotion-complex", wordsForCategory("emotion-complex")]);
+      } else {
+        const grouped = /* @__PURE__ */ new Map();
+        aiEmotionHighlights.forEach((h) => {
+          if (!grouped.has(h.category)) grouped.set(h.category, []);
+          grouped.get(h.category).push(h.word);
+        });
+        grouped.forEach((words, category) => featureSets.push([category, words]));
+      }
     }
-    if (focusPrefixes) {
-      const prefix = text.trim().slice(0, 30);
-      return focusPrefixes.some((p) => prefix.startsWith(p.slice(0, 25)));
+    if (settings.transitionAnimation) {
+      featureSets.push(["transition", wordsForCategory("transition")]);
+    }
+    featureSets.forEach(([category, words]) => {
+      words.forEach((word) => {
+        if (!word) return;
+        const regex = new RegExp(`(?<![a-zA-Z-])${escapeRegex(word)}(?![a-zA-Z-])`, "gi");
+        for (const m of text.matchAll(regex)) {
+          matches.push({ start: m.index, end: m.index + m[0].length, category });
+        }
+      });
+    });
+    matches.sort((a, b) => a.start - b.start || b.end - b.start - (a.end - a.start));
+    const result = [];
+    let lastEnd = 0;
+    matches.forEach((m) => {
+      if (m.start >= lastEnd) {
+        result.push(m);
+        lastEnd = m.end;
+      }
+    });
+    return result;
+  }
+  function inlineText(text) {
+    return settings.boldBeginning ? bionicReaderText(text) : escapeHTML(text);
+  }
+  function renderInlineHighlights(text) {
+    const matches = collectMatches(text);
+    if (matches.length === 0) return inlineText(text);
+    let result = "";
+    let pos = 0;
+    matches.forEach(({ start, end, category }) => {
+      if (pos < start) result += inlineText(text.slice(pos, start));
+      const inner = inlineText(text.slice(start, end));
+      if (category === "transition") {
+        result += `<span class="dra-transition-word">${inner}</span>`;
+      } else if (category.startsWith("emotion")) {
+        result += `<span class="dra-${category}">${inner}</span>`;
+      } else {
+        result += inner;
+      }
+      pos = end;
+    });
+    if (pos < text.length) result += inlineText(text.slice(pos));
+    return result;
+  }
+  function labelClassForSentence(sentence) {
+    if (!settings.sentenceLabels) return "";
+    const trimmed = sentence.trim();
+    const idx = allSentences.findIndex((as) => as.slice(0, 25) === trimmed.slice(0, 25));
+    const label = sentenceLabels.find((l) => l.index === idx);
+    return LABEL_TYPES.has(label?.type) ? ` dra-label-${label.type}` : "";
+  }
+  function isFocusedSentence(sentence) {
+    if (topicFocusKeywords) {
+      const text = sentence.toLowerCase();
+      return topicFocusKeywords.some((keyword) => text.includes(keyword));
+    }
+    if (topicFocusAIPrefixes) {
+      const prefix = sentence.trim().slice(0, 30);
+      return topicFocusAIPrefixes.some((p) => prefix.startsWith(p.slice(0, 25)));
     }
     return true;
   }
-  function decorate(text, index) {
-    let html = settings.boldBeginning ? bionic(text) : escapeHTML(text);
-    if (settings.readingAidsEnabled && settings.transitionAnimation) {
-      const regex = new RegExp(`(?<![a-zA-Z-])(${words("transition").map(escapeRegex).join("|")})(?![a-zA-Z-])`, "gi");
-      html = html.replace(regex, '<span class="transition">$1</span>');
+  function renderArticleHTML() {
+    if (!readerContent.blocks.length) {
+      return '<p class="dra-reader-status">Argus could not extract readable text from this PDF.</p>';
     }
-    if (settings.readingAidsEnabled && settings.emotionColor) html = html.replace(/\b([A-Za-z]+)\b/g, (match, word) => {
-      const kind = wordClass(word);
-      return kind ? `<span class="${kind}">${match}</span>` : match;
-    });
-    const label = labelBySentence.get(index);
-    return `<span class="sentence${label ? ` label-${label}` : ""}${focused(text) ? "" : " reader-muted"}">${html}</span>`;
+    return readerContent.blocks.map((block) => {
+      const sentences = splitSentences(block.trim()).filter(Boolean);
+      const html = sentences.map((sentence) => {
+        const cls = labelClassForSentence(sentence);
+        const muted = isFocusedSentence(sentence) ? "" : " dra-reader-muted";
+        return `<span class="dra-sentence${cls}${muted}">${renderInlineHighlights(sentence)}</span>`;
+      }).join(" ");
+      return `<p>${html}</p>`;
+    }).join("");
   }
-  function flatSentences() {
+  function renderArticle() {
+    const root = getRoot();
+    if (!root) return;
+    root.querySelector(".dra-reader-article").innerHTML = `<h1>${escapeHTML(readerContent.title)}</h1>${renderArticleHTML()}`;
+  }
+  function applyReaderStyle() {
+    const root = getRoot();
+    if (!root) return;
+    const article = root.querySelector(".dra-reader-article");
+    root.dataset.theme = readerState.theme;
+    root.style.setProperty("--dra-positive", settings.emotionPositiveColor);
+    root.style.setProperty("--dra-negative", settings.emotionNegativeColor);
+    root.style.setProperty("--dra-complex", settings.emotionComplexColor);
+    root.style.setProperty("--dra-row-shading", settings.rowShadingColor);
+    root.style.setProperty("--dra-label-key-point", settings.labelKeyPointColor);
+    root.style.setProperty("--dra-label-core-detail", settings.labelCoreDetailColor);
+    root.style.setProperty("--dra-label-concept", settings.labelConceptColor);
+    root.style.setProperty("--dra-label-reasoning", settings.labelReasoningColor);
+    root.style.setProperty("--dra-label-takeaway", settings.labelTakeawayColor);
+    root.style.setProperty("--dra-label-claim", settings.labelClaimColor);
+    root.style.setProperty("--dra-label-evidence", settings.labelEvidenceColor);
+    root.style.setProperty("--dra-label-counterpoint", settings.labelCounterpointColor);
+    article.style.fontSize = settings.fontSize ? `${settings.fontSize}px` : "";
+    article.style.lineHeight = settings.lineHeight ? String(settings.lineHeight) : "";
+    article.style.fontFamily = settings.fontFamily ? settings.fontFamily : "";
+    article.style.wordSpacing = settings.wordSpacing ? `${settings.wordSpacing}em` : "";
+    article.style.letterSpacing = settings.letterSpacing ? `${settings.letterSpacing}em` : "";
+    root.classList.toggle("dra-reader-row-shading", Boolean(settings.gradientRows));
+    root.classList.toggle("dra-reader-ruler-active", Boolean(settings.rulerActive));
+    root.querySelectorAll("[data-reader-theme]").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.readerTheme === readerState.theme);
+    });
+    updateProgress();
+    updateReaderAutoScroll();
+  }
+  function refresh() {
+    if (tw) {
+      renderTW();
+      applyReaderStyle();
+      return;
+    }
+    renderArticle();
+    applyReaderStyle();
+  }
+  function updateProgress() {
+    const root = getRoot();
+    if (!root) return;
+    if (tw) {
+      const total = tw.flatSentences.length;
+      let progress2 = 0;
+      if (tw.phase === "finished") progress2 = 1;
+      else if (total > 0 && tw.currentIndex >= 0) progress2 = (tw.currentIndex + 1) / total;
+      root.style.setProperty("--dra-reader-progress", `${Math.min(1, Math.max(0, progress2)) * 100}%`);
+      return;
+    }
+    const scrollEl = root.querySelector(".dra-reader-scroll");
+    if (!scrollEl) return;
+    const max = scrollEl.scrollHeight - scrollEl.clientHeight;
+    const progress = max <= 0 ? 1 : scrollEl.scrollTop / max;
+    root.style.setProperty("--dra-reader-progress", `${Math.min(1, Math.max(0, progress)) * 100}%`);
+  }
+  function speedLevelToPixelsPerSecond(level) {
+    const safeLevel = Math.min(10, Math.max(1, Math.round(Number(level) || 2)));
+    return 15 + (safeLevel - 1) * (165 / 9);
+  }
+  function stopReaderAutoScroll() {
+    if (scrollFrameId !== null) cancelAnimationFrame(scrollFrameId);
+    scrollFrameId = null;
+    scrollLastTime = null;
+  }
+  function updateReaderAutoScroll() {
+    stopReaderAutoScroll();
+    if (tw) return;
+    if (!settings.autoScrollActive) return;
+    const root = getRoot();
+    const scrollEl = root.querySelector(".dra-reader-scroll");
+    const speed = speedLevelToPixelsPerSecond(settings.autoScrollSpeed);
+    const tick = (timestamp) => {
+      if (scrollLastTime === null) scrollLastTime = timestamp;
+      const elapsed = (timestamp - scrollLastTime) / 1e3;
+      scrollLastTime = timestamp;
+      scrollEl.scrollTop += speed * elapsed;
+      scrollFrameId = requestAnimationFrame(tick);
+    };
+    scrollFrameId = requestAnimationFrame(tick);
+  }
+  function updateReaderRuler(e) {
+    const root = getRoot();
+    if (!root) return;
+    const halfH = Math.round(16 * 1.8 * (settings.rulerWindowLines ?? 1.5) / 2);
+    root.querySelector(".dra-reader-ruler-top").style.height = Math.max(0, e.clientY - halfH) + "px";
+    root.querySelector(".dra-reader-ruler-bottom").style.top = e.clientY + halfH + "px";
+    root.querySelector(".dra-reader-ruler-window").style.top = Math.max(0, e.clientY - halfH) + "px";
+    root.querySelector(".dra-reader-ruler-window").style.height = halfH * 2 + "px";
+  }
+  function speedLevelToTypeInterval(level) {
+    const safeLevel = Math.min(10, Math.max(1, Math.round(Number(level) || 5)));
+    return 70 - (safeLevel - 1) * (60 / 9);
+  }
+  function buildFlatSentences() {
     const flat = [];
-    documentModel.blocks.forEach((block, blockIndex) => splitSentences(block.text).forEach((text, i) => flat.push({ text, blockIndex, isBlockStart: i === 0 })));
+    readerContent.blocks.forEach((block, blockIndex) => {
+      splitSentences(block.trim()).filter(Boolean).forEach((text, i) => flat.push({ text, blockIndex, isBlockStart: i === 0 }));
+    });
     return flat;
   }
-  function renderNormal() {
-    let index = 0;
-    return documentModel.blocks.map((block) => `<p class="block">${splitSentences(block.text).map((s) => decorate(s, index++)).join(" ")}</p>`).join("");
+  function renderCompletedSentence(text) {
+    const cls = labelClassForSentence(text);
+    const muted = isFocusedSentence(text) ? "" : " dra-reader-muted";
+    return `<span class="dra-sentence${cls}${muted}">${renderInlineHighlights(text)}</span>`;
   }
-  function renderPickStart() {
+  function renderPickStartArticle() {
     let html = '<div class="dra-tw-banner"><div class="dra-tw-banner-main">Click any sentence to start reading from there, or <button data-tw-action="start-beginning">Start from Beginning</button></div><div class="dra-tw-banner-hint">Press Space to continue, or press Space while typing to reveal the full paragraph.</div></div>';
-    let open = false;
+    let openP = false;
     tw.flatSentences.forEach((s, i) => {
       if (s.isBlockStart) {
-        if (open) html += "</p>";
-        html += '<p class="block">';
-        open = true;
+        if (openP) html += "</p>";
+        html += "<p>";
+        openP = true;
       }
-      html += `<span class="sentence dra-tw-pickable" data-tw-index="${i}">${escapeHTML(s.text)}</span> `;
+      html += `<span class="dra-sentence dra-tw-pickable" data-tw-index="${i}">${escapeHTML(s.text)}</span> `;
     });
-    return html + (open ? "</p>" : "");
-  }
-  function renderTyping() {
-    let html = "", open = false;
-    for (let i = 0; i <= tw.currentIndex && i < tw.flatSentences.length; i++) {
-      const s = tw.flatSentences[i];
-      if (s.isBlockStart) {
-        if (open) html += "</p>";
-        html += '<p class="block">';
-        open = true;
-      }
-      if (i !== tw.currentIndex) html += decorate(s.text, i) + " ";
-      else if (tw.phase === "typing") html += `<span class="sentence dra-tw-current dra-tw-typing">${escapeHTML(s.text.slice(0, tw.revealedChars))}</span> `;
-      else {
-        const label = labelBySentence.get(i), rendered = decorate(s.text, i).replace(/^<span[^>]*>|<\/span>$/g, "");
-        html += `<span class="sentence dra-tw-current${label ? ` label-${label}` : ""}${focused(s.text) ? "" : " reader-muted"}">${rendered}</span> `;
-      }
-    }
-    if (open) html += "</p>";
-    if (tw.phase === "paused" && tw.showContinueHint) html += '<div class="dra-tw-continue-hint">Space to continue</div>';
+    if (openP) html += "</p>";
     return html;
   }
-  function render() {
-    if (!documentModel) return;
-    article.innerHTML = `<h1>${escapeHTML(documentModel.title)}</h1>${tw?.phase === "picking-start" ? renderPickStart() : tw ? renderTyping() : renderNormal()}`;
-    applyStyles();
+  function renderTypewriterArticle() {
+    let html = "";
+    let openP = false;
+    for (let i = 0; i < tw.flatSentences.length && i <= tw.currentIndex; i++) {
+      const s = tw.flatSentences[i];
+      if (s.isBlockStart) {
+        if (openP) html += "</p>";
+        html += "<p>";
+        openP = true;
+      }
+      const isCurrent = i === tw.currentIndex;
+      if (!isCurrent) {
+        html += renderCompletedSentence(s.text) + " ";
+      } else if (tw.phase === "typing") {
+        const partial = escapeHTML(s.text.slice(0, tw.revealedChars));
+        html += `<span class="dra-sentence dra-tw-current dra-tw-typing">${partial}</span> `;
+      } else {
+        const cls = labelClassForSentence(s.text);
+        const muted = isFocusedSentence(s.text) ? "" : " dra-reader-muted";
+        html += `<span class="dra-sentence dra-tw-current${cls}${muted}">${renderInlineHighlights(s.text)}</span> `;
+      }
+    }
+    if (openP) html += "</p>";
+    if (tw.phase === "paused" && tw.showContinueHint) {
+      html += '<div class="dra-tw-continue-hint">Space to continue</div>';
+    }
+    return html;
+  }
+  function renderTW() {
+    const root = getRoot();
+    if (!root || !tw) return;
+    const body = tw.phase === "picking-start" ? renderPickStartArticle() : renderTypewriterArticle();
+    root.querySelector(".dra-reader-article").innerHTML = `<h1>${escapeHTML(readerContent.title)}</h1>${body}`;
     updateProgress();
+  }
+  function centerCurrentLine() {
+    const root = getRoot();
+    if (!root) return;
+    const scrollEl = root.querySelector(".dra-reader-scroll");
+    const cur = root.querySelector(".dra-tw-current");
+    if (!scrollEl || !cur) return;
+    const containerRect = scrollEl.getBoundingClientRect();
+    const curRect = cur.getBoundingClientRect();
+    scrollEl.scrollTop += curRect.top + curRect.height / 2 - (containerRect.top + containerRect.height / 2);
   }
   function clearContinueHintTimer() {
     if (tw?.continueHintTimer) clearTimeout(tw.continueHintTimer);
@@ -26530,350 +27176,351 @@ fn fs_main(in : VertexOutput) -> @location(0) vec4<f32> {
     clearContinueHintTimer();
     if (!tw || tw.currentIndex + 1 >= tw.flatSentences.length) return;
     tw.continueHintTimer = setTimeout(() => {
-      if (tw?.phase === "paused") {
-        tw.showContinueHint = true;
-        render();
-      }
+      if (!tw || tw.phase !== "paused") return;
+      tw.showContinueHint = true;
+      renderTW();
     }, 2e3);
-  }
-  function setTypewriter(active) {
-    clearInterval(typeTimer);
-    clearContinueHintTimer();
-    if (active && documentModel) {
-      tw = { phase: "picking-start", flatSentences: flatSentences(), startIndex: null, currentIndex: -1, revealedChars: 0, continueHintTimer: null, showContinueHint: false };
-      scroll.classList.remove("dra-tw-scroll-pad");
-    } else {
-      tw = null;
-      scroll.classList.remove("dra-tw-scroll-pad");
-    }
-    render();
-  }
-  function centerCurrent() {
-    const cur = article.querySelector(".dra-tw-current");
-    if (!cur) return;
-    const containerRect = scroll.getBoundingClientRect(), curRect = cur.getBoundingClientRect();
-    scroll.scrollTop += curRect.top + curRect.height / 2 - (containerRect.top + containerRect.height / 2);
   }
   function startTyping(index) {
     clearContinueHintTimer();
-    clearInterval(typeTimer);
+    clearInterval(tw.tickTimer);
     tw.currentIndex = index;
     tw.revealedChars = 0;
     tw.phase = "typing";
     tw.showContinueHint = false;
     const text = tw.flatSentences[index].text;
-    render();
-    centerCurrent();
-    typeTimer = setInterval(() => {
+    renderTW();
+    centerCurrentLine();
+    tw.tickTimer = setInterval(() => {
       tw.revealedChars++;
       if (tw.revealedChars >= text.length) {
-        clearInterval(typeTimer);
+        clearInterval(tw.tickTimer);
         tw.phase = "paused";
         scheduleContinueHint();
       }
-      render();
-      centerCurrent();
-    }, typeInterval);
+      renderTW();
+      centerCurrentLine();
+    }, typeIntervalMs);
   }
   function chooseStart(index) {
-    scroll.classList.add("dra-tw-scroll-pad");
+    const root = getRoot();
+    if (root) root.querySelector(".dra-reader-scroll").classList.add("dra-tw-scroll-pad");
     tw.startIndex = index;
     startTyping(index);
   }
-  function revealParagraph() {
+  function revealCurrentParagraph() {
     clearContinueHintTimer();
-    clearInterval(typeTimer);
+    clearInterval(tw.tickTimer);
     const current = tw.flatSentences[tw.currentIndex];
-    while (tw.currentIndex + 1 < tw.flatSentences.length && tw.flatSentences[tw.currentIndex + 1].blockIndex === current.blockIndex) tw.currentIndex++;
+    while (tw.currentIndex + 1 < tw.flatSentences.length && tw.flatSentences[tw.currentIndex + 1].blockIndex === current.blockIndex) {
+      tw.currentIndex++;
+    }
     tw.revealedChars = tw.flatSentences[tw.currentIndex].text.length;
     tw.phase = "paused";
     tw.showContinueHint = false;
     scheduleContinueHint();
-    render();
-    centerCurrent();
+    renderTW();
+    centerCurrentLine();
   }
-  function advanceTypewriter() {
+  function handleSpace() {
     if (!tw) return;
     if (tw.phase === "picking-start") {
       chooseStart(0);
       return;
     }
     if (tw.phase === "typing") {
-      revealParagraph();
+      revealCurrentParagraph();
       return;
     }
     if (tw.phase === "paused") {
       clearContinueHintTimer();
       tw.showContinueHint = false;
-      if (tw.currentIndex + 1 < tw.flatSentences.length) startTyping(tw.currentIndex + 1);
-      else {
+      if (tw.currentIndex + 1 < tw.flatSentences.length) {
+        startTyping(tw.currentIndex + 1);
+      } else {
         tw.phase = "finished";
-        render();
+        renderTW();
       }
     }
   }
-  function applyStyles() {
-    app.style.setProperty("--positive", settings.emotionPositiveColor);
-    app.style.setProperty("--negative", settings.emotionNegativeColor);
-    app.style.setProperty("--complex", settings.emotionComplexColor);
-    app.style.setProperty("--row", settings.rowShadingColor);
-    app.style.setProperty("--label-key-point", settings.labelKeyPointColor);
-    app.style.setProperty("--label-core-detail", settings.labelCoreDetailColor);
-    app.style.setProperty("--label-concept", settings.labelConceptColor);
-    app.style.setProperty("--label-reasoning", settings.labelReasoningColor);
-    app.style.setProperty("--label-takeaway", settings.labelTakeawayColor);
-    app.style.setProperty("--label-claim", settings.labelClaimColor);
-    app.style.setProperty("--label-evidence", settings.labelEvidenceColor);
-    app.style.setProperty("--label-counterpoint", settings.labelCounterpointColor);
-    article.style.fontSize = settings.typographyEnabled ? `${settings.fontSize || 18}px` : "";
-    article.style.lineHeight = settings.typographyEnabled ? String(settings.lineHeight || 1.8) : "";
-    article.style.fontFamily = settings.typographyEnabled && settings.fontFamily ? settings.fontFamily : "";
-    article.style.wordSpacing = settings.typographyEnabled ? `${settings.wordSpacing || 0}em` : "";
-    article.style.letterSpacing = settings.typographyEnabled ? `${settings.letterSpacing || 0}em` : "";
-    app.classList.toggle("rows", Boolean(settings.readingAidsEnabled && settings.gradientRows));
-    updateRuler();
-    updateAutoscroll();
-  }
-  function updateRuler(e) {
-    const active = settings.readingAidsEnabled && settings.rulerActive;
-    const y = e?.clientY ?? innerHeight / 2, half = 16 * 1.8 * (settings.rulerWindowLines || 1.5) / 2;
-    document.querySelectorAll(".ruler").forEach((el) => el.classList.toggle("active", active));
-    document.getElementById("ruler-top").style.height = `${Math.max(0, y - half)}px`;
-    document.getElementById("ruler-bottom").style.height = `${Math.max(0, innerHeight - y - half)}px`;
-  }
-  function updateAutoscroll() {
-    cancelAnimationFrame(autoFrame);
-    lastFrame = void 0;
-    if (tw || !settings.readingAidsEnabled || !settings.autoScrollActive) return;
-    const speed = 15 + ((settings.autoScrollSpeed || 2) - 1) * 165 / 9;
-    const tick = (t) => {
-      if (lastFrame) scroll.scrollTop += speed * (t - lastFrame) / 1e3;
-      lastFrame = t;
-      autoFrame = requestAnimationFrame(tick);
-    };
-    autoFrame = requestAnimationFrame(tick);
-  }
-  function updateProgress() {
-    let progress;
-    if (tw) {
-      const total = tw.flatSentences.length;
-      progress = tw.phase === "finished" ? 1 : total > 0 && tw.currentIndex >= 0 ? (tw.currentIndex + 1) / total : 0;
-    } else {
-      const max = scroll.scrollHeight - scroll.clientHeight;
-      progress = max <= 0 ? 1 : scroll.scrollTop / max;
+  function setTypewriterActive(active) {
+    const root = getRoot();
+    if (!root) return;
+    const scrollEl = root.querySelector(".dra-reader-scroll");
+    if (active && !tw) {
+      tw = {
+        phase: "picking-start",
+        flatSentences: buildFlatSentences(),
+        startIndex: null,
+        currentIndex: -1,
+        revealedChars: 0,
+        tickTimer: null,
+        continueHintTimer: null,
+        showContinueHint: false
+      };
+      renderTW();
+      updateReaderAutoScroll();
+    } else if (!active && tw) {
+      clearInterval(tw.tickTimer);
+      clearContinueHintTimer();
+      tw = null;
+      scrollEl.classList.remove("dra-tw-scroll-pad");
+      renderArticle();
+      updateProgress();
+      updateReaderAutoScroll();
     }
-    document.querySelector("#progress i").style.width = `${Math.min(1, Math.max(0, progress)) * 100}%`;
   }
-  async function loadSession(id) {
+  function setTypewriterSpeed(level) {
+    typeIntervalMs = speedLevelToTypeInterval(level);
+  }
+  function aiStatus(feature, status) {
+    chrome.runtime.sendMessage({ type: "AI_STATUS", feature, status }).catch(() => {
+    });
+  }
+  function requestPdfEmotion() {
+    if (!settings.emotionColor || settings.emotionMode !== "ai") return;
+    const requestId = `pdf:emotion:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    emotionRequestId = requestId;
+    aiStatus("emotion", "loading");
+    chrome.runtime.sendMessage({
+      type: "PDF_EMOTION_REQUEST",
+      requestId,
+      fingerprint,
+      text: readerContent.blocks.join("\n\n")
+    }).catch(() => {
+    });
+  }
+  function requestPdfLabels() {
+    const requestId = `pdf:labels:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    labelsRequestId = requestId;
+    aiStatus("labels", "loading");
+    chrome.runtime.sendMessage({
+      type: "PDF_LABEL_REQUEST",
+      requestId,
+      fingerprint,
+      sentences: allSentences,
+      lensPurpose: settings.sentenceLabelsLens ?? "inform",
+      minImportance: DENSITY_THRESHOLDS[settings.sentenceLabelsDensity] ?? 75
+    }).catch(() => {
+    });
+  }
+  function requestPdfFocusAI(topic) {
+    const requestId = `pdf:focus:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    focusRequestId = requestId;
+    aiStatus("focus", "loading");
+    chrome.runtime.sendMessage({
+      type: "PDF_FOCUS_ANALYZE",
+      requestId,
+      fingerprint,
+      topic,
+      text: readerContent.blocks.join("\n\n")
+    }).catch(() => {
+    });
+  }
+  function hashText(text) {
+    let h = 5381;
+    for (let i = 0; i < text.length; i++) h = (h << 5) + h + text.charCodeAt(i) | 0;
+    return (h >>> 0).toString(36);
+  }
+  function loadSessionFile(sessionId) {
     return new Promise((resolve, reject) => {
-      const r = indexedDB.open("argus-pdf", 1);
-      r.onerror = () => reject(r.error);
-      r.onsuccess = () => {
-        const db = r.result, tx = db.transaction("sessions", "readwrite"), get = tx.objectStore("sessions").get(id);
+      const request = indexedDB.open("argus-pdf", 1);
+      request.onupgradeneeded = () => request.result.createObjectStore("sessions");
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction("sessions", "readonly");
+        const get = tx.objectStore("sessions").get(sessionId);
         get.onsuccess = () => {
-          const value = get.result;
-          tx.objectStore("sessions").delete(id);
-          value ? resolve(value.file) : reject(new Error("This PDF session has expired. Please select the file again."));
+          db.close();
+          resolve(get.result);
         };
-        tx.oncomplete = () => db.close();
+        get.onerror = () => {
+          db.close();
+          reject(get.error);
+        };
       };
     });
   }
-  async function fingerprint(data) {
-    const digest = await crypto.subtle.digest("SHA-256", data);
-    return [...new Uint8Array(digest)].slice(0, 12).map((n) => n.toString(16).padStart(2, "0")).join("");
+  async function getPdfBytes(params) {
+    if (params.get("session")) {
+      const record = await loadSessionFile(params.get("session"));
+      if (!record?.file) throw new Error("session not found");
+      return { bytes: new Uint8Array(await record.file.arrayBuffer()), title: record.title };
+    }
+    if (params.get("url")) {
+      const res = await fetch(params.get("url"));
+      if (!res.ok) throw new Error("fetch failed");
+      return { bytes: new Uint8Array(await res.arrayBuffer()), title: null };
+    }
+    throw new Error("no source");
   }
-  function sendPdf(type, payload = {}) {
-    chrome.runtime.sendMessage({ type, tabId: ownTabId, ...payload });
+  async function parsePdf(bytes) {
+    const pdf = await getDocument({ data: bytes }).promise;
+    const pages = [];
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const page = await pdf.getPage(n);
+      const content = await page.getTextContent();
+      pages.push({ number: n, lines: normalizeLines(content.items) });
+    }
+    return blocksFromPages(pages).map((b) => b.text);
   }
-  function sendStatus(feature, status) {
-    sendPdf("AI_STATUS", { feature, status });
-  }
-  function requestEmotion() {
-    if (!documentModel || emotionPending || settings.emotionMode !== "ai" || !settings.emotionColor || !settings.readingAidsEnabled) return;
-    const chunks = [];
-    let current = "";
-    documentModel.blocks.forEach((block) => {
-      if (current && current.length + block.text.length > 55e3) {
-        chunks.push(current);
-        current = "";
-      }
-      current += `${current ? "\n\n" : ""}${block.text}`;
-    });
-    if (current) chunks.push(current);
-    const requestId = `pdf:emotion:${Date.now()}`;
-    emotionPending = { requestId, remaining: chunks.length, highlights: [] };
-    sendStatus("emotion", "loading");
-    chunks.forEach((text, chunk) => sendPdf("PDF_EMOTION_REQUEST", { requestId, chunk, text, fingerprint: documentModel.fingerprint }));
-  }
-  function requestLabels() {
-    if (!documentModel || labelPending || !settings.sentenceLabels || !settings.readingAidsEnabled) return;
-    const sentences = allSentences(), requestId = `pdf:labels:${Date.now()}`, batchSize = 200, batches = [];
-    for (let start = 0; start < sentences.length; start += batchSize) batches.push({ start, sentences: sentences.slice(start, start + batchSize) });
-    labelPending = { requestId, remaining: batches.length, labels: /* @__PURE__ */ new Map() };
-    sendStatus("labels", "loading");
-    batches.forEach((batch) => sendPdf("PDF_LABEL_REQUEST", { requestId, batchStart: batch.start, sentences: batch.sentences, fingerprint: documentModel.fingerprint, lensPurpose: settings.sentenceLabelsLens, minImportance: DENSITY[settings.sentenceLabelsDensity] || 75 }));
-  }
-  function runAiIfNeeded() {
-    requestEmotion();
-    requestLabels();
-  }
-  function requestFocus(topic) {
-    if (!documentModel) return;
-    focusRequestId = `pdf:focus:${Date.now()}`;
-    sendStatus("focus", "loading");
-    sendPdf("PDF_FOCUS_ANALYZE", { requestId: focusRequestId, topic, text: documentModel.blocks.map((b) => b.text).join("\n\n").slice(0, 6e4), fingerprint: documentModel.fingerprint });
-  }
-  async function loadPdf() {
-    const params = new URLSearchParams(location.search);
-    let data, fallback = params.get("title") || "PDF document";
-    try {
-      if (params.get("session")) data = await (await loadSession(params.get("session"))).arrayBuffer();
-      else {
-        const response = await fetch(params.get("url"));
-        if (!response.ok) throw new Error(`Download failed (${response.status})`);
-        data = await response.arrayBuffer();
-      }
-      const hash = await fingerprint(data), pdf = await getDocument({ data }).promise, pages = [];
-      for (let i = 1; i <= pdf.numPages; i++) {
-        article.innerHTML = `<p class="status">Extracting text\u2026 ${i} / ${pdf.numPages}</p>`;
-        const content = await (await pdf.getPage(i)).getTextContent();
-        pages.push({ number: i, lines: normalizeLines(content.items) });
-      }
-      const metadata = await pdf.getMetadata().catch(() => null), title = metadata?.info?.Title?.trim() || fallback.replace(/\.pdf$/i, ""), blocks = blocksFromPages(pages);
-      if (!blocks.length) throw new Error("This PDF has no readable text layer. It may be a scanned PDF and needs OCR.");
-      documentModel = { title, blocks, fingerprint: hash };
-      render();
-      chrome.runtime.sendMessage({ type: "PDF_READER_STATUS", active: true, tabId: ownTabId });
-      runAiIfNeeded();
-    } catch (error) {
-      article.innerHTML = `<p class="status error">${escapeHTML(error.message || "Could not open this PDF.")}</p>`;
-    }
-  }
-  function handlePdfMessage(msg) {
-    if (msg.targetPdfTabId !== ownTabId) return;
-    if (msg.type === "PDF_EMOTION_RESULT" && emotionPending?.requestId === msg.requestId) {
-      emotionPending.highlights.push(...msg.highlights || []);
-      if (!--emotionPending.remaining) {
-        emotionWords = emotionPending.highlights;
-        emotionPending = null;
-        sendStatus("emotion", "success");
-        render();
-      }
-    }
-    if (msg.type === "PDF_EMOTION_ERROR" && emotionPending?.requestId === msg.requestId) {
-      emotionPending = null;
-      sendStatus("emotion", "error");
-    }
-    if (msg.type === "PDF_LABEL_RESULT" && labelPending?.requestId === msg.requestId) {
-      (msg.labels || []).forEach((l) => labelPending.labels.set(msg.batchStart + l.index, l.type));
-      if (!--labelPending.remaining) {
-        labelBySentence = labelPending.labels;
-        labelPending = null;
-        sendStatus("labels", "success");
-        render();
-      }
-    }
-    if (msg.type === "PDF_LABEL_ERROR" && labelPending?.requestId === msg.requestId) {
-      labelPending = null;
-      sendStatus("labels", "error");
-    }
-    if (msg.type === "PDF_FOCUS_APPLY") {
-      focusPrefixes = null;
-      focusKeywords = msg.keywords;
-      render();
-    }
-    if (msg.type === "PDF_FOCUS_CLEAR") {
-      focusKeywords = null;
-      focusPrefixes = null;
-      sendStatus("focus", null);
-      render();
-    }
-    if (msg.type === "PDF_FOCUS_REQUEST") requestFocus(msg.topic);
-    if (msg.type === "PDF_FOCUS_RESULT" && msg.requestId === focusRequestId) {
-      focusKeywords = null;
-      focusPrefixes = msg.relevant || [];
-      sendStatus("focus", "success");
-      render();
-    }
-    if (msg.type === "PDF_FOCUS_ERROR" && msg.requestId === focusRequestId) {
-      focusPrefixes = null;
-      sendStatus("focus", "error");
-      render();
-    }
-    if (msg.type === "AI_RETRY") {
-      if (msg.feature === "emotion") {
-        emotionWords = [];
-        emotionPending = null;
-        requestEmotion();
-      }
-      if (msg.feature === "labels") {
-        labelBySentence.clear();
-        labelPending = null;
-        requestLabels();
-      }
-    }
-  }
-  var tabReady = chrome.tabs.getCurrent().then((tab) => {
-    ownTabId = tab?.id ?? null;
-    sendPdf("PDF_READER_STATUS", { active: true });
-  });
-  chrome.storage.sync.get(["draSettings", "draWordLists"], (data) => {
-    settings = { ...DEFAULTS, ...data.draSettings };
-    wordLists = { ...FALLBACK_WORDS, ...data.draWordLists };
-    typeInterval = typeSpeed(settings.typewriterSpeed);
-    tabReady.then(loadPdf);
-  });
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area !== "sync") return;
-    if (changes.draSettings) {
-      const wasTypewriter = settings.typewriterActive;
-      settings = { ...DEFAULTS, ...changes.draSettings.newValue };
-      typeInterval = typeSpeed(settings.typewriterSpeed);
-      if (settings.typewriterActive !== wasTypewriter) setTypewriter(settings.typewriterActive);
-      else {
-        emotionPending = null;
-        labelPending = null;
-        emotionWords = [];
-        labelBySentence.clear();
-        render();
-        runAiIfNeeded();
-      }
-    }
-    if (changes.draWordLists) {
-      wordLists = { ...FALLBACK_WORDS, ...changes.draWordLists.newValue };
-      render();
-    }
-  });
-  chrome.runtime.onMessage.addListener(handlePdfMessage);
-  document.querySelectorAll(".dra-reader-actions [data-theme]").forEach((btn) => btn.addEventListener("click", () => {
-    app.dataset.theme = btn.dataset.theme;
-    document.querySelectorAll(".dra-reader-actions [data-theme]").forEach((b) => b.classList.toggle("active", b === btn));
-  }));
-  article.addEventListener("click", (event) => {
-    if (!tw) return;
-    if (event.target.closest('[data-tw-action="start-beginning"]')) {
-      chooseStart(0);
+  function onKeydown(e) {
+    if (e.key === "Escape") {
+      closeReader();
       return;
     }
-    if (tw.phase === "picking-start") {
-      const el = event.target.closest("[data-tw-index]");
-      if (el) chooseStart(Number(el.dataset.twIndex));
+    if (e.key === " " && tw) {
+      e.preventDefault();
+      handleSpace();
     }
-  });
-  addEventListener("keydown", (event) => {
-    if (event.key === "Escape") document.getElementById("close-reader").click();
-    if (event.key === " " && tw) {
-      event.preventDefault();
-      advanceTypewriter();
+  }
+  function closeReader() {
+    chrome.runtime.sendMessage({ type: "PDF_READER_STATUS", active: false }).catch(() => {
+    });
+    if (myTabId != null) chrome.tabs.remove(myTabId).catch(() => window.close());
+    else window.close();
+  }
+  function wireReader() {
+    const root = getRoot();
+    const scrollEl = root.querySelector(".dra-reader-scroll");
+    root.querySelector("#close-reader").addEventListener("click", closeReader);
+    root.querySelectorAll("[data-reader-theme]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        readerState.theme = btn.dataset.readerTheme;
+        applyReaderStyle();
+      });
+    });
+    root.querySelector(".dra-reader-article").addEventListener("click", (e) => {
+      if (!tw) return;
+      if (e.target.closest('[data-tw-action="start-beginning"]')) {
+        chooseStart(0);
+        return;
+      }
+      if (tw.phase === "picking-start") {
+        const el = e.target.closest("[data-tw-index]");
+        if (el) chooseStart(Number(el.dataset.twIndex));
+      }
+    });
+    scrollEl.addEventListener("scroll", updateProgress);
+    root.addEventListener("mousemove", updateReaderRuler);
+    document.addEventListener("keydown", onKeydown);
+  }
+  function applyStoredSettings(nextSettings, nextWordLists) {
+    const prev = settings;
+    if (nextSettings) settings = { ...DEFAULT_SETTINGS, ...nextSettings };
+    if (nextWordLists) wordLists = nextWordLists;
+    if (settings.typewriterSpeed !== prev.typewriterSpeed) setTypewriterSpeed(settings.typewriterSpeed);
+    if (Boolean(settings.typewriterActive) !== Boolean(prev.typewriterActive)) {
+      setTypewriterActive(Boolean(settings.typewriterActive));
+      applyReaderStyle();
+      return;
     }
-  });
-  scroll.addEventListener("scroll", updateProgress);
-  addEventListener("mousemove", updateRuler);
-  addEventListener("beforeunload", () => chrome.runtime.sendMessage({ type: "PDF_READER_STATUS", active: false, tabId: ownTabId }));
-  document.getElementById("close-reader").addEventListener("click", async () => {
-    chrome.runtime.sendMessage({ type: "PDF_READER_STATUS", active: false, tabId: ownTabId });
-    const tab = await chrome.tabs.getCurrent();
-    if (tab?.id) chrome.tabs.remove(tab.id);
-  });
+    refresh();
+  }
+  function handleMessage(msg) {
+    if (!msg || msg.targetPdfTabId != null && msg.targetPdfTabId !== myTabId) return;
+    switch (msg.type) {
+      case "PDF_EMOTION_RESULT":
+        if (msg.requestId !== emotionRequestId) return;
+        aiEmotionHighlights = Array.isArray(msg.highlights) ? msg.highlights : [];
+        aiStatus("emotion", Array.isArray(msg.highlights) ? "success" : "error");
+        refresh();
+        break;
+      case "PDF_EMOTION_ERROR":
+        if (msg.requestId !== emotionRequestId) return;
+        aiStatus("emotion", "error");
+        break;
+      case "PDF_LABEL_RESULT":
+        if (msg.requestId !== labelsRequestId) return;
+        sentenceLabels = Array.isArray(msg.labels) ? msg.labels : [];
+        aiStatus("labels", Array.isArray(msg.labels) ? "success" : "error");
+        refresh();
+        break;
+      case "PDF_LABEL_ERROR":
+        if (msg.requestId !== labelsRequestId) return;
+        aiStatus("labels", "error");
+        break;
+      case "PDF_FOCUS_RESULT":
+        if (msg.requestId !== focusRequestId) return;
+        topicFocusKeywords = null;
+        topicFocusAIPrefixes = Array.isArray(msg.relevant) ? msg.relevant : [];
+        aiStatus("focus", "success");
+        refresh();
+        break;
+      case "PDF_FOCUS_ERROR":
+        if (msg.requestId !== focusRequestId) return;
+        topicFocusAIPrefixes = null;
+        aiStatus("focus", "error");
+        break;
+      case "PDF_FOCUS_APPLY":
+        topicFocusAIPrefixes = null;
+        topicFocusKeywords = Array.isArray(msg.keywords) ? msg.keywords : null;
+        refresh();
+        break;
+      case "PDF_FOCUS_CLEAR":
+        topicFocusKeywords = null;
+        topicFocusAIPrefixes = null;
+        refresh();
+        break;
+      case "PDF_FOCUS_REQUEST":
+        requestPdfFocusAI(msg.topic);
+        break;
+      case "AI_RETRY":
+        if (msg.feature === "emotion") {
+          aiEmotionHighlights = [];
+          emotionRequestId = null;
+          requestPdfEmotion();
+        }
+        if (msg.feature === "labels") {
+          sentenceLabels = [];
+          labelsRequestId = null;
+          requestPdfLabels();
+        }
+        break;
+    }
+  }
+  async function init() {
+    const currentTab = await chrome.tabs.getCurrent().catch(() => null);
+    myTabId = currentTab?.id ?? null;
+    const stored = await chrome.storage.sync.get(["draSettings", "draWordLists"]);
+    settings = { ...DEFAULT_SETTINGS, ...stored.draSettings || {} };
+    wordLists = stored.draWordLists || {};
+    typeIntervalMs = speedLevelToTypeInterval(settings.typewriterSpeed);
+    const params = new URLSearchParams(location.search);
+    const article = getRoot().querySelector(".dra-reader-article");
+    try {
+      const { bytes, title } = await getPdfBytes(params);
+      const blocks = await parsePdf(bytes);
+      readerContent = {
+        title: params.get("title") || title || "PDF document",
+        blocks
+      };
+    } catch (err) {
+      readerContent = { title: "PDF document", blocks: [] };
+      article.innerHTML = `<p class="dra-reader-status">Could not open this PDF (${escapeHTML(String(err.message || err))}).</p>`;
+    }
+    allSentences = readerContent.blocks.flatMap((b) => splitSentences(b.trim()).filter((s) => s.trim()));
+    fingerprint = hashText(readerContent.blocks.join("\n"));
+    const meta = document.getElementById("reader-meta");
+    if (meta) meta.textContent = readerContent.blocks.length ? `${readerContent.blocks.length} paragraphs` : "";
+    wireReader();
+    renderArticle();
+    applyReaderStyle();
+    if (settings.typewriterActive) setTypewriterActive(true);
+    chrome.runtime.onMessage.addListener(handleMessage);
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== "sync") return;
+      if (changes.draSettings || changes.draWordLists) {
+        applyStoredSettings(changes.draSettings?.newValue, changes.draWordLists?.newValue);
+      }
+    });
+    chrome.runtime.sendMessage({ type: "PDF_READER_STATUS", active: true }).catch(() => {
+    });
+    window.addEventListener("pagehide", () => {
+      chrome.runtime.sendMessage({ type: "PDF_READER_STATUS", active: false }).catch(() => {
+      });
+    });
+  }
+  init();
 })();
