@@ -179,6 +179,103 @@ body {
   margin-left: auto;
 }
 
+/* ── Account & cloud sync ───────────────────────────────────────────── */
+
+.account-card {
+  margin: 0 16px 20px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.account-copy {
+  color: #66677a;
+  font-size: var(--small-font-size);
+  line-height: 1.45;
+  margin-bottom: 12px;
+}
+
+.account-label {
+  display: block;
+  color: var(--navy);
+  font-size: var(--small-font-size);
+  font-weight: 700;
+  margin: 10px 0 5px;
+}
+
+.account-input-row,
+.account-actions,
+.account-user-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.account-input-row input {
+  flex: 1;
+  min-width: 0;
+  height: var(--control-height);
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--ctl-radius);
+  font: inherit;
+}
+
+.account-card button {
+  min-height: var(--control-height);
+  padding: 0 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--ctl-radius);
+  background: #fff;
+  color: var(--navy);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+
+.account-card button:hover { background: var(--surface-hover); }
+.account-card button:disabled { cursor: wait; opacity: 0.55; }
+
+.account-user-row { justify-content: space-between; }
+.account-user-row strong { display: block; margin-top: 3px; overflow-wrap: anywhere; }
+.account-state { color: var(--muted); font-size: var(--small-font-size); }
+
+.account-sync-badge {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #e7f7f3;
+  color: #177267;
+  font-size: var(--small-font-size);
+  font-weight: 700;
+}
+
+.account-sync-badge[data-state="error"] { background: #fdecec; color: #a33131; }
+.account-sync-badge[data-state="pending"] { background: #fff4dc; color: #8a5a00; }
+.account-actions { flex-wrap: wrap; margin-top: 14px; }
+.account-card .account-delete { color: #a33131; margin-left: auto; }
+
+.account-message {
+  min-height: 1.4em;
+  margin-top: 10px;
+  color: #66677a;
+  font-size: var(--small-font-size);
+  line-height: 1.4;
+}
+
+.account-message[data-state="error"] { color: #a33131; }
+.account-message[data-state="success"] { color: #177267; }
+
+.account-waiting {
+  margin-top: 11px;
+  padding: 10px;
+  border-radius: var(--ctl-radius);
+  background: #eef7f6;
+  color: #315f5b;
+  font-size: var(--small-font-size);
+  line-height: 1.45;
+}
+
 .section-label-collapsed > .ai-controls {
   display: none;
 }

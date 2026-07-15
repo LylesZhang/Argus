@@ -534,6 +534,37 @@
         </div>
       </div>
 
+      <div class="section-label"><span>Account &amp; Sync</span></div>
+
+      <div class="account-card" id="account-card">
+        <div id="account-signed-out">
+          <p class="account-copy">Use Argus without an account, or sign in to restore your settings on other devices.</p>
+          <label class="account-label" for="account-email">Email</label>
+          <div class="account-input-row">
+            <input id="account-email" type="email" autocomplete="email" placeholder="you@example.com">
+            <button id="account-send-link" type="button">Send login email</button>
+          </div>
+          <p id="account-waiting" class="account-waiting hidden">Open the email on this browser and click <strong>Sign in</strong>. Argus will finish automatically.</p>
+        </div>
+
+        <div id="account-signed-in" class="hidden">
+          <div class="account-user-row">
+            <div>
+              <span class="account-state">Signed in</span>
+              <strong id="account-user-email"></strong>
+            </div>
+            <span id="account-sync-badge" class="account-sync-badge">Synced</span>
+          </div>
+          <div class="account-actions">
+            <button id="account-sync-now" type="button">Sync now</button>
+            <button id="account-sign-out" type="button">Sign out</button>
+            <button id="account-delete" class="account-delete" type="button">Delete account</button>
+          </div>
+        </div>
+
+        <p id="account-message" class="account-message" role="status"></p>
+      </div>
+
     </div>
   </div>
 

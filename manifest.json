@@ -11,7 +11,8 @@
   ],
 
   "host_permissions": [
-    "https://argus-1ygn.onrender.com/*"
+    "https://argus-1ygn.onrender.com/*",
+    "https://*.supabase.co/*"
   ],
 
   "optional_host_permissions": ["http://*/*", "https://*/*"],
@@ -19,6 +20,10 @@
   "background": {
     "service_worker": "background/index.js",
     "type": "module"
+  },
+
+  "externally_connectable": {
+    "matches": ["https://argus-1ygn.onrender.com/auth/callback*"]
   },
 
   "content_scripts": [

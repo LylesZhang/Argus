@@ -5,8 +5,9 @@ import cors from 'cors';
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+app.disable('x-powered-by');
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
 
 app.use('/api/', (req, res, next) => {
   if (req.path === '/status') return next();
@@ -18,6 +19,244 @@ app.use('/api/', (req, res, next) => {
 
 app.get('/api/status', (_req, res) => {
   res.json(pendingRequestStatus());
+});
+
+// Supabase redirects Magic Links here with the session in the URL fragment.
+// The fragment never reaches this server. Browser-side code forwards it only
+// to the installed Argus extension named in the signed redirect URL.
+app.get('/auth/callback', (_req, res) => {
+  res
+    .set({
+      'Cache-Control': 'no-store',
+      'Content-Security-Policy': "default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      'Referrer-Policy': 'no-referrer',
+      'X-Content-Type-Options': 'nosniff',
+    })
+    .type('html')
+    .send(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Sign in to Argus</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f1f0f8; color: #1e1b4b; font: 16px/1.5 system-ui, sans-serif; }
+    main { width: min(420px, calc(100% - 40px)); padding: 32px; border: 1px solid #e0e0ea; border-radius: 14px; background: white; box-shadow: 0 12px 35px rgba(30,27,75,.09); }
+    h1 { margin: 0 0 10px; font-size: 25px; }
+    p { margin: 0; color: #626277; }
+    [data-state="success"] { color: #177267; }
+    [data-state="error"] { color: #a33131; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Argus</h1>
+    <p id="status">Completing sign in…</p>
+  </main>
+  <script src="/auth/callback.js"></script>
+</body>
+</html>`);
+});
+
+app.get('/auth/callback.js', (_req, res) => {
+  res
+    .set({
+      'Cache-Control': 'no-store',
+      'Content-Security-Policy': "default-src 'none'",
+      'X-Content-Type-Options': 'nosniff',
+    })
+    .type('application/javascript')
+    .send(`(() => {
+  const status = document.getElementById('status');
+  const show = (message, state = '') => {
+    status.textContent = message;
+    status.dataset.state = state;
+  };
+  const query = new URLSearchParams(location.search);
+  const fragment = new URLSearchParams(location.hash.slice(1));
+  const extensionId = query.get('extension_id') || '';
+  const state = query.get('state') || '';
+  const authError = fragment.get('error_description') || query.get('error_description');
+  if (authError) {
+    history.replaceState(null, '', location.pathname + location.search);
+    show(authError, 'error');
+    return;
+  }
+  const message = {
+    type: 'ARGUS_MAGIC_LINK_CALLBACK',
+    state,
+    accessToken: fragment.get('access_token'),
+    refreshToken: fragment.get('refresh_token'),
+    expiresIn: Number(fragment.get('expires_in') || 3600),
+  };
+  history.replaceState(null, '', location.pathname + location.search);
+  if (!/^[a-p]{32}$/.test(extensionId) || !/^[A-Za-z0-9_-]{40,64}$/.test(state)) {
+    show('This Argus login link is invalid.', 'error');
+    return;
+  }
+  if (!message.accessToken || !message.refreshToken) {
+    show('This login link is invalid or has expired.', 'error');
+    return;
+  }
+  if (!globalThis.chrome?.runtime?.sendMessage) {
+    show('Argus is not available in this browser profile. Install or reload the extension, then request a new login email.', 'error');
+    return;
+  }
+  chrome.runtime.sendMessage(extensionId, message, response => {
+    const error = chrome.runtime.lastError;
+    if (error) {
+      show('Argus could not receive this login. Reload the extension and request a new email.', 'error');
+      return;
+    }
+    if (!response?.ok) {
+      show(response?.error || 'Argus could not complete sign in.', 'error');
+      return;
+    }
+    show(response.syncError
+      ? 'Signed in, but cloud sync will retry when the service is available.'
+      : 'Signed in successfully. You can close this tab and return to Argus.',
+      response.syncError ? 'error' : 'success');
+  });
+})();`);
+});
+
+// ── Supabase account API ───────────────────────────────────────────────
+
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/$/, '');
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
+const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+function supabaseConfigured() {
+  return Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+}
+
+function bearerToken(req) {
+  const header = req.headers.authorization || '';
+  return header.startsWith('Bearer ') ? header.slice(7).trim() : '';
+}
+
+async function supabaseFetch(path, { token, serviceRole = false, ...options } = {}) {
+  const apiKey = serviceRole ? SUPABASE_SECRET_KEY : SUPABASE_ANON_KEY;
+  // New sb_secret_* keys belong only in apikey. Legacy service_role JWTs also
+  // need the Authorization header for backward compatibility.
+  const authorizationToken = serviceRole
+    ? (apiKey.startsWith('sb_secret_') ? '' : apiKey)
+    : token;
+  const headers = {
+    apikey: apiKey,
+    ...(authorizationToken ? { Authorization: `Bearer ${authorizationToken}` } : {}),
+    ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+    ...(options.headers || {}),
+  };
+  return fetch(`${SUPABASE_URL}${path}`, { ...options, headers });
+}
+
+async function requireUser(req, res, next) {
+  if (!supabaseConfigured()) {
+    return res.status(503).json({ error: 'account service is not configured' });
+  }
+  const token = bearerToken(req);
+  if (!token) return res.status(401).json({ error: 'authentication required' });
+  try {
+    const response = await supabaseFetch('/auth/v1/user', { token });
+    if (!response.ok) return res.status(401).json({ error: 'invalid or expired session' });
+    req.auth = { token, user: await response.json() };
+    next();
+  } catch (error) {
+    console.error('Supabase auth error:', error.message);
+    res.status(503).json({ error: 'account service unavailable' });
+  }
+}
+
+function validState(value) {
+  return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+app.get('/api/v1/me', requireUser, async (req, res) => {
+  try {
+    const [profileResponse, entitlementResponse] = await Promise.all([
+      supabaseFetch(`/rest/v1/profiles?user_id=eq.${req.auth.user.id}&select=status,created_at,updated_at`, { token: req.auth.token }),
+      supabaseFetch(`/rest/v1/entitlements?user_id=eq.${req.auth.user.id}&select=plan,status,valid_until,updated_at`, { token: req.auth.token }),
+    ]);
+    if (!profileResponse.ok || !entitlementResponse.ok) throw new Error('profile query failed');
+    const [profiles, entitlements] = await Promise.all([profileResponse.json(), entitlementResponse.json()]);
+    res.json({
+      id: req.auth.user.id,
+      email: req.auth.user.email,
+      profile: profiles[0] || null,
+      entitlement: entitlements[0] || { plan: 'free', status: 'active' },
+    });
+  } catch (error) {
+    console.error('Account read error:', error.message);
+    res.status(502).json({ error: 'could not read account' });
+  }
+});
+
+app.get('/api/v1/me/state', requireUser, async (req, res) => {
+  try {
+    const response = await supabaseFetch(
+      `/rest/v1/user_states?user_id=eq.${req.auth.user.id}&select=settings,word_lists,presets,initialized,revision,updated_at`,
+      { token: req.auth.token }
+    );
+    if (!response.ok) throw new Error(`state query failed (${response.status})`);
+    const state = (await response.json())[0];
+    if (!state?.initialized) return res.status(204).end();
+    res.json({
+      settings: state.settings,
+      wordLists: state.word_lists,
+      presets: state.presets,
+      revision: Number(state.revision),
+      updatedAt: state.updated_at,
+    });
+  } catch (error) {
+    console.error('State read error:', error.message);
+    res.status(502).json({ error: 'could not read state' });
+  }
+});
+
+app.put('/api/v1/me/state', requireUser, async (req, res) => {
+  const { settings, wordLists, presets } = req.body || {};
+  if (![settings, wordLists, presets].every(validState)) {
+    return res.status(400).json({ error: 'settings, wordLists, and presets must be objects' });
+  }
+  try {
+    const response = await supabaseFetch(`/rest/v1/user_states?user_id=eq.${req.auth.user.id}`, {
+      token: req.auth.token,
+      method: 'PATCH',
+      headers: { Prefer: 'return=representation' },
+      body: JSON.stringify({ settings, word_lists: wordLists, presets }),
+    });
+    if (!response.ok) throw new Error(`state update failed (${response.status})`);
+    const state = (await response.json())[0];
+    if (!state) throw new Error('user state row is missing');
+    res.json({
+      settings: state.settings,
+      wordLists: state.word_lists,
+      presets: state.presets,
+      revision: Number(state.revision),
+      updatedAt: state.updated_at,
+    });
+  } catch (error) {
+    console.error('State update error:', error.message);
+    res.status(502).json({ error: 'could not update state' });
+  }
+});
+
+app.delete('/api/v1/me', requireUser, async (req, res) => {
+  if (!SUPABASE_SECRET_KEY) {
+    return res.status(503).json({ error: 'account deletion is not configured' });
+  }
+  try {
+    const response = await supabaseFetch(`/auth/v1/admin/users/${req.auth.user.id}`, {
+      serviceRole: true,
+      method: 'DELETE',
+    });
+    if (!response.ok) throw new Error(`auth deletion failed (${response.status})`);
+    res.status(204).end();
+  } catch (error) {
+    console.error('Account deletion error:', error.message);
+    res.status(502).json({ error: 'could not delete account' });
+  }
 });
 
 const GEMINI_URL =

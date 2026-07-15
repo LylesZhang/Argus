@@ -1167,7 +1167,153 @@ chrome.runtime.onMessage.addListener((msg) => {
       renderPresetList();
     });
   }
+  if (msg.type === 'ARGUS_AUTH_CHANGED') {
+    updateAccountUI().then(() => {
+      if (msg.syncError) setAccountSyncBadge('error', msg.syncError);
+    });
+  }
+  if (msg.type === 'ARGUS_SYNC_STATUS') {
+    setAccountSyncBadge(msg.status, msg.error);
+  }
+  if (msg.type === 'ARGUS_CLOUD_STATE_APPLIED') {
+    chrome.storage.sync.get(['draSettings', 'draWordLists', 'draPresets'], d => {
+      settings = { ...DEFAULT_SETTINGS, ...(d.draSettings || {}) };
+      migrateLensSettings(settings);
+      wordLists = { ...DEFAULT_WORDS, ...(d.draWordLists || {}) };
+      localPresets = d.draPresets ?? { byId: {}, order: [], activeId: null };
+      syncUI();
+      WL_CONFIG.forEach(({ key, chipsId }) => renderChips(key, chipsId));
+      renderPresetList();
+      chrome.runtime.sendMessage({ type: 'SETTINGS_CHANGED', payload: { ...settings, settingsRevision: Date.now() } });
+      chrome.runtime.sendMessage({ type: 'WORDLISTS_CHANGED', wordLists: { ...wordLists } });
+    });
+  }
 });
+
+// ── Account & cloud sync ──────────────────────────────────────────────
+
+function accountMessage(type, payload = {}) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type, ...payload }, response => {
+      const runtimeError = chrome.runtime.lastError;
+      if (runtimeError) return reject(new Error(runtimeError.message));
+      if (!response?.ok) return reject(new Error(response?.error || 'Account request failed.'));
+      resolve(response);
+    });
+  });
+}
+
+function setAccountMessage(message = '', state = '') {
+  const element = document.getElementById('account-message');
+  if (!element) return;
+  element.textContent = message;
+  element.dataset.state = state;
+}
+
+function setAccountBusy(busy) {
+  document.querySelectorAll('#account-card button, #account-card input').forEach(element => {
+    element.disabled = busy;
+  });
+}
+
+function setAccountSyncBadge(status, error = '') {
+  const badge = document.getElementById('account-sync-badge');
+  if (!badge) return;
+  const state = status === 'error' ? 'error' : status === 'pending' ? 'pending' : 'synced';
+  badge.dataset.state = state;
+  badge.textContent = state === 'error' ? 'Sync error' : state === 'pending' ? 'Syncing…' : 'Synced';
+  if (error) setAccountMessage(error, 'error');
+}
+
+async function updateAccountUI() {
+  const signedOut = document.getElementById('account-signed-out');
+  const signedIn = document.getElementById('account-signed-in');
+  try {
+    const status = await accountMessage('AUTH_GET_STATUS');
+    if (!status.configured) {
+      signedOut?.classList.remove('hidden');
+      signedIn?.classList.add('hidden');
+      document.querySelectorAll('#account-card input, #account-card button').forEach(element => { element.disabled = true; });
+      setAccountMessage('Account sync is not configured in config.js.', 'error');
+      return;
+    }
+    signedOut?.classList.toggle('hidden', status.signedIn);
+    signedIn?.classList.toggle('hidden', !status.signedIn);
+    document.getElementById('account-waiting')?.classList.toggle('hidden', !status.waitingForMagicLink);
+    if (!status.signedIn && status.waitingForMagicLink) {
+      if (status.pendingEmail) document.getElementById('account-email').value = status.pendingEmail;
+      setAccountMessage(`Login email sent to ${status.pendingEmail}.`, 'success');
+    }
+    if (status.signedIn) {
+      document.getElementById('account-user-email').textContent = status.email;
+      setAccountSyncBadge(status.syncError ? 'error' : status.pending ? 'pending' : 'synced', status.syncError);
+      if (!status.syncError) setAccountMessage('Cloud is the source of truth while you are signed in.');
+    }
+  } catch (error) {
+    setAccountMessage(error.message, 'error');
+  }
+}
+
+function initAccountUI() {
+  const email = document.getElementById('account-email');
+  const waiting = document.getElementById('account-waiting');
+
+  document.getElementById('account-send-link')?.addEventListener('click', async () => {
+    setAccountBusy(true);
+    setAccountMessage('Sending login email…');
+    try {
+      const result = await accountMessage('AUTH_REQUEST_MAGIC_LINK', { email: email.value });
+      waiting?.classList.remove('hidden');
+      setAccountMessage(`Login email sent to ${result.email}.`, 'success');
+    } catch (error) {
+      setAccountMessage(error.message, 'error');
+    } finally {
+      setAccountBusy(false);
+    }
+  });
+
+  document.getElementById('account-sync-now')?.addEventListener('click', async () => {
+    setAccountBusy(true);
+    setAccountSyncBadge('pending');
+    try {
+      await accountMessage('AUTH_SYNC_NOW');
+      setAccountSyncBadge('synced');
+      setAccountMessage('Cloud state is up to date.', 'success');
+    } catch (error) {
+      setAccountSyncBadge('error', error.message);
+    } finally {
+      setAccountBusy(false);
+    }
+  });
+
+  document.getElementById('account-sign-out')?.addEventListener('click', async () => {
+    setAccountBusy(true);
+    try {
+      await accountMessage('AUTH_SIGN_OUT');
+      waiting?.classList.add('hidden');
+      await updateAccountUI();
+      setAccountMessage('Signed out. This device keeps its last local copy.');
+    } catch (error) {
+      setAccountMessage(error.message, 'error');
+    } finally {
+      setAccountBusy(false);
+    }
+  });
+
+  document.getElementById('account-delete')?.addEventListener('click', async () => {
+    if (!confirm('Delete this Argus account and all cloud settings? This cannot be undone.')) return;
+    setAccountBusy(true);
+    try {
+      await accountMessage('AUTH_DELETE_ACCOUNT');
+      location.reload();
+    } catch (error) {
+      setAccountMessage(error.message, 'error');
+      setAccountBusy(false);
+    }
+  });
+
+  updateAccountUI();
+}
 
 // ── Boot ───────────────────────────────────────────────────────────────
 
@@ -1186,6 +1332,7 @@ chrome.storage.sync.get('draSettings', (data) => {
   init();
   initWordListEditor();
   initPresetManager();
+  initAccountUI();
   chrome.runtime.sendMessage({ type: 'GET_ACTIVE_READER_STATUS' });
 });
 
