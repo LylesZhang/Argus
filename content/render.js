@@ -3,14 +3,15 @@ import { findContentArea } from './detect.js';
 import { splitSentences } from './utils.js';
 import { injectOpenDyslexicFont } from './features/typography.js';
 import { applyBionicToText } from './features/bionic.js';
-import { generateEmotionHighlights, requestEmotionAnalysis } from './features/emotions.js';
+import { generateEmotionHighlights } from './features/emotions.js';
 import { generateTransitionHighlights } from './features/transitions.js';
-import { extractAllSentences, requestSentenceLabels } from './features/labels.js';
+import { extractAllSentences } from './features/labels.js';
 import { setupRuler, teardownRuler } from './features/ruler.js';
 import { setupAutoScroll, teardownAutoScroll } from './features/autoScroll.js';
 import { applyFocusMask, applyFocusMaskByPrefixes } from './features/topicFocus.js';
 import { setupSelectionMenu, teardownSelectionMenu } from './features/selectionMenu.js';
 import { setupSimplify, teardownSimplify } from './features/simplify.js';
+import { closeImmersiveReader } from './features/immersiveReader.js';
 
 // ── Sentence rendering ─────────────────────────────────────────────────
 
@@ -187,21 +188,21 @@ function applyTransformations() {
   state.contentArea.querySelectorAll('p, li, blockquote').forEach(para => {
     if (para.innerText.trim().length < 20) return;
 
-    if (state.settings.typographyEnabled) {
+    if (state.settings.fontSize)      para.style.fontSize     = state.settings.fontSize + 'px';
+    if (state.settings.lineHeight)    para.style.lineHeight   = String(state.settings.lineHeight);
+    if (state.settings.fontFamily) {
       injectOpenDyslexicFont();
-      if (state.settings.fontSize)      para.style.fontSize     = state.settings.fontSize + 'px';
-      if (state.settings.lineHeight)    para.style.lineHeight   = String(state.settings.lineHeight);
-      if (state.settings.fontFamily)    para.style.fontFamily   = state.settings.fontFamily;
-      if (state.settings.wordSpacing)   para.style.wordSpacing   = state.settings.wordSpacing + 'em';
-      if (state.settings.letterSpacing) para.style.letterSpacing = state.settings.letterSpacing + 'em';
-      if (state.settings.fontColor)     para.style.color         = state.settings.fontColor;
+      para.style.fontFamily = state.settings.fontFamily;
     }
+    if (state.settings.wordSpacing)   para.style.wordSpacing   = state.settings.wordSpacing + 'em';
+    if (state.settings.letterSpacing) para.style.letterSpacing = state.settings.letterSpacing + 'em';
+    if (state.settings.fontColor)     para.style.color         = state.settings.fontColor;
 
     const needsSentenceWrap = state.settings.emotionColor ||
                               state.settings.transitionAnimation ||
                               state.settings.sentenceLabels;
-    const shouldWrap = (state.settings.readingAidsEnabled && needsSentenceWrap) ||
-                       (state.settings.typographyEnabled && state.settings.boldBeginning) ||
+    const shouldWrap = needsSentenceWrap ||
+                       state.settings.boldBeginning ||
                        state.topicFocusKeywords !== null ||
                        state.topicFocusAIPrefixes !== null;
     if (shouldWrap && !hasEmbeddedContent(para)) {
@@ -212,7 +213,7 @@ function applyTransformations() {
       para.innerHTML    = reInjectAnnotations(rendered, annotations);
     }
 
-    if (state.settings.readingAidsEnabled && state.settings.gradientRows) {
+    if (state.settings.gradientRows) {
       const lh = parseFloat(getComputedStyle(para).lineHeight);
       para.style.backgroundImage = `repeating-linear-gradient(to bottom,`
         + ` color-mix(in srgb, var(--dra-row-shading) 18%, transparent) 0px,`
@@ -221,14 +222,14 @@ function applyTransformations() {
     }
   });
 
-  if (state.settings.typographyEnabled && state.settings.bgColor) {
+  if (state.settings.bgColor) {
     state.contentArea.style.background = state.settings.bgColor;
   }
 
-  if (state.settings.readingAidsEnabled && state.settings.rulerActive) setupRuler();
+  if (state.settings.rulerActive) setupRuler();
   else teardownRuler();
 
-  if (state.settings.readingAidsEnabled && state.settings.autoScrollActive) {
+  if (state.settings.autoScrollActive) {
     setupAutoScroll(state.settings.autoScrollSpeed);
   } else {
     teardownAutoScroll();
@@ -247,11 +248,20 @@ function removeTransformations() {
 
   state.contentArea.style.background = '';
   teardownRuler();
+  teardownAutoScroll();
 }
 
 // ── Render coordinator ─────────────────────────────────────────────────
 
 export function render() {
+  if (!state.settings.masterEnabled) {
+    removeTransformations();
+    teardownSelectionMenu();
+    teardownSimplify();
+    closeImmersiveReader();
+    return;
+  }
+
   removeTransformations();
 
   // Derive active highlights from the current switches on every render. Never
@@ -259,42 +269,31 @@ export function render() {
   state.articleHighlights = [];
   if (!state.settings.sentenceLabels) state.sentenceLabels = [];
 
-  if (state.settings.readingAidsEnabled) {
-    const transitionHL = state.settings.transitionAnimation ? generateTransitionHighlights() : [];
-    const emotionHL    = !state.settings.emotionColor ? [] :
-      state.settings.emotionMode === 'local' ? generateEmotionHighlights() : state.aiEmotionHighlights;
-    state.articleHighlights = [...emotionHL, ...transitionHL];
+  const transitionHL = state.settings.transitionAnimation ? generateTransitionHighlights() : [];
+  const emotionHL    = !state.settings.emotionColor ? [] :
+    state.settings.emotionMode === 'local' ? generateEmotionHighlights() : state.aiEmotionHighlights;
+  state.articleHighlights = [...emotionHL, ...transitionHL];
 
-    if (state.settings.sentenceLabels) {
-      // Label indexes refer to the sentence snapshot used for the AI request.
-      // Recomputing it when another setting changes can invalidate every index.
-      if (state.allSentences.length === 0) state.allSentences = extractAllSentences();
-      state.sentenceLabels = state.aiSentenceLabels;  // Lens is AI-only
-    }
-
-    const needsEmotionAI = state.settings.emotionColor  && state.settings.emotionMode === 'ai';
-    if (needsEmotionAI) requestEmotionAnalysis();
-    if (state.settings.sentenceLabels) requestSentenceLabels();
+  if (state.settings.sentenceLabels) {
+    // Label indexes refer to the sentence snapshot used for the AI request.
+    // Recomputing it when another setting changes can invalidate every index.
+    if (state.allSentences.length === 0) state.allSentences = extractAllSentences();
+    state.sentenceLabels = state.aiSentenceLabels;  // Lens is AI-only
   }
 
-  if (state.settings.typographyEnabled || state.settings.readingAidsEnabled ||
-      state.topicFocusKeywords || state.topicFocusAIPrefixes) {
-    applyTransformations();
-  } else {
-    teardownAutoScroll();
-  }
+  applyTransformations();
+
   if (state.topicFocusKeywords) {
     applyFocusMask(state.topicFocusKeywords);
   } else if (state.topicFocusAIPrefixes) {
     applyFocusMaskByPrefixes(state.topicFocusAIPrefixes);
   }
 
-  const needsSelectionMenu = state.settings.readingAidsEnabled &&
-    (state.settings.emotionColor || state.settings.transitionAnimation);
+  const needsSelectionMenu = state.settings.emotionColor || state.settings.transitionAnimation;
   if (needsSelectionMenu) setupSelectionMenu(render);
   else teardownSelectionMenu();
 
-  if (state.settings.readingAidsEnabled && state.settings.sentenceSimplify) {
+  if (state.settings.sentenceSimplify) {
     setupSimplify();
   } else {
     teardownSimplify();

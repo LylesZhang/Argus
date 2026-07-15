@@ -1,7 +1,6 @@
 export const DEFAULT_SETTINGS = {
   panelSize:             'comfortable',
-  typographyEnabled:     false,
-  readingAidsEnabled:    false,
+  masterEnabled:         true,
   boldBeginning:         false,
   emotionColor:          false,
   emotionMode:           'local', // 'ai' | 'local'

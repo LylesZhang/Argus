@@ -8,6 +8,17 @@
 </head>
 <body>
 
+  <div class="master-row">
+    <label class="toggle-switch">
+      <input type="checkbox" id="toggle-master" checked>
+      <span class="track"></span>
+    </label>
+    <span class="master-label">Argus</span>
+    <button id="btn-reset-defaults" class="reset-defaults-btn">Reset</button>
+  </div>
+
+  <div class="tab-content">
+
   <nav class="tab-nav">
     <button class="tab-btn active" data-tab="effects">Effects</button>
     <button class="tab-btn"        data-tab="settings">Settings</button>
@@ -16,308 +27,453 @@
   <div id="tab-effects" class="tab-panel active">
     <div class="panel">
 
-      <!-- Typography -->
-      <div class="section-label">
-        <span>Typography</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-typography">
-          <span class="track"></span>
-        </label>
-      </div>
+      <!-- ══ READABILITY ══ -->
+      <div class="feature-group">
+        <div class="feature-group-title">Readability</div>
 
-      <div class="control-block">
-        <label class="control-label">Font</label>
-        <div class="font-row">
-          <select id="font-family" class="font-select">
-            <option value="">System Default</option>
-            <option value="Georgia">Georgia</option>
-            <option value="Arial">Arial</option>
-            <option value="Verdana">Verdana</option>
-            <option value="OpenDyslexic, sans-serif">OpenDyslexic</option>
-          </select>
-          <div class="bionic-toggle">
+        <!-- Font & Size -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Font &amp; Size</span>
+              <span class="feature-row-chevron"></span>
+            </button>
+          </div>
+          <div class="feature-detail">
+            <div class="control-block">
+              <label class="control-label">Font</label>
+              <select id="font-family" class="font-select">
+                <option value="">System Default</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Arial">Arial</option>
+                <option value="Verdana">Verdana</option>
+                <option value="OpenDyslexic, sans-serif">OpenDyslexic</option>
+              </select>
+            </div>
+            <div class="control-row">
+              <div class="control-block">
+                <label class="control-label">Font Size</label>
+                <div class="stepper">
+                  <button id="font-size-dec" class="stepper-btn">-</button>
+                  <div class="stepper-center">
+                    <input type="number" id="font-size-value" class="stepper-num" min="14" max="28" step="1" value="18" aria-label="Font size">
+                    <span class="stepper-unit">px</span>
+                  </div>
+                  <button id="font-size-inc" class="stepper-btn">+</button>
+                </div>
+              </div>
+              <div class="control-block">
+                <label class="control-label">Line Height</label>
+                <div class="stepper">
+                  <button id="line-height-dec" class="stepper-btn">-</button>
+                  <div class="stepper-center">
+                    <input type="number" id="line-height-value" class="stepper-num" min="1.4" max="2.4" step="0.1" value="1.8" aria-label="Line height">
+                  </div>
+                  <button id="line-height-inc" class="stepper-btn">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spacing -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Spacing</span>
+              <span class="feature-row-chevron"></span>
+            </button>
+          </div>
+          <div class="feature-detail">
+            <div class="control-row">
+              <div class="control-block">
+                <label class="control-label">Word Space</label>
+                <div class="stepper">
+                  <button id="word-spacing-dec" class="stepper-btn">-</button>
+                  <div class="stepper-center">
+                    <input type="number" id="word-spacing-value" class="stepper-num" min="0" max="0.5" step="0.05" value="0.00" aria-label="Word spacing">
+                    <span class="stepper-unit">em</span>
+                  </div>
+                  <button id="word-spacing-inc" class="stepper-btn">+</button>
+                </div>
+              </div>
+              <div class="control-block">
+                <label class="control-label">Letter Space</label>
+                <div class="stepper">
+                  <button id="letter-spacing-dec" class="stepper-btn">-</button>
+                  <div class="stepper-center">
+                    <input type="number" id="letter-spacing-value" class="stepper-num" min="0" max="0.1" step="0.01" value="0.00" aria-label="Letter spacing">
+                    <span class="stepper-unit">em</span>
+                  </div>
+                  <button id="letter-spacing-inc" class="stepper-btn">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bionic Reading -->
+        <div class="feature-row">
+          <div class="feature-row-head">
             <label class="toggle-switch">
               <input type="checkbox" id="toggle-bold">
               <span class="track"></span>
             </label>
-            <span class="bionic-label">Bionic Effect</span>
+            <span class="feature-row-name">Bionic Reading</span>
           </div>
         </div>
-      </div>
 
-      <div class="control-row">
-        <div class="control-block">
-          <label class="control-label">Font Size</label>
-          <div class="stepper">
-            <button id="font-size-dec" class="stepper-btn">-</button>
-            <div class="stepper-center">
-              <input type="number" id="font-size-value" class="stepper-num" min="14" max="28" step="1" value="18" aria-label="Font size">
-              <span class="stepper-unit">px</span>
+        <!-- Text Colors -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Text Colors</span>
+              <span class="feature-row-chevron"></span>
+            </button>
+          </div>
+          <div class="feature-detail">
+            <div class="control-row">
+              <div class="control-block">
+                <label class="control-label">Text Color</label>
+                <input type="color" id="font-color" value="#2c2c2c" class="color-input">
+              </div>
+              <div class="control-block">
+                <label class="control-label">Background</label>
+                <input type="color" id="bg-color" value="#ffffff" class="color-input">
+              </div>
             </div>
-            <button id="font-size-inc" class="stepper-btn">+</button>
           </div>
-          <input type="range" id="font-size-slider" min="14" max="28" step="1" value="18" class="slider">
         </div>
-        <div class="control-block">
-          <label class="control-label">Line Height</label>
-          <div class="stepper">
-            <button id="line-height-dec" class="stepper-btn">-</button>
-            <div class="stepper-center">
-              <input type="number" id="line-height-value" class="stepper-num" min="1.4" max="2.4" step="0.1" value="1.8" aria-label="Line height">
+
+        <!-- Row Shading -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-gradient">
+              <span class="track"></span>
+            </label>
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Row Shading</span>
+              <span class="feature-row-chevron"></span>
+            </button>
+          </div>
+          <div class="feature-detail">
+            <div class="color-row">
+              <span>Shading Color</span>
+              <input type="color" id="row-shading-color" value="#64b4f0" class="row-shading-color-input">
             </div>
-            <button id="line-height-inc" class="stepper-btn">+</button>
           </div>
-          <input type="range" id="line-height-slider" min="1.4" max="2.4" step="0.1" value="1.8" class="slider">
         </div>
       </div>
 
-      <div class="control-row">
-        <div class="control-block">
-          <label class="control-label">Word Space</label>
-          <div class="stepper">
-            <button id="word-spacing-dec" class="stepper-btn">-</button>
-            <div class="stepper-center">
-              <input type="number" id="word-spacing-value" class="stepper-num" min="0" max="0.5" step="0.05" value="0.00" aria-label="Word spacing">
-              <span class="stepper-unit">em</span>
+      <!-- ══ FOCUS & NAVIGATION ══ -->
+      <div class="feature-group">
+        <div class="feature-group-title">Focus &amp; Navigation</div>
+
+        <!-- Reader Mode -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-immersive-reader">
+              <span class="track"></span>
+            </label>
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Reader Mode</span>
+              <span class="feature-row-chevron"></span>
+            </button>
+          </div>
+          <div class="feature-detail">
+            <div class="toggle-row typewriter-row disabled" id="typewriter-control">
+              <label class="toggle-switch">
+                <input type="checkbox" id="toggle-typewriter" disabled>
+                <span class="track"></span>
+              </label>
+              <span class="toggle-label">Typewriter</span>
+              <input type="range" id="typewriter-speed-slider" min="1" max="10" step="1" value="5" class="slider typewriter-slider" disabled>
+              <span id="typewriter-speed-value" class="slider-value">Speed 05</span>
             </div>
-            <button id="word-spacing-inc" class="stepper-btn">+</button>
           </div>
-          <input type="range" id="word-spacing-slider" min="0" max="0.5" step="0.05" value="0" class="slider">
         </div>
-        <div class="control-block">
-          <label class="control-label">Letter Space</label>
-          <div class="stepper">
-            <button id="letter-spacing-dec" class="stepper-btn">-</button>
-            <div class="stepper-center">
-              <input type="number" id="letter-spacing-value" class="stepper-num" min="0" max="0.1" step="0.01" value="0.00" aria-label="Letter spacing">
-              <span class="stepper-unit">em</span>
+
+        <!-- Reading Ruler -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-ruler">
+              <span class="track"></span>
+            </label>
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Reading Ruler</span>
+              <span class="feature-row-chevron"></span>
+            </button>
+          </div>
+          <div class="feature-detail" id="ruler-size-control">
+            <div class="control-block">
+              <label class="control-label">Ruler Width</label>
+              <div class="slider-row">
+                <input type="range" id="ruler-size-slider" min="1" max="10" step="0.5" value="1.5" class="slider ruler-slider">
+                <span id="ruler-size-value" class="slider-value">1.5 lines</span>
+              </div>
             </div>
-            <button id="letter-spacing-inc" class="stepper-btn">+</button>
           </div>
-          <input type="range" id="letter-spacing-slider" min="0" max="0.1" step="0.01" value="0" class="slider">
         </div>
-      </div>
 
-      <div class="control-row">
-        <div class="control-block">
-          <label class="control-label">Text Color</label>
-          <input type="color" id="font-color" value="#2c2c2c" class="color-input">
-        </div>
-        <div class="control-block">
-          <label class="control-label">Background</label>
-          <input type="color" id="bg-color" value="#ffffff" class="color-input">
-        </div>
-      </div>
-
-      <section class="pdf-import" aria-labelledby="pdf-import-title">
-        <div id="pdf-import-title" class="pdf-import-title">Open a PDF</div>
-        <label class="pdf-file-button" for="pdf-file-input">Choose PDF file</label>
-        <input id="pdf-file-input" type="file" accept="application/pdf,.pdf" hidden>
-        <div class="pdf-url-row">
-          <input id="pdf-url-input" type="url" placeholder="https://example.com/document.pdf" aria-label="PDF URL">
-          <button id="pdf-url-open" type="button">Open</button>
-        </div>
-        <p id="pdf-import-status" class="pdf-import-status" role="status"></p>
-      </section>
-
-      <!-- Reader Mode -->
-      <div class="section-label reader-mode-label">
-        <span>Reader Mode</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-immersive-reader">
-          <span class="track"></span>
-        </label>
-      </div>
-
-      <div class="toggle-row typewriter-row disabled" id="typewriter-control">
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-typewriter" disabled>
-          <span class="track"></span>
-        </label>
-        <span class="toggle-label">Typewriter</span>
-        <input type="range" id="typewriter-speed-slider" min="1" max="10" step="1" value="5" class="slider typewriter-slider" disabled>
-        <span id="typewriter-speed-value" class="slider-value">Speed 05</span>
-      </div>
-
-      <!-- Reading Aids -->
-      <div class="section-label">
-        <span>Reading Aids</span>
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-reading-aids">
-          <span class="track"></span>
-        </label>
-      </div>
-
-      <div class="toggle-grid">
-        <div class="toggle-row">
-          <label class="toggle-switch">
-            <input type="checkbox" id="toggle-gradient">
-            <span class="track"></span>
-          </label>
-          <span class="toggle-label">Row Shading</span>
-          <input type="color" id="row-shading-color" value="#64b4f0" class="row-shading-color-input">
-        </div>
-        <div class="toggle-row">
-          <label class="toggle-switch">
-            <input type="checkbox" id="toggle-transition">
-            <span class="track"></span>
-          </label>
-          <span class="toggle-label">Transition Words</span>
-        </div>
-        <div class="toggle-row">
-          <label class="toggle-switch">
-            <input type="checkbox" id="toggle-simplify">
-            <span class="track"></span>
-          </label>
-          <span class="toggle-label">Simplify Text</span>
-        </div>
-      </div>
-
-      <div class="toggle-row ruler-row" id="ruler-size-control">
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-ruler">
-          <span class="track"></span>
-        </label>
-        <span class="toggle-label">Reading Ruler</span>
-        <input type="range" id="ruler-size-slider" min="1" max="10" step="0.5" value="1.5" class="slider ruler-slider">
-        <span id="ruler-size-value" class="slider-value">1.5 lines</span>
-      </div>
-
-      <div class="toggle-row auto-scroll-row" id="auto-scroll-control">
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-auto-scroll">
-          <span class="track"></span>
-        </label>
-        <span class="toggle-label">Auto Scroll</span>
-        <input type="range" id="auto-scroll-speed-slider" min="1" max="10" step="1" value="2" class="slider auto-scroll-slider">
-        <span id="auto-scroll-speed-value" class="slider-value">Speed 02</span>
-      </div>
-
-      <div class="toggle-row toggle-row--full">
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-emotion">
-          <span class="track"></span>
-        </label>
-        <span class="toggle-label">Emotion Colors</span>
-        <div class="ai-controls">
-          <div class="mode-pill" id="emotion-mode-pill">
-            <button class="mode-btn active" data-feature="emotion" data-mode="local">Local</button>
-            <button class="mode-btn" data-feature="emotion" data-mode="ai">AI</button>
+        <!-- Auto Scroll -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-auto-scroll">
+              <span class="track"></span>
+            </label>
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Auto Scroll</span>
+              <span class="feature-row-chevron"></span>
+            </button>
           </div>
-          <div class="ai-status-row hidden" id="emotion-ai-row">
-            <span class="ai-status-dot hidden" id="emotion-ai-status"></span>
-            <button class="ai-retry-btn" data-feature="emotion">Retry</button>
+          <div class="feature-detail" id="auto-scroll-control">
+            <div class="control-block">
+              <label class="control-label">Scroll Speed</label>
+              <div class="slider-row">
+                <input type="range" id="auto-scroll-speed-slider" min="1" max="10" step="1" value="2" class="slider auto-scroll-slider">
+                <span id="auto-scroll-speed-value" class="slider-value">Speed 02</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Topic Focus -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Topic Focus</span>
+              <span class="feature-row-chevron"></span>
+            </button>
+          </div>
+          <div class="feature-detail">
+            <div class="ai-controls topic-focus-mode">
+              <div class="mode-pill" id="topic-focus-mode-pill">
+                <button class="mode-btn active" data-feature="topicFocus" data-mode="local">Local</button>
+                <button class="mode-btn"        data-feature="topicFocus" data-mode="ai">AI</button>
+              </div>
+              <span class="ai-status-dot hidden" id="focus-ai-status"></span>
+            </div>
+            <div class="topic-focus-area">
+              <input type="text" id="topic-input" placeholder="Type a topic to focus on…">
+              <button id="topic-apply">Apply</button>
+              <button id="topic-clear">Clear</button>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="emotion-colors" id="emotion-colors">
-        <div class="color-row">
-          <span>Positive</span>
-          <input type="color" id="emotion-positive-color" value="#27ae60">
-        </div>
-        <div class="color-row">
-          <span>Negative</span>
-          <input type="color" id="emotion-negative-color" value="#e74c3c">
-        </div>
-        <div class="color-row">
-          <span>Complex</span>
-          <input type="color" id="emotion-complex-color" value="#8e44ad">
-        </div>
-      </div>
+      <!-- ══ COMPREHENSION ══ -->
+      <div class="feature-group">
+        <div class="feature-group-title">Comprehension</div>
 
-      <div class="toggle-row toggle-row--full">
-        <label class="toggle-switch">
-          <input type="checkbox" id="toggle-labels">
-          <span class="track"></span>
-        </label>
-        <span class="toggle-label">Lens</span>
-        <div class="ai-controls">
-          <div class="ai-status-row hidden" id="labels-ai-row">
-            <span class="ai-status-dot hidden" id="labels-ai-status"></span>
-            <button class="ai-retry-btn" data-feature="labels">Retry</button>
+        <!-- Emotion Colors -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-emotion">
+              <span class="track"></span>
+            </label>
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Emotion Colors</span>
+              <span class="feature-row-chevron"></span>
+            </button>
           </div>
-        </div>
-      </div>
+          <div class="feature-detail">
+            <div class="ai-controls emotion-mode">
+              <div class="mode-pill" id="emotion-mode-pill">
+                <button class="mode-btn active" data-feature="emotion" data-mode="local">Local</button>
+                <button class="mode-btn" data-feature="emotion" data-mode="ai">AI</button>
+              </div>
+              <div class="ai-status-row hidden" id="emotion-ai-row">
+                <span class="ai-status-dot hidden" id="emotion-ai-status"></span>
+                <button class="ai-retry-btn" data-feature="emotion">Analyze</button>
+              </div>
+            </div>
 
-      <div class="sentence-label-colors" id="sentence-label-colors">
-        <div class="color-row">
-          <span>Reading Purpose</span>
-          <select id="label-lens-select" class="lens-select">
-            <option value="inform">Get Information</option>
-            <option value="understand">Understand</option>
-            <option value="evaluate">Evaluate</option>
-          </select>
-        </div>
+            <div class="emotion-colors" id="emotion-colors">
+              <div class="color-row">
+                <span>Positive</span>
+                <input type="color" id="emotion-positive-color" value="#27ae60">
+              </div>
+              <div class="color-row">
+                <span>Negative</span>
+                <input type="color" id="emotion-negative-color" value="#e74c3c">
+              </div>
+              <div class="color-row">
+                <span>Complex</span>
+                <input type="color" id="emotion-complex-color" value="#8e44ad">
+              </div>
+            </div>
 
-        <div class="color-row">
-          <span>Highlight Density</span>
-          <select id="label-density-select" class="lens-select">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
-        </div>
-
-        <div class="label-legend-group" id="legend-inform">
-          <div class="color-row">
-            <span class="label-swatch" id="swatch-key-point">Key Point</span>
-            <input type="color" id="label-key-point-color">
-          </div>
-          <div class="color-row">
-            <span class="label-swatch" id="swatch-core-detail">Core Detail</span>
-            <input type="color" id="label-core-detail-color">
-          </div>
-        </div>
-
-        <div class="label-legend-group" id="legend-understand">
-          <div class="color-row">
-            <span class="label-swatch" id="swatch-concept">Concept</span>
-            <input type="color" id="label-concept-color">
-          </div>
-          <div class="color-row">
-            <span class="label-swatch" id="swatch-reasoning">Reasoning</span>
-            <input type="color" id="label-reasoning-color">
-          </div>
-          <div class="color-row">
-            <span class="label-swatch" id="swatch-takeaway">Takeaway</span>
-            <input type="color" id="label-takeaway-color">
-          </div>
-        </div>
-
-        <div class="label-legend-group" id="legend-evaluate">
-          <div class="color-row">
-            <span class="label-swatch" id="swatch-claim">Claim</span>
-            <input type="color" id="label-claim-color">
-          </div>
-          <div class="color-row">
-            <span class="label-swatch" id="swatch-evidence">Evidence</span>
-            <input type="color" id="label-evidence-color">
-          </div>
-          <div class="color-row">
-            <span class="label-swatch" id="swatch-counterpoint">Counterpoint</span>
-            <input type="color" id="label-counterpoint-color">
+            <div class="feature-detail-words">
+              <div class="feature-detail-words-head">
+                <button class="words-toggle" type="button">
+                  <span>Word Lists</span>
+                  <span class="feature-row-chevron"></span>
+                </button>
+                <button type="button" id="wl-reset-emotion" class="section-reset-btn">Reset</button>
+              </div>
+              <div class="feature-detail-words-body">
+                <div class="wordlist-section">
+                  <div class="wordlist-category-label">Positive</div>
+                  <div class="wordlist-chips" id="wl-emotion-positive"></div>
+                  <div class="wordlist-add">
+                    <input type="text" id="wl-add-positive" placeholder="Add word…">
+                    <button id="wl-add-positive-btn">Add</button>
+                  </div>
+                </div>
+                <div class="wordlist-section">
+                  <div class="wordlist-category-label">Negative</div>
+                  <div class="wordlist-chips" id="wl-emotion-negative"></div>
+                  <div class="wordlist-add">
+                    <input type="text" id="wl-add-negative" placeholder="Add word…">
+                    <button id="wl-add-negative-btn">Add</button>
+                  </div>
+                </div>
+                <div class="wordlist-section">
+                  <div class="wordlist-category-label">Complex</div>
+                  <div class="wordlist-chips" id="wl-emotion-complex"></div>
+                  <div class="wordlist-add">
+                    <input type="text" id="wl-add-complex" placeholder="Add word…">
+                    <button id="wl-add-complex-btn">Add</button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-      </div>
-
-      <!-- Topic Focus -->
-      <div class="section-label topic-focus-header">
-        <span>Topic Focus</span>
-        <div class="ai-controls">
-          <div class="mode-pill" id="topic-focus-mode-pill">
-            <button class="mode-btn active" data-feature="topicFocus" data-mode="local">Local</button>
-            <button class="mode-btn"        data-feature="topicFocus" data-mode="ai">AI</button>
+        <!-- Lens -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-labels">
+              <span class="track"></span>
+            </label>
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Lens</span>
+              <span class="feature-row-chevron"></span>
+            </button>
           </div>
-          <span class="ai-status-dot hidden" id="focus-ai-status"></span>
-        </div>
-      </div>
+          <div class="feature-detail">
+            <div class="ai-controls lens-analyze">
+              <div class="ai-status-row hidden" id="labels-ai-row">
+                <span class="ai-status-dot hidden" id="labels-ai-status"></span>
+                <button class="ai-retry-btn" data-feature="labels">Analyze</button>
+              </div>
+            </div>
 
-      <div class="topic-focus-area">
-        <input type="text" id="topic-input" placeholder="Type a topic to focus on…">
-        <button id="topic-apply">Apply</button>
-        <button id="topic-clear">Clear</button>
+            <div class="sentence-label-colors" id="sentence-label-colors">
+              <div class="color-row">
+                <span>Reading Purpose</span>
+                <select id="label-lens-select" class="lens-select">
+                  <option value="inform">Get Information</option>
+                  <option value="understand">Understand</option>
+                  <option value="evaluate">Evaluate</option>
+                </select>
+              </div>
+
+              <div class="color-row">
+                <span>Highlight Density</span>
+                <select id="label-density-select" class="lens-select">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+
+              <div class="label-legend-group" id="legend-inform">
+                <div class="color-row">
+                  <span class="label-swatch" id="swatch-key-point">Key Point</span>
+                  <input type="color" id="label-key-point-color">
+                </div>
+                <div class="color-row">
+                  <span class="label-swatch" id="swatch-core-detail">Core Detail</span>
+                  <input type="color" id="label-core-detail-color">
+                </div>
+              </div>
+
+              <div class="label-legend-group" id="legend-understand">
+                <div class="color-row">
+                  <span class="label-swatch" id="swatch-concept">Concept</span>
+                  <input type="color" id="label-concept-color">
+                </div>
+                <div class="color-row">
+                  <span class="label-swatch" id="swatch-reasoning">Reasoning</span>
+                  <input type="color" id="label-reasoning-color">
+                </div>
+                <div class="color-row">
+                  <span class="label-swatch" id="swatch-takeaway">Takeaway</span>
+                  <input type="color" id="label-takeaway-color">
+                </div>
+              </div>
+
+              <div class="label-legend-group" id="legend-evaluate">
+                <div class="color-row">
+                  <span class="label-swatch" id="swatch-claim">Claim</span>
+                  <input type="color" id="label-claim-color">
+                </div>
+                <div class="color-row">
+                  <span class="label-swatch" id="swatch-evidence">Evidence</span>
+                  <input type="color" id="label-evidence-color">
+                </div>
+                <div class="color-row">
+                  <span class="label-swatch" id="swatch-counterpoint">Counterpoint</span>
+                  <input type="color" id="label-counterpoint-color">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Transition Words -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-transition">
+              <span class="track"></span>
+            </label>
+            <button class="feature-row-expand" type="button">
+              <span class="feature-row-name">Transition Words</span>
+              <span class="feature-row-chevron"></span>
+            </button>
+          </div>
+          <div class="feature-detail">
+            <div class="feature-detail-words">
+              <div class="feature-detail-words-head">
+                <button class="words-toggle" type="button">
+                  <span>Phrase List</span>
+                  <span class="feature-row-chevron"></span>
+                </button>
+                <button type="button" id="wl-reset-transition" class="section-reset-btn">Reset</button>
+              </div>
+              <div class="feature-detail-words-body">
+                <div class="wordlist-section">
+                  <div class="wordlist-chips" id="wl-transition"></div>
+                  <div class="wordlist-add">
+                    <input type="text" id="wl-add-transition" placeholder="Add phrase…">
+                    <button id="wl-add-transition-btn">Add</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Simplify Text -->
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-simplify">
+              <span class="track"></span>
+            </label>
+            <span class="feature-row-name">Simplify Text</span>
+          </div>
+        </div>
       </div>
 
     </div>
@@ -357,51 +513,6 @@
         </div>
       </div>
 
-      <div class="section-label">
-        <span>Emotion Words</span>
-        <button type="button" id="wl-reset-emotion" class="section-reset-btn">Reset</button>
-      </div>
-
-      <div class="wordlist-section">
-        <div class="wordlist-category-label">Positive</div>
-        <div class="wordlist-chips" id="wl-emotion-positive"></div>
-        <div class="wordlist-add">
-          <input type="text" id="wl-add-positive" placeholder="Add word…">
-          <button id="wl-add-positive-btn">Add</button>
-        </div>
-      </div>
-
-      <div class="wordlist-section">
-        <div class="wordlist-category-label">Negative</div>
-        <div class="wordlist-chips" id="wl-emotion-negative"></div>
-        <div class="wordlist-add">
-          <input type="text" id="wl-add-negative" placeholder="Add word…">
-          <button id="wl-add-negative-btn">Add</button>
-        </div>
-      </div>
-
-      <div class="wordlist-section">
-        <div class="wordlist-category-label">Complex</div>
-        <div class="wordlist-chips" id="wl-emotion-complex"></div>
-        <div class="wordlist-add">
-          <input type="text" id="wl-add-complex" placeholder="Add word…">
-          <button id="wl-add-complex-btn">Add</button>
-        </div>
-      </div>
-
-      <div class="section-label">
-        <span>Transition Words</span>
-        <button type="button" id="wl-reset-transition" class="section-reset-btn">Reset</button>
-      </div>
-
-      <div class="wordlist-section">
-        <div class="wordlist-chips" id="wl-transition"></div>
-        <div class="wordlist-add">
-          <input type="text" id="wl-add-transition" placeholder="Add phrase…">
-          <button id="wl-add-transition-btn">Add</button>
-        </div>
-      </div>
-
     </div>
   </div>
 
@@ -415,6 +526,8 @@
       </div>
     </div>
   </div>
+
+  </div><!-- /.tab-content -->
 
   <script src="panel.js"></script>
 </body>

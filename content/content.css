@@ -835,24 +835,26 @@ html.dra-preset-editor-open body {
 #dra-preset-editor .mode-btn.active { background: #5aaea9; color: #fff; }
 
 /* Form controls */
-#dra-preset-editor .dra-pe-section {
+#dra-preset-editor .dra-pe-group {
   margin-bottom: 4px;
 }
 
-#dra-preset-editor .dra-pe-section-title {
-  padding: 8px 18px 4px;
+#dra-preset-editor .dra-pe-group-title {
+  padding: 12px 18px 4px;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #1e1b4b;
+  letter-spacing: 0.09em;
+  color: #9899ab;
   border-top: 1px solid #e0e0ea;
 }
 
-#dra-preset-editor .pe-sub-items {
-  border-left: 2px solid #e0e0ea;
-  margin: 2px 18px 4px 26px;
-  padding-left: 6px;
+#dra-preset-editor .dra-pe-group:first-child .dra-pe-group-title {
+  border-top: none;
+}
+
+#dra-preset-editor .dra-pe-group-body {
+  padding-bottom: 6px;
 }
 
 #dra-preset-editor .pe-disabled {
@@ -860,8 +862,64 @@ html.dra-preset-editor-open body {
   pointer-events: none;
 }
 
-#dra-preset-editor .dra-pe-section:first-child .dra-pe-section-title {
-  border-top: none;
+/* Stepper — ported from panel.css, scoped to the editor */
+#dra-preset-editor .stepper {
+  display: flex;
+  align-items: stretch;
+  flex: 0 0 auto;
+  width: 118px;
+  margin-left: auto;
+  border: 1px solid #e0e0ea;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  height: 32px;
+}
+#dra-preset-editor .stepper-btn {
+  width: 30px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 15px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+#dra-preset-editor .stepper-btn:hover  { background: #f4f4f9; }
+#dra-preset-editor .stepper-btn:active { background: #eaeaf2; }
+#dra-preset-editor .stepper-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border-left: 1px solid #e0e0ea;
+  border-right: 1px solid #e0e0ea;
+}
+#dra-preset-editor .stepper-num {
+  width: 4.2ch;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  line-height: 1;
+  text-align: center;
+  color: #333;
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+#dra-preset-editor .stepper-num:focus { color: #1e1b4b; }
+#dra-preset-editor .stepper-num::-webkit-inner-spin-button,
+#dra-preset-editor .stepper-num::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
+#dra-preset-editor .stepper-unit {
+  font-size: 11px;
+  color: #9899ab;
 }
 
 #dra-preset-editor .dra-pe-row {

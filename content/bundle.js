@@ -2,8 +2,7 @@
   // content/settings.js
   var DEFAULT_SETTINGS = {
     panelSize: "comfortable",
-    typographyEnabled: false,
-    readingAidsEnabled: false,
+    masterEnabled: true,
     boldBeginning: false,
     emotionColor: false,
     emotionMode: "local",
@@ -447,7 +446,7 @@
     return matchEmotionWords(area.innerText, state.wordLists);
   }
   function requestEmotionAnalysis() {
-    if (!state.settings.readingAidsEnabled || !state.settings.emotionColor || state.settings.emotionMode !== "ai") {
+    if (!state.settings.emotionColor || state.settings.emotionMode !== "ai") {
       state.emotionAIInProgress = false;
       return;
     }
@@ -905,7 +904,6 @@
     return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
   function collectMatches(text) {
-    if (!state.settings.readingAidsEnabled) return [];
     const matches = [];
     const featureSets = [];
     if (state.settings.emotionColor) {
@@ -969,7 +967,7 @@
     return result;
   }
   function labelClassForSentence(sentence) {
-    if (!state.settings.readingAidsEnabled || !state.settings.sentenceLabels) return "";
+    if (!state.settings.sentenceLabels) return "";
     const trimmed = sentence.trim();
     const sentenceIndex = state.allSentences.findIndex((as) => as.slice(0, 25) === trimmed.slice(0, 25));
     const label = state.sentenceLabels.find((l) => l.index === sentenceIndex);
@@ -1221,15 +1219,15 @@
     root.style.setProperty("--dra-label-claim", state.settings.labelClaimColor);
     root.style.setProperty("--dra-label-evidence", state.settings.labelEvidenceColor);
     root.style.setProperty("--dra-label-counterpoint", state.settings.labelCounterpointColor);
-    article.style.fontSize = state.settings.typographyEnabled && state.settings.fontSize ? `${state.settings.fontSize}px` : "";
-    article.style.lineHeight = state.settings.typographyEnabled && state.settings.lineHeight ? String(state.settings.lineHeight) : "";
-    article.style.fontFamily = state.settings.typographyEnabled && state.settings.fontFamily ? state.settings.fontFamily : "";
-    article.style.wordSpacing = state.settings.typographyEnabled && state.settings.wordSpacing ? `${state.settings.wordSpacing}em` : "";
-    article.style.letterSpacing = state.settings.typographyEnabled && state.settings.letterSpacing ? `${state.settings.letterSpacing}em` : "";
+    article.style.fontSize = state.settings.fontSize ? `${state.settings.fontSize}px` : "";
+    article.style.lineHeight = state.settings.lineHeight ? String(state.settings.lineHeight) : "";
+    article.style.fontFamily = state.settings.fontFamily ? state.settings.fontFamily : "";
+    article.style.wordSpacing = state.settings.wordSpacing ? `${state.settings.wordSpacing}em` : "";
+    article.style.letterSpacing = state.settings.letterSpacing ? `${state.settings.letterSpacing}em` : "";
     article.style.color = "";
     article.style.background = "";
-    root.classList.toggle("dra-reader-row-shading", Boolean(state.settings.readingAidsEnabled && state.settings.gradientRows));
-    root.classList.toggle("dra-reader-ruler-active", Boolean(state.settings.readingAidsEnabled && state.settings.rulerActive));
+    root.classList.toggle("dra-reader-row-shading", Boolean(state.settings.gradientRows));
+    root.classList.toggle("dra-reader-ruler-active", Boolean(state.settings.rulerActive));
     root.querySelectorAll("[data-reader-theme]").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.readerTheme === readerState.theme);
     });
@@ -1262,7 +1260,7 @@
   function updateReaderAutoScroll(root) {
     stopReaderAutoScroll();
     if (tw) return;
-    if (!state.settings.readingAidsEnabled || !state.settings.autoScrollActive) return;
+    if (!state.settings.autoScrollActive) return;
     const scrollEl = root.querySelector(".dra-reader-scroll");
     const speed = speedLevelToPixelsPerSecond2(state.settings.autoScrollSpeed);
     const tick2 = (timestamp) => {
@@ -1814,17 +1812,17 @@
     document.documentElement.style.setProperty("--dra-label-counterpoint", state.settings.labelCounterpointColor);
     state.contentArea.querySelectorAll("p, li, blockquote").forEach((para) => {
       if (para.innerText.trim().length < 20) return;
-      if (state.settings.typographyEnabled) {
+      if (state.settings.fontSize) para.style.fontSize = state.settings.fontSize + "px";
+      if (state.settings.lineHeight) para.style.lineHeight = String(state.settings.lineHeight);
+      if (state.settings.fontFamily) {
         injectOpenDyslexicFont();
-        if (state.settings.fontSize) para.style.fontSize = state.settings.fontSize + "px";
-        if (state.settings.lineHeight) para.style.lineHeight = String(state.settings.lineHeight);
-        if (state.settings.fontFamily) para.style.fontFamily = state.settings.fontFamily;
-        if (state.settings.wordSpacing) para.style.wordSpacing = state.settings.wordSpacing + "em";
-        if (state.settings.letterSpacing) para.style.letterSpacing = state.settings.letterSpacing + "em";
-        if (state.settings.fontColor) para.style.color = state.settings.fontColor;
+        para.style.fontFamily = state.settings.fontFamily;
       }
+      if (state.settings.wordSpacing) para.style.wordSpacing = state.settings.wordSpacing + "em";
+      if (state.settings.letterSpacing) para.style.letterSpacing = state.settings.letterSpacing + "em";
+      if (state.settings.fontColor) para.style.color = state.settings.fontColor;
       const needsSentenceWrap = state.settings.emotionColor || state.settings.transitionAnimation || state.settings.sentenceLabels;
-      const shouldWrap = state.settings.readingAidsEnabled && needsSentenceWrap || state.settings.typographyEnabled && state.settings.boldBeginning || state.topicFocusKeywords !== null || state.topicFocusAIPrefixes !== null;
+      const shouldWrap = needsSentenceWrap || state.settings.boldBeginning || state.topicFocusKeywords !== null || state.topicFocusAIPrefixes !== null;
       if (shouldWrap && !hasEmbeddedContent(para)) {
         const originalHTML = para.innerHTML;
         if (!state.originalHTML.has(para)) state.originalHTML.set(para, originalHTML);
@@ -1832,17 +1830,17 @@
         const rendered = buildParagraphHTML(para.innerText);
         para.innerHTML = reInjectAnnotations(rendered, annotations);
       }
-      if (state.settings.readingAidsEnabled && state.settings.gradientRows) {
+      if (state.settings.gradientRows) {
         const lh = parseFloat(getComputedStyle(para).lineHeight);
         para.style.backgroundImage = `repeating-linear-gradient(to bottom, color-mix(in srgb, var(--dra-row-shading) 18%, transparent) 0px, color-mix(in srgb, var(--dra-row-shading) 18%, transparent) ${lh}px, transparent ${lh}px, transparent ${lh * 2}px)`;
       }
     });
-    if (state.settings.typographyEnabled && state.settings.bgColor) {
+    if (state.settings.bgColor) {
       state.contentArea.style.background = state.settings.bgColor;
     }
-    if (state.settings.readingAidsEnabled && state.settings.rulerActive) setupRuler();
+    if (state.settings.rulerActive) setupRuler();
     else teardownRuler();
-    if (state.settings.readingAidsEnabled && state.settings.autoScrollActive) {
+    if (state.settings.autoScrollActive) {
       setupAutoScroll(state.settings.autoScrollSpeed);
     } else {
       teardownAutoScroll();
@@ -1858,37 +1856,36 @@
     });
     state.contentArea.style.background = "";
     teardownRuler();
+    teardownAutoScroll();
   }
   function render() {
+    if (!state.settings.masterEnabled) {
+      removeTransformations();
+      teardownSelectionMenu();
+      teardownSimplify();
+      closeImmersiveReader();
+      return;
+    }
     removeTransformations();
     state.articleHighlights = [];
     if (!state.settings.sentenceLabels) state.sentenceLabels = [];
-    if (state.settings.readingAidsEnabled) {
-      const transitionHL = state.settings.transitionAnimation ? generateTransitionHighlights() : [];
-      const emotionHL = !state.settings.emotionColor ? [] : state.settings.emotionMode === "local" ? generateEmotionHighlights() : state.aiEmotionHighlights;
-      state.articleHighlights = [...emotionHL, ...transitionHL];
-      if (state.settings.sentenceLabels) {
-        if (state.allSentences.length === 0) state.allSentences = extractAllSentences();
-        state.sentenceLabels = state.aiSentenceLabels;
-      }
-      const needsEmotionAI = state.settings.emotionColor && state.settings.emotionMode === "ai";
-      if (needsEmotionAI) requestEmotionAnalysis();
-      if (state.settings.sentenceLabels) requestSentenceLabels();
+    const transitionHL = state.settings.transitionAnimation ? generateTransitionHighlights() : [];
+    const emotionHL = !state.settings.emotionColor ? [] : state.settings.emotionMode === "local" ? generateEmotionHighlights() : state.aiEmotionHighlights;
+    state.articleHighlights = [...emotionHL, ...transitionHL];
+    if (state.settings.sentenceLabels) {
+      if (state.allSentences.length === 0) state.allSentences = extractAllSentences();
+      state.sentenceLabels = state.aiSentenceLabels;
     }
-    if (state.settings.typographyEnabled || state.settings.readingAidsEnabled || state.topicFocusKeywords || state.topicFocusAIPrefixes) {
-      applyTransformations();
-    } else {
-      teardownAutoScroll();
-    }
+    applyTransformations();
     if (state.topicFocusKeywords) {
       applyFocusMask(state.topicFocusKeywords);
     } else if (state.topicFocusAIPrefixes) {
       applyFocusMaskByPrefixes(state.topicFocusAIPrefixes);
     }
-    const needsSelectionMenu = state.settings.readingAidsEnabled && (state.settings.emotionColor || state.settings.transitionAnimation);
+    const needsSelectionMenu = state.settings.emotionColor || state.settings.transitionAnimation;
     if (needsSelectionMenu) setupSelectionMenu(render);
     else teardownSelectionMenu();
-    if (state.settings.readingAidsEnabled && state.settings.sentenceSimplify) {
+    if (state.settings.sentenceSimplify) {
       setupSimplify();
     } else {
       teardownSimplify();
@@ -1995,9 +1992,6 @@
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
   function renderSentenceText(sentence, settings, emotionHighlights, transitionWords) {
-    if (!settings.readingAidsEnabled) {
-      return settings.boldBeginning ? applyBionicToText(sentence) : escapeHTML2(sentence);
-    }
     const lower = sentence.toLowerCase();
     const spans = [];
     if (settings.emotionColor) {
@@ -2043,10 +2037,10 @@
   }
   function renderPreviewArticle(article, settings, wordLists, { externalEmotions, externalLabels } = {}) {
     const { blocks } = article;
-    const finalLabels = settings.readingAidsEnabled && settings.sentenceLabels && externalLabels ? externalLabels : [];
-    const useAIEmotion = settings.readingAidsEnabled && settings.emotionColor && settings.emotionMode === "ai" && externalEmotions;
-    const emotionHighlights = useAIEmotion ? externalEmotions : settings.readingAidsEnabled && settings.emotionColor ? matchEmotionWords(blocks.join(" "), wordLists) : [];
-    const transitionWords = settings.readingAidsEnabled && settings.transitionAnimation ? wordLists.transition ?? DEFAULT_TRANSITION_WORDS : [];
+    const finalLabels = settings.sentenceLabels && externalLabels ? externalLabels : [];
+    const useAIEmotion = settings.emotionColor && settings.emotionMode === "ai" && externalEmotions;
+    const emotionHighlights = useAIEmotion ? externalEmotions : settings.emotionColor ? matchEmotionWords(blocks.join(" "), wordLists) : [];
+    const transitionWords = settings.transitionAnimation ? wordLists.transition ?? DEFAULT_TRANSITION_WORDS : [];
     const LABEL_TYPES2 = /* @__PURE__ */ new Set([
       "key-point",
       "core-detail",
@@ -2122,19 +2116,19 @@
     }
     const article = container.querySelector(".dra-pe-article");
     if (!article) return;
-    if (s.typographyEnabled && s.fontFamily?.includes("OpenDyslexic")) {
+    if (s.fontFamily?.includes("OpenDyslexic")) {
       injectOpenDyslexicFont();
     }
-    article.style.fontFamily = s.typographyEnabled && s.fontFamily ? s.fontFamily : "";
-    article.style.fontSize = s.typographyEnabled && s.fontSize ? `${s.fontSize}px` : "";
-    article.style.lineHeight = s.typographyEnabled && s.lineHeight ? String(s.lineHeight) : "";
-    article.style.wordSpacing = s.typographyEnabled && s.wordSpacing ? `${s.wordSpacing}em` : "";
-    article.style.letterSpacing = s.typographyEnabled && s.letterSpacing ? `${s.letterSpacing}em` : "";
+    article.style.fontFamily = s.fontFamily ? s.fontFamily : "";
+    article.style.fontSize = s.fontSize ? `${s.fontSize}px` : "";
+    article.style.lineHeight = s.lineHeight ? String(s.lineHeight) : "";
+    article.style.wordSpacing = s.wordSpacing ? `${s.wordSpacing}em` : "";
+    article.style.letterSpacing = s.letterSpacing ? `${s.letterSpacing}em` : "";
     const isReaderMode = Boolean(actions?.autoOpenReaderMode);
-    article.style.color = s.typographyEnabled && s.fontColor && !isReaderMode ? s.fontColor : "";
-    article.style.background = s.typographyEnabled && s.bgColor && !isReaderMode ? s.bgColor : "";
-    container.classList.toggle("dra-pe-row-shading", Boolean(s.readingAidsEnabled && s.gradientRows));
-    updateRulerOverlay(container, Boolean(s.readingAidsEnabled && s.rulerActive));
+    article.style.color = s.fontColor && !isReaderMode ? s.fontColor : "";
+    article.style.background = s.bgColor && !isReaderMode ? s.bgColor : "";
+    container.classList.toggle("dra-pe-row-shading", Boolean(s.gradientRows));
+    updateRulerOverlay(container, Boolean(s.rulerActive));
     container.classList.toggle("dra-pe-reader-mode-on", isReaderMode);
     container.style.background = isReaderMode ? "#f4f0e7" : "";
   }
@@ -2184,7 +2178,6 @@
     };
   }
   var PRESET_KEYS = [
-    "typographyEnabled",
     "fontFamily",
     "boldBeginning",
     "fontSize",
@@ -2194,7 +2187,6 @@
     "fontColor",
     "bgColor",
     "typewriterSpeed",
-    "readingAidsEnabled",
     "gradientRows",
     "rowShadingColor",
     "transitionAnimation",
@@ -2220,7 +2212,6 @@
     "panelSize"
   ];
   var ONBOARDING_PREVIEW_SETTINGS = {
-    typographyEnabled: true,
     fontFamily: "",
     boldBeginning: true,
     fontSize: 18,
@@ -2229,7 +2220,6 @@
     letterSpacing: 0,
     fontColor: "#2c2c2c",
     bgColor: "#ffffff",
-    readingAidsEnabled: true,
     gradientRows: true,
     rowShadingColor: "#d8d1e2",
     transitionAnimation: true,
@@ -2259,7 +2249,7 @@
     <div class="dra-pe-article" style="position:relative">${html}</div>`;
     applyPreviewStyles(previewBody, s, draft.actions);
     filterLabelColors(root, lens);
-    if (s.readingAidsEnabled && s.rulerActive) {
+    if (s.rulerActive) {
       const fontPx = Number(s.fontSize) || 15;
       const lineH = Number(s.lineHeight) || 1.7;
       const halfWin = Math.round(fontPx * lineH * (s.rulerWindowLines ?? 1.5) / 2);
@@ -2287,6 +2277,22 @@
     </div>
   </div>`;
   }
+  function stepper(id, key, label, min, max, step, unit = "") {
+    const raw = draft.settings[key] ?? DEFAULT_SETTINGS[key] ?? min;
+    const val = Number(raw).toFixed(step < 1 ? step < 0.05 ? 2 : 1 : 0);
+    const unitSpan = unit ? `<span class="stepper-unit">${unit}</span>` : "";
+    return `<div class="dra-pe-row">
+    <span class="dra-pe-label">${label}</span>
+    <div class="stepper">
+      <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="-1">-</button>
+      <div class="stepper-center">
+        <input type="number" id="${id}" class="stepper-num" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${label}">
+        ${unitSpan}
+      </div>
+      <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="1">+</button>
+    </div>
+  </div>`;
+  }
   function colorInput(id, key, label) {
     const val = draft.settings[key] ?? DEFAULT_SETTINGS[key];
     return `<div class="dra-pe-row dra-pe-color-row">
@@ -2309,15 +2315,15 @@
     <button class="mode-btn${cur === "ai" ? " active" : ""}" data-pe-feature="${feature}" data-pe-mode="ai">AI</button>
   </div>`;
   }
-  function section(title, content) {
-    return `<div class="dra-pe-section">
-    <div class="dra-pe-section-title">${title}</div>
-    <div class="dra-pe-section-body">${content}</div>
+  function group(title, content) {
+    return `<div class="dra-pe-group">
+    <div class="dra-pe-group-title">${title}</div>
+    <div class="dra-pe-group-body">${content}</div>
   </div>`;
   }
   function buildFormHTML() {
-    const s = draft.settings;
-    const typographySub = [
+    const openReaderChecked = draft.actions?.autoOpenReaderMode ? "checked" : "";
+    const readability = [
       selectInput("pe-font-family", "fontFamily", "Font Family", [
         ["", "System Default"],
         ["Georgia", "Georgia"],
@@ -2326,29 +2332,26 @@
         ["OpenDyslexic, sans-serif", "OpenDyslexic"]
       ]),
       toggle("pe-toggle-bold", "boldBeginning", "Bionic Effect"),
-      slider("pe-font-size", "fontSize", "Font Size", 14, 28, 1, "px"),
-      slider("pe-line-height", "lineHeight", "Line Height", 1.4, 2.4, 0.1),
-      slider("pe-word-spacing", "wordSpacing", "Word Space", 0, 0.5, 0.05, "em"),
-      slider("pe-letter-spacing", "letterSpacing", "Letter Space", 0, 0.1, 0.01, "em"),
+      stepper("pe-font-size", "fontSize", "Font Size", 14, 28, 1, "px"),
+      stepper("pe-line-height", "lineHeight", "Line Height", 1.4, 2.4, 0.1),
+      stepper("pe-word-spacing", "wordSpacing", "Word Space", 0, 0.5, 0.05, "em"),
+      stepper("pe-letter-spacing", "letterSpacing", "Letter Space", 0, 0.1, 0.01, "em"),
       colorInput("pe-font-color", "fontColor", "Text Color"),
-      colorInput("pe-bg-color", "bgColor", "Background")
+      colorInput("pe-bg-color", "bgColor", "Background"),
+      toggle("pe-toggle-gradient", "gradientRows", "Row Shading"),
+      colorInput("pe-row-shading-color", "rowShadingColor", "Row Shading Color")
     ].join("");
-    const typography = toggle("pe-toggle-typography", "typographyEnabled", "Enable Typography") + `<div class="pe-sub-items" id="pe-typo-sub">${typographySub}</div>`;
-    const openReaderChecked = draft.actions?.autoOpenReaderMode ? "checked" : "";
-    const readerMode = [
+    const focusNav = [
       `<label class="dra-pe-toggle-row">
       <label class="toggle-switch"><input type="checkbox" id="pe-action-open-reader" ${openReaderChecked}><span class="track"></span></label>
       <span class="dra-pe-toggle-label">Auto-open Reader Mode when applied</span>
     </label>`,
-      slider("pe-typewriter-speed", "typewriterSpeed", "Typewriter Speed", 1, 10, 1)
-    ].join("");
-    const aidsSub = [
-      toggle("pe-toggle-gradient", "gradientRows", "Row Shading"),
-      colorInput("pe-row-shading-color", "rowShadingColor", "Row Shading Color"),
-      toggle("pe-toggle-transition", "transitionAnimation", "Transition Words"),
+      slider("pe-typewriter-speed", "typewriterSpeed", "Typewriter Speed", 1, 10, 1),
       toggle("pe-toggle-ruler", "rulerActive", "Reading Ruler"),
       slider("pe-ruler-size", "rulerWindowLines", "Ruler Width", 1, 10, 0.5, " lines"),
-      slider("pe-auto-scroll-speed", "autoScrollSpeed", "Auto Scroll Speed", 1, 10, 1),
+      slider("pe-auto-scroll-speed", "autoScrollSpeed", "Auto Scroll Speed", 1, 10, 1)
+    ].join("");
+    const comprehension = [
       // Emotion Colors
       `<div class="dra-pe-row dra-pe-ai-row">
       ${toggle("pe-toggle-emotion", "emotionColor", "Emotion Colors")}
@@ -2387,11 +2390,11 @@
         ${colorInput("pe-lc-evidence", "labelEvidenceColor", "Evidence")}
         ${colorInput("pe-lc-counterpoint", "labelCounterpointColor", "Counterpoint")}
       </div>
-    </div>`
+    </div>`,
+      toggle("pe-toggle-transition", "transitionAnimation", "Transition Words")
     ].join("");
-    const aids = toggle("pe-toggle-reading-aids", "readingAidsEnabled", "Enable Reading Aids") + `<div class="pe-sub-items" id="pe-aids-sub">${aidsSub}</div>`;
     const panelSz = draft.settings.panelSize ?? "comfortable";
-    const panelDisplay = `<div class="dra-pe-row">
+    const display = `<div class="dra-pe-row">
     <span class="dra-pe-label">Panel Size</span>
     <div class="panel-size-pill dra-pe-panel-size">
       ${["compact", "comfortable", "large"].map(
@@ -2400,10 +2403,10 @@
     </div>
   </div>`;
     return [
-      section("Typography", typography),
-      section("Reader Mode", readerMode),
-      section("Reading Aids", aids),
-      section("Panel Display", panelDisplay)
+      group("Readability", readability),
+      group("Focus &amp; Navigation", focusNav),
+      group("Comprehension", comprehension),
+      group("Display", display)
     ].join("");
   }
   function filterLabelColors(root, lens) {
@@ -2429,22 +2432,12 @@
       const el = e.target;
       if (!el.id?.startsWith("pe-")) return;
       switch (el.id) {
-        case "pe-toggle-typography": {
-          update("typographyEnabled", el.checked);
-          root.querySelector("#pe-typo-sub").style.display = el.checked ? "" : "none";
-          break;
-        }
         case "pe-toggle-bold":
           update("boldBeginning", el.checked);
           break;
         case "pe-font-family":
           update("fontFamily", el.value);
           break;
-        case "pe-toggle-reading-aids": {
-          update("readingAidsEnabled", el.checked);
-          root.querySelector("#pe-aids-sub").style.display = el.checked ? "" : "none";
-          break;
-        }
         case "pe-toggle-gradient":
           update("gradientRows", el.checked);
           break;
@@ -2504,6 +2497,7 @@
       };
       if (numKeys[el.id]) {
         const v = parseFloat(el.value);
+        if (!Number.isFinite(v)) return;
         update(numKeys[el.id], v);
         const display = root.querySelector(`#${el.id}-val`);
         if (display) display.textContent = el.value;
@@ -2511,7 +2505,25 @@
         update(colorKeys[el.id], el.value);
       }
     });
+    const STEP_KEY = {
+      "pe-font-size": "fontSize",
+      "pe-line-height": "lineHeight",
+      "pe-word-spacing": "wordSpacing",
+      "pe-letter-spacing": "letterSpacing"
+    };
     container.addEventListener("click", (e) => {
+      const stepBtn = e.target.closest("[data-pe-step]");
+      if (stepBtn) {
+        const input = root.querySelector("#" + stepBtn.dataset.peStep);
+        if (input) {
+          const step = Number(input.step), min = Number(input.min), max = Number(input.max);
+          let v = Number(input.value) + Number(stepBtn.dataset.peDir) * step;
+          v = Math.min(max, Math.max(min, Math.round(v / step) * step));
+          input.value = step < 1 ? v.toFixed(step < 0.05 ? 2 : 1) : String(v);
+          update(STEP_KEY[stepBtn.dataset.peStep], Number(input.value));
+        }
+        return;
+      }
       const btn = e.target.closest("[data-pe-mode]");
       if (btn) {
         const feature = btn.dataset.peFeature;
@@ -2581,10 +2593,7 @@
     }
     const body = root.querySelector(".dra-pe-preview-body");
     if (!body) return;
-    const isRulerActive = () => {
-      const s = draft?.settings;
-      return s?.readingAidsEnabled && s?.rulerActive;
-    };
+    const isRulerActive = () => Boolean(draft?.settings?.rulerActive);
     const syncTransform = () => {
       if (!isRulerActive()) return;
       const wrap = body.querySelector(".dra-pe-ruler-wrap");
@@ -2668,8 +2677,6 @@
     root.innerHTML = buildEditorHTML(title, { onboarding: isOnboarding });
     root.querySelector(".dra-pe-form").innerHTML = buildFormHTML();
     wireForm(root);
-    root.querySelector("#pe-typo-sub").style.display = draft.settings.typographyEnabled ? "" : "none";
-    root.querySelector("#pe-aids-sub").style.display = draft.settings.readingAidsEnabled ? "" : "none";
     syncColorInputsDisabled(root, draft.actions?.autoOpenReaderMode ?? false);
     refreshPreview();
     setupRulerTracking(root);
@@ -2932,7 +2939,7 @@
     }
     if (msg.type === "EMOTION_RESULT") {
       if (msg.requestId !== state.emotionRequestId) return;
-      if (!state.settings.readingAidsEnabled || !state.settings.emotionColor || state.settings.emotionMode !== "ai") {
+      if (!state.settings.emotionColor || state.settings.emotionMode !== "ai") {
         state.emotionAIInProgress = false;
         return;
       }
@@ -2954,7 +2961,7 @@
       state.emotionAIInProgress = false;
       state.emotionLoaded = false;
       state.emotionRequestFailed = true;
-      if (!state.settings.readingAidsEnabled || !state.settings.emotionColor || state.settings.emotionMode !== "ai") return;
+      if (!state.settings.emotionColor || state.settings.emotionMode !== "ai") return;
       chrome.runtime.sendMessage({ type: "AI_STATUS", feature: "emotion", status: "error" });
     }
     if (msg.type === "SIMPLIFY_RESULT") {
@@ -2970,6 +2977,7 @@
         state.emotionRequestFailed = false;
         state.emotionAIInProgress = false;
         state.emotionRequestId = null;
+        requestEmotionAnalysis();
       }
       if (msg.feature === "labels") {
         state.aiSentenceLabels = [];
@@ -2979,6 +2987,7 @@
         state.sentenceLabelsLoaded = false;
         state.sentenceLabelsRequestFailed = false;
         state.sentenceLabelsRequestId = null;
+        requestSentenceLabels();
       }
       render();
     }

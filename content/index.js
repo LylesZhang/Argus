@@ -6,7 +6,8 @@ import { state } from './state.js';
 import { render } from './render.js';
 import { findContentArea } from './detect.js';
 import { clearFocusMask } from './features/topicFocus.js';
-import { DEFAULT_EMOTION_POSITIVE, DEFAULT_EMOTION_NEGATIVE, DEFAULT_EMOTION_COMPLEX } from './features/emotions.js';
+import { DEFAULT_EMOTION_POSITIVE, DEFAULT_EMOTION_NEGATIVE, DEFAULT_EMOTION_COMPLEX, requestEmotionAnalysis } from './features/emotions.js';
+import { requestSentenceLabels } from './features/labels.js';
 import { DEFAULT_TRANSITION_WORDS } from './features/transitions.js';
 import { openImmersiveReader, closeImmersiveReader, refreshImmersiveReader, setTypewriterActive, setTypewriterSpeed, startTypewriterFromBeginning } from './features/immersiveReader.js';
 import { openPresetEditor, maybeShowOnboarding } from './features/presetEditor.js';
@@ -244,9 +245,7 @@ chrome.runtime.onMessage.addListener((msg) => {
 
   if (msg.type === 'EMOTION_RESULT') {
     if (msg.requestId !== state.emotionRequestId) return;
-    if (!state.settings.readingAidsEnabled ||
-        !state.settings.emotionColor ||
-        state.settings.emotionMode !== 'ai') {
+    if (!state.settings.emotionColor || state.settings.emotionMode !== 'ai') {
       state.emotionAIInProgress = false;
       return;
     }
@@ -268,9 +267,7 @@ chrome.runtime.onMessage.addListener((msg) => {
     state.emotionAIInProgress = false;
     state.emotionLoaded = false;
     state.emotionRequestFailed = true;
-    if (!state.settings.readingAidsEnabled ||
-        !state.settings.emotionColor ||
-        state.settings.emotionMode !== 'ai') return;
+    if (!state.settings.emotionColor || state.settings.emotionMode !== 'ai') return;
     chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: 'emotion', status: 'error' });
   }
 
@@ -289,6 +286,7 @@ chrome.runtime.onMessage.addListener((msg) => {
       state.emotionRequestFailed = false;
       state.emotionAIInProgress = false;
       state.emotionRequestId = null;
+      requestEmotionAnalysis();
     }
     if (msg.feature === 'labels') {
       state.aiSentenceLabels         = [];
@@ -298,6 +296,7 @@ chrome.runtime.onMessage.addListener((msg) => {
       state.sentenceLabelsLoaded     = false;
       state.sentenceLabelsRequestFailed = false;
       state.sentenceLabelsRequestId = null;
+      requestSentenceLabels();
     }
     render();
   }

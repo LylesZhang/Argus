@@ -8,6 +8,14 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/', (req, res, next) => {
+  if (req.path === '/status') return next();
+  if (!req.headers['x-argus-version']) {
+    return res.status(403).json({ error: 'outdated client' });
+  }
+  next();
+});
+
 app.get('/api/status', (_req, res) => {
   res.json(pendingRequestStatus());
 });

@@ -77,8 +77,7 @@ export function generateEmotionHighlights() {
 export function requestEmotionAnalysis() {
   // Defensive gate: callers and delayed render cycles must never start emotion
   // analysis unless the AI Emotion feature is currently enabled.
-  if (!state.settings.readingAidsEnabled ||
-      !state.settings.emotionColor ||
+  if (!state.settings.emotionColor ||
       state.settings.emotionMode !== 'ai') {
     state.emotionAIInProgress = false;
     return;
