@@ -243,11 +243,12 @@ function initFeatureRows() {
     if (detail && expandBtn) {
       expandBtn.addEventListener('click', () => row.classList.toggle('expanded'));
     }
-    // Turning a feature on auto-expands its row so its settings are visible.
+    // Keep disclosure state in sync with the feature toggle: turning a feature
+    // on reveals its settings, while turning it off closes the detail panel.
     const toggle = row.querySelector(':scope > .feature-row-head input[type="checkbox"]');
     if (detail && toggle) {
       toggle.addEventListener('change', () => {
-        if (toggle.checked) row.classList.add('expanded');
+        row.classList.toggle('expanded', toggle.checked);
       });
     }
   });

@@ -115,11 +115,11 @@
         <!-- Bionic Reading -->
         <div class="feature-row">
           <div class="feature-row-head">
+            <span class="feature-row-name">Bionic Reading</span>
             <label class="toggle-switch">
               <input type="checkbox" id="toggle-bold">
               <span class="track"></span>
             </label>
-            <span class="feature-row-name">Bionic Reading</span>
           </div>
         </div>
 
@@ -148,14 +148,14 @@
         <!-- Row Shading -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-gradient">
-              <span class="track"></span>
-            </label>
             <button class="feature-row-expand" type="button">
               <span class="feature-row-name">Row Shading</span>
               <span class="feature-row-chevron"></span>
             </button>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-gradient">
+              <span class="track"></span>
+            </label>
           </div>
           <div class="feature-detail">
             <div class="color-row">
@@ -194,14 +194,14 @@
         <!-- Reader Mode -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-immersive-reader">
-              <span class="track"></span>
-            </label>
             <button class="feature-row-expand" type="button">
               <span class="feature-row-name">Reader Mode</span>
               <span class="feature-row-chevron"></span>
             </button>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-immersive-reader">
+              <span class="track"></span>
+            </label>
           </div>
           <div class="feature-detail">
             <div class="toggle-row typewriter-row disabled" id="typewriter-control">
@@ -219,14 +219,14 @@
         <!-- Reading Ruler -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-ruler">
-              <span class="track"></span>
-            </label>
             <button class="feature-row-expand" type="button">
               <span class="feature-row-name">Reading Ruler</span>
               <span class="feature-row-chevron"></span>
             </button>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-ruler">
+              <span class="track"></span>
+            </label>
           </div>
           <div class="feature-detail" id="ruler-size-control">
             <div class="control-block">
@@ -242,14 +242,14 @@
         <!-- Auto Scroll -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-auto-scroll">
-              <span class="track"></span>
-            </label>
             <button class="feature-row-expand" type="button">
               <span class="feature-row-name">Auto Scroll</span>
               <span class="feature-row-chevron"></span>
             </button>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-auto-scroll">
+              <span class="track"></span>
+            </label>
           </div>
           <div class="feature-detail" id="auto-scroll-control">
             <div class="control-block">
@@ -269,15 +269,15 @@
               <span class="feature-row-name">Topic Focus</span>
               <span class="feature-row-chevron"></span>
             </button>
-          </div>
-          <div class="feature-detail">
-            <div class="ai-controls topic-focus-mode">
+            <div class="ai-controls feature-row-ai-controls topic-focus-mode">
               <div class="mode-pill" id="topic-focus-mode-pill">
                 <button class="mode-btn active" data-feature="topicFocus" data-mode="local">Local</button>
-                <button class="mode-btn"        data-feature="topicFocus" data-mode="ai">AI</button>
+                <button class="mode-btn" data-feature="topicFocus" data-mode="ai">AI</button>
               </div>
               <span class="ai-status-dot hidden" id="focus-ai-status"></span>
             </div>
+          </div>
+          <div class="feature-detail">
             <div class="topic-focus-area">
               <input type="text" id="topic-input" placeholder="Type a topic to focus on…">
               <button id="topic-apply">Apply</button>
@@ -294,17 +294,11 @@
         <!-- Emotion Colors -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-emotion">
-              <span class="track"></span>
-            </label>
             <button class="feature-row-expand" type="button">
               <span class="feature-row-name">Emotion Colors</span>
               <span class="feature-row-chevron"></span>
             </button>
-          </div>
-          <div class="feature-detail">
-            <div class="ai-controls emotion-mode">
+            <div class="ai-controls feature-row-ai-controls emotion-mode">
               <div class="mode-pill" id="emotion-mode-pill">
                 <button class="mode-btn active" data-feature="emotion" data-mode="local">Local</button>
                 <button class="mode-btn" data-feature="emotion" data-mode="ai">AI</button>
@@ -314,7 +308,12 @@
                 <button class="ai-retry-btn" data-feature="emotion">Analyze</button>
               </div>
             </div>
-
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-emotion">
+              <span class="track"></span>
+            </label>
+          </div>
+          <div class="feature-detail">
             <div class="emotion-colors" id="emotion-colors">
               <div class="color-row">
                 <span>Positive</span>
@@ -371,23 +370,22 @@
         <!-- Lens -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-labels">
-              <span class="track"></span>
-            </label>
             <button class="feature-row-expand" type="button">
               <span class="feature-row-name">Lens</span>
               <span class="feature-row-chevron"></span>
             </button>
-          </div>
-          <div class="feature-detail">
-            <div class="ai-controls lens-analyze">
+            <div class="ai-controls feature-row-ai-controls lens-analyze">
               <div class="ai-status-row hidden" id="labels-ai-row">
                 <span class="ai-status-dot hidden" id="labels-ai-status"></span>
                 <button class="ai-retry-btn" data-feature="labels">Analyze</button>
               </div>
             </div>
-
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-labels">
+              <span class="track"></span>
+            </label>
+          </div>
+          <div class="feature-detail">
             <div class="sentence-label-colors" id="sentence-label-colors">
               <div class="color-row">
                 <span>Reading Purpose</span>
@@ -454,14 +452,14 @@
         <!-- Transition Words -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <label class="toggle-switch">
-              <input type="checkbox" id="toggle-transition">
-              <span class="track"></span>
-            </label>
             <button class="feature-row-expand" type="button">
               <span class="feature-row-name">Transition Words</span>
               <span class="feature-row-chevron"></span>
             </button>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-transition">
+              <span class="track"></span>
+            </label>
           </div>
           <div class="feature-detail">
             <div class="feature-detail-words">
@@ -488,11 +486,11 @@
         <!-- Simplify Text -->
         <div class="feature-row">
           <div class="feature-row-head">
+            <span class="feature-row-name">Simplify Text</span>
             <label class="toggle-switch">
               <input type="checkbox" id="toggle-simplify">
               <span class="track"></span>
             </label>
-            <span class="feature-row-name">Simplify Text</span>
           </div>
         </div>
       </div>

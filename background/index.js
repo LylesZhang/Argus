@@ -702,7 +702,10 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === 'AI_RETRY') {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       const tab = tabs[0];
-      if (!tab) return;
+      if (!tab) {
+        chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: msg.feature, status: 'error' }).catch(() => {});
+        return;
+      }
       if (readerTabs.get(tab.id) === 'pdf') {
         // PDF caches are keyed by fingerprint; successes are stable and errors
         // are never cached, so a retry safely re-fetches without cache busting.
@@ -717,7 +720,12 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
         for (const key of [...labelCache.keys()])   if (key.startsWith(url + '|')) labelCache.delete(key);
         for (const key of [...labelPending.keys()]) if (key.startsWith(url + '|')) labelPending.delete(key);
       }
-      chrome.tabs.sendMessage(tab.id, msg);
+      chrome.tabs.sendMessage(tab.id, msg).catch(() => {
+        // A panel can be open on a page that has no content script (for
+        // example after an extension reload or on an ungranted origin). Do not
+        // leave Analyze in its loading state when the retry cannot be routed.
+        chrome.runtime.sendMessage({ type: 'AI_STATUS', feature: msg.feature, status: 'error' }).catch(() => {});
+      });
     });
   }
   if (msg.type === 'OPEN_IMMERSIVE_READER')  forwardToActiveTab();

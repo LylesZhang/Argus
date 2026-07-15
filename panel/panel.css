@@ -252,8 +252,35 @@ body {
 
 .account-sync-badge[data-state="error"] { background: #fdecec; color: #a33131; }
 .account-sync-badge[data-state="pending"] { background: #fff4dc; color: #8a5a00; }
-.account-actions { flex-wrap: wrap; margin-top: 14px; }
-.account-card .account-delete { color: #a33131; margin-left: auto; }
+.account-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 14px;
+}
+
+.account-actions button {
+  width: 100%;
+  min-width: 0;
+}
+
+#account-sync-now {
+  border-color: var(--navy);
+  background: var(--navy);
+  color: #fff;
+}
+
+#account-sync-now:hover { background: var(--navy-hover); }
+
+.account-card .account-delete {
+  grid-column: 1 / -1;
+  color: #a33131;
+  border-color: #efc3c3;
+}
+
+.account-card .account-delete:hover {
+  background: #fdecec;
+  border-color: #dfa1a1;
+}
 
 .account-message {
   min-height: 1.4em;
@@ -565,12 +592,12 @@ body {
 .feature-group:first-child { border-top: none; }
 
 .feature-group-title {
-  font-size: var(--label-font-size);
+  font-size: var(--section-font-size);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.09em;
-  color: var(--muted);
-  padding: 12px 16px 4px;
+  color: var(--navy);
+  padding: 18px 16px 10px;
 }
 
 .feature-row { margin: 0 6px; border-radius: 8px; }
@@ -583,12 +610,12 @@ body {
   min-height: var(--control-height);
 }
 
-/* Clickable expand target fills the remaining row width */
+/* The disclosure arrow stays immediately after the feature title. */
 .feature-row-expand {
-  flex: 1;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   background: transparent;
   border: none;
@@ -599,6 +626,12 @@ body {
 }
 
 .feature-row-name { font-size: var(--control-font-size); color: #333; }
+
+/* Non-expandable rows still keep the feature label aligned on the left. */
+.feature-row-head > .feature-row-name { flex: 1 1 auto; min-width: 0; }
+
+/* Keep every feature toggle anchored to the far right edge of the panel. */
+.feature-row-head > .toggle-switch { margin-left: auto; }
 
 .feature-row-chevron {
   width: 14px;
@@ -618,12 +651,76 @@ body {
   transform: rotate(45deg);
   transition: transform 0.2s, top 0.2s;
 }
-.feature-row.expanded .feature-row-chevron::before {
+.feature-row.expanded > .feature-row-head .feature-row-chevron::before {
   transform: rotate(-135deg);
   top: 5px;
 }
 .feature-row-expand:hover .feature-row-name { color: var(--navy); }
 .feature-row-expand:hover .feature-row-chevron::before { border-color: var(--navy); }
+
+.feature-row-ai-controls {
+  flex: 0 0 auto;
+  margin-left: 0;
+}
+
+/* AI feature rows use shared fixed columns so every control type lines up:
+   title/chevron | Local/AI | status | Analyze | toggle. */
+.feature-row-head:has(.feature-row-ai-controls) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 76px 14px 58px var(--switch-width);
+  column-gap: 4px;
+}
+
+.feature-row-head:has(.feature-row-ai-controls) > .feature-row-expand {
+  grid-column: 1;
+  min-width: 0;
+  gap: 4px;
+}
+
+.feature-row-head:has(.feature-row-ai-controls) .feature-row-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Flatten the wrappers so their children participate in the header grid. */
+.feature-row-head .feature-row-ai-controls,
+.feature-row-head .feature-row-ai-controls > .ai-status-row {
+  display: contents;
+}
+
+.feature-row-head .feature-row-ai-controls > .mode-pill {
+  grid-column: 2;
+  justify-self: stretch;
+  width: 100%;
+}
+
+.feature-row-head .feature-row-ai-controls .mode-btn {
+  flex: 1;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.feature-row-head .feature-row-ai-controls .ai-status-dot {
+  grid-column: 3;
+  justify-self: center;
+}
+
+.feature-row-head .feature-row-ai-controls .ai-retry-btn {
+  grid-column: 4;
+  justify-self: stretch;
+  width: 100%;
+  margin-left: 0;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+.feature-row-head:has(.feature-row-ai-controls) > .toggle-switch {
+  grid-column: 5;
+  justify-self: end;
+  margin-left: 0;
+}
 
 /* Detail panel — hidden until the row is expanded */
 .feature-detail {
@@ -685,7 +782,7 @@ body {
 .feature-detail-words-body { display: none; }
 .feature-detail-words.expanded > .feature-detail-words-body { display: block; }
 
-.feature-detail-words.expanded .feature-row-chevron::before {
+.feature-detail-words.expanded > .feature-detail-words-head .feature-row-chevron::before {
   transform: rotate(-135deg);
   top: 5px;
 }
@@ -1060,16 +1157,17 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 }
 
 .topic-focus-area {
-  padding: 4px 16px 12px;
+  padding: 4px 0 0;
   display: flex;
-  align-items: stretch;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
 }
 
 .topic-focus-area input {
   flex: 1 1 auto;
   min-width: 0;
-  padding: 9px 12px;
+  height: 32px;
+  padding: 0 9px;
   border: 1px solid var(--border);
   border-radius: var(--ctl-radius);
   font-size: var(--control-font-size);
@@ -1082,9 +1180,10 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 
 .topic-focus-area button {
   flex: 0 0 auto;
-  padding: 9px 14px;
+  min-height: 32px;
+  padding: 5px 10px;
   border-radius: var(--ctl-radius);
-  font-size: var(--control-font-size);
+  font-size: var(--small-font-size);
   font-weight: 600;
   cursor: pointer;
   border: 1px solid var(--border);
