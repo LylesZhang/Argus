@@ -109,6 +109,17 @@
         </div>
       </div>
 
+      <section class="pdf-import" aria-labelledby="pdf-import-title">
+        <div id="pdf-import-title" class="pdf-import-title">Open a PDF</div>
+        <label class="pdf-file-button" for="pdf-file-input">Choose PDF file</label>
+        <input id="pdf-file-input" type="file" accept="application/pdf,.pdf" hidden>
+        <div class="pdf-url-row">
+          <input id="pdf-url-input" type="url" placeholder="https://example.com/document.pdf" aria-label="PDF URL">
+          <button id="pdf-url-open" type="button">Open</button>
+        </div>
+        <p id="pdf-import-status" class="pdf-import-status" role="status"></p>
+      </section>
+
       <!-- Reader Mode -->
       <div class="section-label reader-mode-label">
         <span>Reader Mode</span>

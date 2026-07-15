@@ -1,0 +1,80 @@
+@font-face { font-family: OpenDyslexic; src: url('../fonts/OpenDyslexic-Regular.otf'); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+
+#app {
+  --dra-reader-progress: 0%;
+  --dra-reader-light-bg: #f7f7fb;
+  --dra-reader-light-text: #2d2d34;
+  --dra-reader-warm-bg: #f4f0e7;
+  --dra-reader-warm-text: #312f2a;
+  --dra-reader-dark-bg: #171729;
+  --dra-reader-dark-text: #ececf4;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #2f2f38;
+  background: #f1f0f8;
+}
+#app[data-theme="light"] { background: var(--dra-reader-light-bg); color: var(--dra-reader-light-text); }
+#app[data-theme="warm"] { background: var(--dra-reader-warm-bg); color: var(--dra-reader-warm-text); }
+#app[data-theme="dark"] { background: var(--dra-reader-dark-bg); color: var(--dra-reader-dark-text); }
+
+.dra-reader-shell { height: 100%; display: grid; grid-template-rows: auto 1fr; }
+.dra-reader-topbar { position: relative; z-index: 4; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 18px 13px; background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(14px); }
+#app[data-theme="dark"] .dra-reader-topbar { background: rgba(23, 23, 41, 0.82); }
+.dra-reader-brand { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0; color: #1e1b4b; }
+#app[data-theme="dark"] .dra-reader-brand { color: #fff; }
+.dra-reader-actions { display: flex; align-items: center; gap: 7px; }
+.dra-reader-actions button { border: 1px solid rgba(30, 27, 75, 0.14); background: #fff; color: #363643; border-radius: 7px; min-height: 28px; padding: 4px 9px; font: inherit; font-size: 12px; font-weight: 650; cursor: pointer; }
+.dra-reader-theme-light { background: var(--dra-reader-light-bg) !important; color: var(--dra-reader-light-text) !important; }
+.dra-reader-theme-warm { background: var(--dra-reader-warm-bg) !important; color: var(--dra-reader-warm-text) !important; }
+.dra-reader-theme-dark { background: var(--dra-reader-dark-bg) !important; color: var(--dra-reader-dark-text) !important; }
+.dra-reader-actions button.active { border-color: #5aaea9; box-shadow: 0 0 0 2px rgba(90, 174, 169, 0.28); }
+.dra-reader-close { display: inline-grid; place-items: center; width: 28px; min-width: 28px; padding: 0 !important; border-radius: 50% !important; background: transparent !important; color: currentColor !important; border-color: transparent !important; font-size: 20px !important; line-height: 1 !important; }
+.dra-reader-progress { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(30, 27, 75, 0.12); }
+.dra-reader-progress i { display: block; width: 0; height: 100%; background: #5aaea9; transition: width 0.12s linear; }
+
+.dra-reader-scroll { min-height: 0; overflow-y: auto; padding: 44px 24px 70px; }
+.dra-reader-article { width: min(760px, calc(100vw - 48px)); margin: 0 auto; padding: 28px 34px; border-radius: 8px; font-size: 20px; line-height: 1.8; word-break: break-word; }
+.dra-reader-article h1 { margin: 0 0 30px; font-size: clamp(30px, 5vw, 52px); line-height: 1.12; letter-spacing: 0; font-weight: 760; }
+.dra-reader-article p { margin: 0 0 1.15em; }
+.status { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; text-align: center; opacity: .72; }
+.status.error { color: #c2410c; }
+
+.sentence { display: inline; }
+.reader-muted { opacity: .38; }
+.bionic { font-weight: 800; }
+.transition { color: #2563eb; text-decoration: underline; text-underline-offset: 3px; }
+.positive { color: var(--positive, #27ae60); }
+.negative { color: var(--negative, #e74c3c); }
+.complex { color: var(--complex, #8e44ad); }
+.label-key-point { background: color-mix(in srgb, var(--label-key-point) 25%, transparent); }
+.label-core-detail { background: color-mix(in srgb, var(--label-core-detail) 22%, transparent); }
+.label-concept { background: color-mix(in srgb, var(--label-concept) 21%, transparent); }
+.label-reasoning { background: color-mix(in srgb, var(--label-reasoning) 23%, transparent); }
+.label-takeaway { background: color-mix(in srgb, var(--label-takeaway) 22%, transparent); }
+.label-claim { background: color-mix(in srgb, var(--label-claim) 23%, transparent); }
+.label-evidence { background: color-mix(in srgb, var(--label-evidence) 22%, transparent); }
+.label-counterpoint { background: color-mix(in srgb, var(--label-counterpoint) 20%, transparent); }
+#app.rows .dra-reader-article p { background-image: repeating-linear-gradient(to bottom, color-mix(in srgb, var(--row, #bfb3d0) 18%, transparent) 0, color-mix(in srgb, var(--row, #bfb3d0) 18%, transparent) 1lh, transparent 1lh, transparent 2lh); }
+.dra-tw-banner { margin: 0 0 24px; padding: 14px 18px 13px; border-radius: 8px; background: rgba(90, 174, 169, 0.12); border: 1px dashed rgba(90, 174, 169, 0.4); color: inherit; }
+.dra-tw-banner-main { font-size: 14px; }
+.dra-tw-banner-hint { margin-top: 7px; color: #7a7a8a; font-size: 12px; line-height: 1.35; }
+.dra-tw-banner button { margin-left: 6px; border: 1px solid rgba(30, 27, 75, 0.14); background: #fff; color: #363643; border-radius: 7px; padding: 4px 9px; font: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+.dra-tw-pickable { cursor: pointer; border-radius: 3px; transition: background .15s; }
+.dra-tw-pickable:hover { background: rgba(90, 174, 169, .22); }
+.dra-tw-continue-hint { width: fit-content; margin: -8px 0 1.25em; padding: 0; color: #7a7a8a; font-size: 12px; font-weight: 600; animation: dra-tw-hint-in .28s ease-out both; }
+#app[data-theme="dark"] .dra-tw-continue-hint { color: #aaaabc; }
+@keyframes dra-tw-hint-in { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+.dra-reader-scroll.dra-tw-scroll-pad { padding-top: 48vh; padding-bottom: 48vh; }
+.ruler { display: none; position: fixed; z-index: 3; left: 0; right: 0; background: color-mix(in srgb, currentColor 18%, transparent); pointer-events: none; }
+.ruler.active { display: block; }
+#ruler-top { top: 0; }
+#ruler-bottom { bottom: 0; }
+
+@media (max-width: 640px) {
+  .dra-reader-topbar { align-items: flex-start; }
+  .dra-reader-actions { flex-wrap: wrap; justify-content: flex-end; }
+  .dra-reader-scroll { padding: 28px 14px 54px; }
+  .dra-reader-article { width: 100%; padding: 22px 12px; }
+}

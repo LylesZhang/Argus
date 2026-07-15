@@ -289,6 +289,42 @@ function broadcast(changed) {
   maybeShowEffectsWarning(changed);
 }
 
+// PDF files cannot be sent through extension messaging. Keep each selected file
+// in the extension origin's IndexedDB until the dedicated reader has consumed it.
+function savePdfSession(file) {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open('argus-pdf', 1);
+    request.onupgradeneeded = () => request.result.createObjectStore('sessions');
+    request.onerror = () => reject(request.error);
+    request.onsuccess = () => {
+      const db = request.result;
+      const id = crypto.randomUUID();
+      const tx = db.transaction('sessions', 'readwrite');
+      tx.objectStore('sessions').put({ file, title: file.name, createdAt: Date.now() }, id);
+      tx.oncomplete = () => { db.close(); resolve(id); };
+      tx.onerror = () => reject(tx.error);
+    };
+  });
+}
+
+function setPdfStatus(message, state = '') {
+  const status = document.getElementById('pdf-import-status');
+  status.textContent = message;
+  status.dataset.state = state;
+}
+
+async function openPdfUrl() {
+  const input = document.getElementById('pdf-url-input');
+  let url;
+  try { url = new URL(input.value.trim()); } catch { setPdfStatus('Enter a valid PDF URL.', 'error'); return; }
+  if (!/^https?:$/.test(url.protocol)) { setPdfStatus('Only HTTP(S) PDF links are supported.', 'error'); return; }
+  setPdfStatus('Requesting access to this website…');
+  const granted = await chrome.permissions.request({ origins: [`${url.protocol}//${url.host}/*`] });
+  if (!granted) { setPdfStatus('Website access was not granted.', 'error'); return; }
+  chrome.runtime.sendMessage({ type: 'OPEN_PDF_READER', sourceUrl: url.href, title: url.pathname.split('/').pop() || 'PDF document' });
+  setPdfStatus('Opening PDF Reader…');
+}
+
 // ── Sync all UI controls to match current settings ─────────────────────
 
 function syncUI() {
@@ -372,6 +408,29 @@ function init() {
     effectsWarningDisabled = true;
     chrome.storage.local.set({ effectsWarningDisabled: true });
     hideEffectsWarning();
+  });
+
+  document.getElementById('pdf-file-input').addEventListener('change', async event => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setPdfStatus('Please choose a PDF file.', 'error');
+      return;
+    }
+    try {
+      setPdfStatus('Preparing PDF Reader…');
+      const sessionId = await savePdfSession(file);
+      chrome.runtime.sendMessage({ type: 'OPEN_PDF_READER', sessionId, title: file.name });
+      setPdfStatus('Opening PDF Reader…');
+    } catch {
+      setPdfStatus('Could not prepare this PDF.', 'error');
+    } finally {
+      event.target.value = '';
+    }
+  });
+  document.getElementById('pdf-url-open').addEventListener('click', openPdfUrl);
+  document.getElementById('pdf-url-input').addEventListener('keydown', event => {
+    if (event.key === 'Enter') openPdfUrl();
   });
 
   document.querySelectorAll('.panel-size-btn').forEach(btn => {
@@ -790,6 +849,14 @@ function init() {
 }
 
 chrome.runtime.onMessage.addListener((msg) => {
+  if (msg.type === 'PDF_READER_OPENED') {
+    setPdfStatus('PDF Reader opened successfully.', 'success');
+    return;
+  }
+  if (msg.type === 'PDF_READER_OPEN_FAILED') {
+    setPdfStatus('Could not open PDF Reader.', 'error');
+    return;
+  }
   if (msg.type !== 'IMMERSIVE_READER_STATUS') return;
   const toggle = document.getElementById('toggle-immersive-reader');
   if (toggle) toggle.checked = Boolean(msg.active);
@@ -1175,6 +1242,7 @@ chrome.storage.sync.get('draSettings', (data) => {
   init();
   initWordListEditor();
   initPresetManager();
+  chrome.runtime.sendMessage({ type: 'GET_ACTIVE_READER_STATUS' });
 });
 
 chrome.storage.local.get(['activeTab', 'effectsWarningDisabled'], (data) => {

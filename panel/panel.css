@@ -180,6 +180,15 @@ body {
 
 .reader-mode-label { padding-bottom: 10px; }
 
+.pdf-import { margin: 14px 16px 4px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; background: #fff; }
+.pdf-import-title { margin-bottom: 9px; color: var(--navy); font-weight: 700; font-size: var(--control-font-size); }
+.pdf-file-button, .pdf-url-row button { display: inline-flex; align-items: center; justify-content: center; min-height: 32px; border: 0; border-radius: 7px; background: var(--teal); color: #fff; font: inherit; font-weight: 700; cursor: pointer; padding: 0 10px; }
+.pdf-url-row { display: flex; gap: 7px; margin-top: 9px; }
+.pdf-url-row input { min-width: 0; flex: 1; border: 1px solid var(--border); border-radius: 7px; padding: 7px 8px; font: inherit; }
+.pdf-import-status { min-height: 15px; margin-top: 7px; color: #737487; font-size: var(--small-font-size); }
+.pdf-import-status[data-state="success"] { color: #16803b; font-weight: 650; }
+.pdf-import-status[data-state="error"] { color: #b42318; }
+
 /* ── Panel display settings ─────────────────────────────────────────── */
 
 .settings-row {

@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "esbuild content/index.js --bundle --outfile=content/bundle.js --platform=browser",
+    "build": "esbuild content/index.js --bundle --outfile=content/bundle.js --platform=browser && esbuild pdf/reader.js --bundle --outfile=pdf/reader.bundle.js --platform=browser && cp node_modules/pdfjs-dist/build/pdf.worker.mjs pdf/pdf.worker.mjs",
+    "test": "node --test test/*.test.mjs",
     "watch": "esbuild content/index.js --bundle --outfile=content/bundle.js --platform=browser --watch"
   },
   "devDependencies": {
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "pdfjs-dist": "^5.4.149"
   }
 }
