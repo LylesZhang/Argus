@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Argus",
+  "name": "Argus: Dyslexia and ADHD Reading Aid",
   "version": "0.4.0",
   "description": "AI-powered reading aid for people with dyslexia. Customizes any webpage with visual aids for better reading experience.",
 
