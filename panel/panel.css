@@ -607,6 +607,35 @@ body {
 
 .feature-row-head .panel-size-pill { margin-left: auto; }
 
+/* Expand button inside Settings section titles */
+.feature-group-expand {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+/* Section titles start expanded: chevron points down */
+.feature-group-title .feature-row-chevron::before {
+  transform: rotate(45deg);
+}
+/* Section collapsed: chevron points right */
+.feature-group.collapsed > .feature-group-title .feature-row-chevron::before {
+  transform: rotate(-45deg);
+}
+
 .feature-row { margin: 0 6px; border-radius: 8px; }
 
 .feature-row-head {
@@ -655,12 +684,11 @@ body {
   height: 7px;
   border-right: 2px solid var(--muted);
   border-bottom: 2px solid var(--muted);
-  transform: rotate(45deg);
-  transition: transform 0.2s, top 0.2s;
+  transform: rotate(-45deg);
+  transition: transform 0.2s;
 }
 .feature-row.expanded > .feature-row-head .feature-row-chevron::before {
-  transform: rotate(-135deg);
-  top: 5px;
+  transform: rotate(45deg);
 }
 .feature-row-expand:hover .feature-row-name { color: var(--navy); }
 .feature-row-expand:hover .feature-row-chevron::before { border-color: var(--navy); }
@@ -790,8 +818,7 @@ body {
 .feature-detail-words.expanded > .feature-detail-words-body { display: block; }
 
 .feature-detail-words.expanded > .feature-detail-words-head .feature-row-chevron::before {
-  transform: rotate(-135deg);
-  top: 5px;
+  transform: rotate(45deg);
 }
 
 /* ── PDF import (inside the Open PDF feature-detail) ─────────────────── */

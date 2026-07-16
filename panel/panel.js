@@ -155,6 +155,38 @@ function maybeShowEffectsWarning(changed) {
   showEffectsWarning();
 }
 
+// ── Settings section collapse (feature-group titles in Settings tab) ────
+
+let sectionCollapseState = {};
+
+function initSectionCollapse() {
+  const groups = [...document.querySelectorAll('#tab-settings .feature-group')];
+  const collapsible = groups.map(group => {
+    const expandBtn = group.querySelector(':scope > .feature-group-title > .feature-group-expand');
+    const content   = [...group.children].filter(el => !el.classList.contains('feature-group-title'));
+    const id        = `tab-settings:${expandBtn?.textContent?.trim().toLowerCase().replace(/\s+/g, '-') || ''}`;
+    return { group, expandBtn, content, id };
+  }).filter(s => s.content.length > 0 && s.expandBtn);
+
+  chrome.storage.local.get('panelSectionCollapse', data => {
+    sectionCollapseState = data.panelSectionCollapse || {};
+    collapsible.forEach(({ group, expandBtn, content, id }) => {
+      const applyCollapse = collapsed => {
+        group.classList.toggle('collapsed', collapsed);
+        content.forEach(el => el.classList.toggle('section-content-collapsed', collapsed));
+      };
+      const toggle = () => {
+        const next = !sectionCollapseState[id];
+        sectionCollapseState = { ...sectionCollapseState, [id]: next };
+        chrome.storage.local.set({ panelSectionCollapse: sectionCollapseState });
+        applyCollapse(next);
+      };
+      applyCollapse(Boolean(sectionCollapseState[id]));
+      expandBtn.addEventListener('click', toggle);
+    });
+  });
+}
+
 // ── Feature-row expand/collapse (Effects tab) ──────────────────────────
 
 function initFeatureRows() {
@@ -340,6 +372,7 @@ function syncUI() {
 // ── Wire up all controls ───────────────────────────────────────────────
 
 function init() {
+  initSectionCollapse();
   initFeatureRows();
 
   document.getElementById('effects-warning-keep')?.addEventListener('click', hideEffectsWarning);
