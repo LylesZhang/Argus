@@ -693,6 +693,13 @@ body {
 .feature-row-expand:hover .feature-row-name { color: var(--navy); }
 .feature-row-expand:hover .feature-row-chevron::before { border-color: var(--navy); }
 
+.feature-row-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--navy);
+}
+
 .feature-row-ai-controls {
   flex: 0 0 auto;
   margin-left: 0;
