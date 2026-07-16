@@ -182,7 +182,7 @@ body {
 /* ── Account & cloud sync ───────────────────────────────────────────── */
 
 .account-card {
-  margin: 0 16px 20px;
+  margin: 0 6px;
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -592,6 +592,9 @@ body {
 .feature-group:first-child { border-top: none; }
 
 .feature-group-title {
+  display: flex;
+  align-items: center;
+  gap: var(--row-gap);
   font-size: var(--section-font-size);
   font-weight: 700;
   text-transform: uppercase;
@@ -599,6 +602,10 @@ body {
   color: var(--navy);
   padding: 18px 16px 10px;
 }
+
+.feature-group-title .preset-add-wrap { margin-left: auto; }
+
+.feature-row-head .panel-size-pill { margin-left: auto; }
 
 .feature-row { margin: 0 6px; border-radius: 8px; }
 

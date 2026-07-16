@@ -62,7 +62,6 @@ const PRESET_SETTING_KEY_SET = new Set(PRESET_SETTING_KEYS);
 
 let settings = { ...DEFAULT_SETTINGS };
 let settingsRevision = Date.now();
-let sectionCollapseState = {};
 let effectsWarningDisabled = false;
 
 const EFFECT_WARNING_THRESHOLD = 7;
@@ -154,84 +153,6 @@ function maybeShowEffectsWarning(changed) {
   if (effectsWarningDisabled) return;
   if (calculateActiveEffectScore(settings) < EFFECT_WARNING_THRESHOLD) return;
   showEffectsWarning();
-}
-
-function getSectionTitle(label) {
-  return label.querySelector('span')?.textContent?.trim() || '';
-}
-
-function getSectionId(label) {
-  const tabPanel = label.closest('.tab-panel');
-  return `${tabPanel?.id || 'panel'}:${getSectionTitle(label).toLowerCase().replace(/\s+/g, '-')}`;
-}
-
-function getSectionContent(label) {
-  const content = [];
-  let node = label.nextElementSibling;
-  while (node && !node.classList.contains('section-label')) {
-    content.push(node);
-    node = node.nextElementSibling;
-  }
-  return content;
-}
-
-function applySectionCollapse(label, collapsed) {
-  const button = label.querySelector('.collapse-btn');
-  const title = label.querySelector(':scope > span');
-  label.classList.toggle('section-label-collapsed', collapsed);
-  getSectionContent(label).forEach(el => {
-    el.hidden = collapsed;
-    el.classList.toggle('section-content-collapsed', collapsed);
-  });
-  if (button) {
-    button.classList.toggle('collapsed', collapsed);
-    button.setAttribute('aria-expanded', String(!collapsed));
-    button.setAttribute('aria-label', collapsed ? `Expand ${getSectionTitle(label)}` : `Collapse ${getSectionTitle(label)}`);
-  }
-  title?.setAttribute('aria-expanded', String(!collapsed));
-}
-
-function initSectionCollapse() {
-  const labels = [...document.querySelectorAll('.tab-panel .section-label')];
-  const collapsible = labels
-    .map(label => ({ label, id: getSectionId(label), content: getSectionContent(label) }))
-    .filter(section => section.content.length > 0);
-
-  collapsible.forEach(({ label }) => {
-    const title = label.querySelector(':scope > span');
-    label.classList.add('section-label-collapsible');
-    if (title) {
-      title.classList.add('section-title-toggle');
-      title.setAttribute('role', 'button');
-      title.setAttribute('tabindex', '0');
-    }
-    if (label.querySelector('.collapse-btn')) return;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'collapse-btn';
-    label.insertBefore(button, label.children[1] || null);
-  });
-
-  chrome.storage.local.get('panelSectionCollapse', data => {
-    sectionCollapseState = data.panelSectionCollapse || {};
-    collapsible.forEach(({ label, id }) => {
-      const toggleSection = () => {
-        const collapsed = !sectionCollapseState[id];
-        sectionCollapseState = { ...sectionCollapseState, [id]: collapsed };
-        chrome.storage.local.set({ panelSectionCollapse: sectionCollapseState });
-        applySectionCollapse(label, collapsed);
-      };
-      const title = label.querySelector(':scope > .section-title-toggle');
-      applySectionCollapse(label, Boolean(sectionCollapseState[id]));
-      label.querySelector('.collapse-btn')?.addEventListener('click', toggleSection);
-      title?.addEventListener('click', toggleSection);
-      title?.addEventListener('keydown', event => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        toggleSection();
-      });
-    });
-  });
 }
 
 // ── Feature-row expand/collapse (Effects tab) ──────────────────────────
@@ -419,7 +340,6 @@ function syncUI() {
 // ── Wire up all controls ───────────────────────────────────────────────
 
 function init() {
-  initSectionCollapse();
   initFeatureRows();
 
   document.getElementById('effects-warning-keep')?.addEventListener('click', hideEffectsWarning);

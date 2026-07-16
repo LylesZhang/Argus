@@ -502,39 +502,46 @@
     <div class="panel">
 
       <!-- Presets -->
-      <div class="section-label">
-        <span>Presets</span>
-        <div class="preset-add-wrap">
-          <!-- inline current-settings save input (hidden until triggered) -->
-          <input type="text" class="preset-name-input hidden" id="preset-save-now-name" placeholder="Preset name" maxlength="60">
-          <span class="preset-name-error hidden" id="preset-save-now-error">Preset name already exists</span>
-          <button class="preset-save-now-confirm hidden" id="preset-save-now-confirm">Save</button>
-          <button class="preset-save-now-cancel  hidden" id="preset-save-now-cancel">✕</button>
-          <button class="preset-add-btn" id="preset-add-btn" aria-label="Add preset">＋</button>
-          <div class="preset-add-menu hidden" id="preset-add-menu">
-            <button class="preset-add-menu-item" id="preset-save-now">Save Current Settings</button>
-            <button class="preset-add-menu-item" id="preset-create-new">Create Custom Preset</button>
+      <div class="feature-group">
+        <div class="feature-group-title">
+          Presets
+          <div class="preset-add-wrap">
+            <!-- inline current-settings save input (hidden until triggered) -->
+            <input type="text" class="preset-name-input hidden" id="preset-save-now-name" placeholder="Preset name" maxlength="60">
+            <span class="preset-name-error hidden" id="preset-save-now-error">Preset name already exists</span>
+            <button class="preset-save-now-confirm hidden" id="preset-save-now-confirm">Save</button>
+            <button class="preset-save-now-cancel  hidden" id="preset-save-now-cancel">✕</button>
+            <button class="preset-add-btn" id="preset-add-btn" aria-label="Add preset">＋</button>
+            <div class="preset-add-menu hidden" id="preset-add-menu">
+              <button class="preset-add-menu-item" id="preset-save-now">Save Current Settings</button>
+              <button class="preset-add-menu-item" id="preset-create-new">Create Custom Preset</button>
+            </div>
+          </div>
+        </div>
+        <div class="preset-list" id="preset-list">
+          <!-- populated by panel.js -->
+        </div>
+      </div>
+
+      <!-- Panel Display -->
+      <div class="feature-group">
+        <div class="feature-group-title">Panel Display</div>
+        <div class="feature-row">
+          <div class="feature-row-head">
+            <span class="feature-row-name">Panel Size</span>
+            <div class="panel-size-pill" id="panel-size-pill">
+              <button class="panel-size-btn" data-panel-size="compact" aria-label="Compact panel size">S</button>
+              <button class="panel-size-btn active" data-panel-size="comfortable" aria-label="Comfortable panel size">M</button>
+              <button class="panel-size-btn" data-panel-size="large" aria-label="Large panel size">L</button>
+            </div>
           </div>
         </div>
       </div>
-      <div class="preset-list" id="preset-list">
-        <!-- populated by panel.js -->
-      </div>
 
-      <div class="section-label"><span>Panel Display</span></div>
-
-      <div class="settings-row">
-        <span class="settings-row-label">Panel Size</span>
-        <div class="panel-size-pill" id="panel-size-pill">
-          <button class="panel-size-btn" data-panel-size="compact" aria-label="Compact panel size">S</button>
-          <button class="panel-size-btn active" data-panel-size="comfortable" aria-label="Comfortable panel size">M</button>
-          <button class="panel-size-btn" data-panel-size="large" aria-label="Large panel size">L</button>
-        </div>
-      </div>
-
-      <div class="section-label"><span>Account &amp; Sync</span></div>
-
-      <div class="account-card" id="account-card">
+      <!-- Account & Sync -->
+      <div class="feature-group">
+        <div class="feature-group-title">Account &amp; Sync</div>
+        <div class="account-card" id="account-card">
         <div id="account-signed-out">
           <p class="account-copy">Use Argus without an account, or sign in to restore your settings on other devices.</p>
           <label class="account-label" for="account-email">Email</label>
@@ -562,6 +569,7 @@
 
         <p id="account-message" class="account-message" role="status"></p>
       </div>
+      </div><!-- /feature-group account -->
 
     </div>
   </div>
