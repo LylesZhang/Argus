@@ -262,10 +262,11 @@ function buildFormHTML() {
 
   const comprehension = [
     // Emotion Colors
-    `<div class="dra-pe-row dra-pe-ai-row dra-pe-toggle-parent">
-      ${toggle('pe-toggle-emotion', 'emotionColor', 'Emotion Colors')}
+    `<label class="dra-pe-toggle-row dra-pe-toggle-parent">
+      <label class="toggle-switch"><input type="checkbox" id="pe-toggle-emotion" ${draft.settings.emotionColor ? 'checked' : ''}><span class="track"></span></label>
       ${modePill('pe-emotion-mode-pill', 'emotion', 'emotionMode')}
-    </div>`,
+      <span class="dra-pe-toggle-label">Emotion Colors</span>
+    </label>`,
     `<div class="dra-pe-child-options dra-pe-emotion-options">
       ${colorInput('pe-emotion-positive', 'emotionPositiveColor', 'Positive Color')}
       ${colorInput('pe-emotion-negative', 'emotionNegativeColor', 'Negative Color')}
