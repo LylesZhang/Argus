@@ -916,6 +916,8 @@ body {
 /* Normalize spacing of reused control classes inside a detail panel */
 .feature-detail .control-block { padding: 8px 0; }
 .feature-detail .control-row   { padding: 0; }
+.feature-detail .control-row .control-block:first-child { padding-right: 8px; }
+.feature-detail .control-row .control-block:last-child  { padding-left:  8px; }
 .feature-detail .ai-controls {
   margin: 0 0 8px 0;
   justify-content: flex-start;
@@ -1664,10 +1666,10 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
-  background: #fff;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(30,27,75,0.12);
+  box-shadow: var(--shadow-raised-hover);
   z-index: 10;
   min-width: max-content;
   overflow: hidden;
@@ -1685,11 +1687,11 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
-  color: #333;
+  color: var(--navy);
   cursor: pointer;
   white-space: nowrap;
 }
-.preset-add-menu-item:hover { background: #f4f4f9; }
+.preset-add-menu-item:hover { background: var(--surface-hover); }
 
 .preset-name-input {
   width: 110px;
@@ -1701,7 +1703,7 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
-  background: #fff;
+  background: var(--bg);
   box-shadow: var(--shadow-recessed);
   outline: none;
   transition: border-color 0.18s, box-shadow 0.18s;
@@ -1720,7 +1722,7 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   padding: 4px 8px;
   border: 1px solid #fecaca;
   border-radius: 6px;
-  background: #fff;
+  background: var(--bg);
   color: #dc2626;
   font-size: 11px;
   font-weight: 500;
@@ -1755,7 +1757,9 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   cursor: pointer;
   font-size: 14px;
   padding: 2px 4px;
+  transition: color 0.15s;
 }
+.preset-save-now-cancel:hover { color: var(--navy); }
 
 .preset-list { padding: 4px 0 8px; }
 
@@ -1766,14 +1770,14 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   padding: 6px 16px;
   cursor: pointer;
 }
-.preset-row:hover { background: #f9fffe8b; }
+.preset-row:hover { background: var(--surface-hover); }
 .preset-row.active { background: rgba(90,174,169,0.1); }
 
 .preset-row-name {
   flex: 1;
   font-size: 12px;
   font-weight: 400;
-  color: #333;
+  color: var(--navy);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1785,13 +1789,16 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   height: 16px;
   border: 1.5px solid var(--border);
   border-radius: 50%;
-  background: #fff;
+  background: var(--surface-recessed);
+  box-shadow: var(--shadow-recessed);
   flex-shrink: 0;
   cursor: pointer;
   position: relative;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .preset-active-toggle[aria-pressed="true"] {
   border-color: var(--teal);
+  box-shadow: none;
 }
 .preset-active-toggle[aria-pressed="true"]::after {
   content: '';
@@ -1805,10 +1812,10 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 }
 
 .preset-row-btn {
-  padding: 2px 8px;
+  padding: 4px 10px;
   font-size: 11px;
   font-weight: 600;
-  border-radius: 5px;
+  border-radius: var(--ctl-radius-sm);
   border: 1px solid var(--border-strong);
   background: var(--surface-raised);
   color: var(--muted);
@@ -1817,7 +1824,7 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   box-shadow: var(--shadow-raised);
   transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.05s;
 }
-.preset-row-btn:hover { background: var(--surface-raised-hover); color: #333; box-shadow: var(--shadow-raised-hover); }
+.preset-row-btn:hover { background: var(--surface-raised-hover); color: var(--navy); box-shadow: var(--shadow-raised-hover); }
 .preset-row-btn:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 .preset-row-btn.delete { border-color: #fecaca; color: #dc2626; }
 .preset-row-btn.delete:hover { background: #fee2e2; }

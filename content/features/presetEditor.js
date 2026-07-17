@@ -323,8 +323,16 @@ function syncColorInputsDisabled(root, disabled) {
   });
 }
 
+function updateSliderFill(el) {
+  const pct = (el.value - el.min) / (el.max - el.min) * 100;
+  el.style.setProperty('--pct', pct + '%');
+}
+
 function wireForm(root) {
   const container = root.querySelector('.dra-pe-form');
+
+  // Set initial --pct on all sliders so the filled track renders correctly
+  container.querySelectorAll('input[type="range"].slider').forEach(updateSliderFill);
 
   const update = (key, val) => {
     draft.settings[key] = val;
@@ -379,6 +387,7 @@ function wireForm(root) {
       update(numKeys[el.id], v);
       const display = root.querySelector(`#${el.id}-val`);
       if (display) display.textContent = el.value;
+      if (el.type === 'range') updateSliderFill(el);
     } else if (colorKeys[el.id]) {
       update(colorKeys[el.id], el.value);
     }

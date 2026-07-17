@@ -675,7 +675,7 @@ html.dra-preset-editor-open body {
   place-items: center;
   border-radius: 50%;
 }
-#dra-preset-editor .dra-pe-close:hover { background: #f4f4f9; }
+#dra-preset-editor .dra-pe-close:hover { background: #eae9f2; }
 
 #dra-preset-editor .dra-pe-body {
   display: grid;
@@ -817,10 +817,11 @@ html.dra-preset-editor-open body {
 /* mode-btn styling scoped to preset editor */
 #dra-preset-editor .mode-pill {
   display: flex;
-  border: 1px solid #e0e0ea;
+  border: 1px solid #c8c6da;
   border-radius: 7px;
   overflow: hidden;
-  background: #fff;
+  background: linear-gradient(180deg, #ffffff, #eef0f7);
+  box-shadow: 0 1px 2px rgba(30,27,75,0.16), 0 2px 5px rgba(30,27,75,0.09);
   flex-shrink: 0;
 }
 #dra-preset-editor .mode-btn {
@@ -831,10 +832,14 @@ html.dra-preset-editor-open body {
   background: transparent;
   cursor: pointer;
   color: #9899ab;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, box-shadow 0.12s;
 }
-#dra-preset-editor .mode-btn:hover:not(.active) { background: #f4f4f9; }
-#dra-preset-editor .mode-btn.active { background: #5aaea9; color: #fff; }
+#dra-preset-editor .mode-btn:hover:not(.active) { background: #eae9f2; }
+#dra-preset-editor .mode-btn.active {
+  background: linear-gradient(180deg, #66bbb6, #5aaea9);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(30,27,75,0.20), inset 0 1px 0 rgba(255,255,255,0.18);
+}
 
 /* Form controls */
 #dra-preset-editor .dra-pe-group {
@@ -871,11 +876,12 @@ html.dra-preset-editor-open body {
   flex: 0 0 auto;
   width: 118px;
   margin-left: auto;
-  border: 1px solid #e0e0ea;
+  border: 1px solid #c8c6da;
   border-radius: 8px;
   overflow: hidden;
-  background: #fff;
-  height: 32px;
+  background: linear-gradient(180deg, #ffffff, #eef0f7);
+  box-shadow: 0 1px 2px rgba(30,27,75,0.16), 0 2px 5px rgba(30,27,75,0.09);
+  height: 36px;
 }
 #dra-preset-editor .stepper-btn {
   width: 30px;
@@ -883,23 +889,23 @@ html.dra-preset-editor-open body {
   background: transparent;
   cursor: pointer;
   font-size: 15px;
-  color: #666;
+  color: #1e1b4b;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.12s;
 }
-#dra-preset-editor .stepper-btn:hover  { background: #f4f4f9; }
-#dra-preset-editor .stepper-btn:active { background: #eaeaf2; }
+#dra-preset-editor .stepper-btn:hover  { background: #eae9f2; }
+#dra-preset-editor .stepper-btn:active { background: #d9d8e6; box-shadow: inset 0 1px 2px rgba(30,27,75,0.13); }
 #dra-preset-editor .stepper-center {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 3px;
-  border-left: 1px solid #e0e0ea;
-  border-right: 1px solid #e0e0ea;
+  border-left: 1px solid #c8c6da;
+  border-right: 1px solid #c8c6da;
 }
 #dra-preset-editor .stepper-num {
   width: 4.2ch;
@@ -912,7 +918,7 @@ html.dra-preset-editor-open body {
   font-family: inherit;
   line-height: 1;
   text-align: center;
-  color: #333;
+  color: #1e1b4b;
   appearance: textfield;
   -moz-appearance: textfield;
 }
@@ -944,7 +950,7 @@ html.dra-preset-editor-open body {
 #dra-preset-editor .dra-pe-toggle-label,
 #dra-preset-editor .dra-pe-label {
   font-size: 12px;
-  color: #333;
+  color: #1e1b4b;
   flex: 1;
 }
 
@@ -957,9 +963,52 @@ html.dra-preset-editor-open body {
 
 #dra-preset-editor .dra-pe-slider-group .slider {
   flex: 1;
-  accent-color: #5aaea9;
-  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 18px;
+  background: transparent;
+  cursor: pointer;
 }
+#dra-preset-editor .dra-pe-slider-group .slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #5aaea9 var(--pct, 0%), #d4d5e2 var(--pct, 0%));
+  box-shadow: inset 0 1px 2px rgba(30,27,75,0.13);
+}
+#dra-preset-editor .dra-pe-slider-group .slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #7fc8c3, #5aaea9);
+  box-shadow: 0 1px 2px rgba(30,27,75,0.28), 0 1px 3px rgba(30,27,75,0.12),
+              inset 0 1px 0 rgba(255,255,255,0.30);
+  transition: transform 0.12s cubic-bezier(0.34,0.1,0.2,1);
+}
+#dra-preset-editor .dra-pe-slider-group .slider:hover::-webkit-slider-thumb { transform: scale(1.08); }
+#dra-preset-editor .dra-pe-slider-group .slider:active::-webkit-slider-thumb { transform: scale(1.12); }
+#dra-preset-editor .dra-pe-slider-group .slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px 0 0 999px;
+  background: #5aaea9;
+}
+#dra-preset-editor .dra-pe-slider-group .slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #d4d5e2;
+  box-shadow: inset 0 1px 2px rgba(30,27,75,0.13);
+}
+#dra-preset-editor .dra-pe-slider-group .slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #7fc8c3, #5aaea9);
+  box-shadow: 0 1px 2px rgba(30,27,75,0.28), 0 1px 3px rgba(30,27,75,0.12);
+}
+#dra-preset-editor .dra-pe-slider-group .slider:focus { outline: none; }
 
 #dra-preset-editor .slider-value {
   font-size: 11px;
@@ -971,10 +1020,11 @@ html.dra-preset-editor-open body {
 #dra-preset-editor .dra-pe-color {
   width: 36px;
   height: 28px;
-  border: 1px solid #e0e0ea;
+  border: 1px solid #c8c6da;
   border-radius: 6px;
   padding: 2px 3px;
   background: #fff;
+  box-shadow: 0 1px 2px rgba(30,27,75,0.12);
   cursor: pointer;
 }
 
@@ -983,11 +1033,12 @@ html.dra-preset-editor-open body {
 #dra-preset-editor .dra-pe-select {
   flex: 1;
   padding: 4px 8px;
-  border: 1px solid #e0e0ea;
-  border-radius: 6px;
+  border: 1px solid #c8c6da;
+  border-radius: 8px;
   font: inherit;
   font-size: 12px;
-  background: #fff;
+  background: linear-gradient(180deg, #ffffff, #eef0f7);
+  box-shadow: 0 1px 2px rgba(30,27,75,0.16), 0 2px 5px rgba(30,27,75,0.09);
 }
 
 #dra-preset-editor .dra-pe-mode-pill {
@@ -999,22 +1050,30 @@ html.dra-preset-editor-open body {
 
 #dra-preset-editor .dra-pe-panel-size {
   display: flex;
-  border: 1px solid #e0e0ea;
+  border: 1px solid #c8c6da;
   border-radius: 7px;
   overflow: hidden;
+  background: linear-gradient(180deg, #ffffff, #eef0f7);
+  box-shadow: 0 1px 2px rgba(30,27,75,0.16), 0 2px 5px rgba(30,27,75,0.09);
 }
 #dra-preset-editor .dra-pe-panel-size .panel-size-btn {
   padding: 3px 10px;
   font-size: 11px;
   font-weight: 700;
   border: none;
-  border-right: 1px solid #e0e0ea;
+  border-right: 1px solid #c8c6da;
   background: transparent;
   color: #9899ab;
   cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.12s;
 }
 #dra-preset-editor .dra-pe-panel-size .panel-size-btn:last-child { border-right: none; }
-#dra-preset-editor .dra-pe-panel-size .panel-size-btn.active { background: #5aaea9; color: #fff; }
+#dra-preset-editor .dra-pe-panel-size .panel-size-btn:hover:not(.active) { background: #eae9f2; }
+#dra-preset-editor .dra-pe-panel-size .panel-size-btn.active {
+  background: linear-gradient(180deg, #66bbb6, #5aaea9);
+  color: #fff;
+  box-shadow: 0 1px 2px rgba(30,27,75,0.20), inset 0 1px 0 rgba(255,255,255,0.18);
+}
 
 /* Footer */
 #dra-preset-editor .dra-pe-footer {
@@ -1042,11 +1101,19 @@ html.dra-preset-editor-open body {
 
 #dra-preset-editor .dra-pe-name-input {
   flex: 1;
-  border: 1px solid #e0e0ea;
+  border: 1px solid #c8c6da;
   border-radius: 7px;
   padding: 6px 10px;
   font: inherit;
   font-size: 13px;
+  background: #f1f0f8;
+  box-shadow: inset 0 1px 2px rgba(30,27,75,0.13);
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+#dra-preset-editor .dra-pe-name-input:focus {
+  border-color: #5aaea9;
+  box-shadow: inset 0 1px 2px rgba(30,27,75,0.13), 0 0 0 3px rgba(90,174,169,0.22);
 }
 #dra-preset-editor .dra-pe-name-input.dra-pe-error { border-color: #ef4444; }
 
@@ -1074,20 +1141,78 @@ html.dra-preset-editor-open body {
 }
 
 #dra-preset-editor .dra-pe-btn-cancel {
-  border: 1px solid #e0e0ea;
-  background: transparent;
-  color: #555;
+  border: 1px solid #c8c6da;
+  background: linear-gradient(180deg, #ffffff, #eef0f7);
+  color: #9899ab;
+  box-shadow: 0 1px 2px rgba(30,27,75,0.16), 0 2px 5px rgba(30,27,75,0.09);
+  transition: background 0.15s, box-shadow 0.18s, transform 0.05s;
 }
-#dra-preset-editor .dra-pe-btn-cancel:hover { background: #f4f4f9; }
+#dra-preset-editor .dra-pe-btn-cancel:hover {
+  background: linear-gradient(180deg, #ffffff, #e6e8f3);
+  box-shadow: 0 2px 4px rgba(30,27,75,0.18), 0 5px 12px rgba(30,27,75,0.13);
+}
+#dra-preset-editor .dra-pe-btn-cancel:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 2px rgba(30,27,75,0.13);
+}
 
 #dra-preset-editor .dra-pe-btn-save {
-  border: none;
-  background: #1e1b4b;
+  border: 1px solid #161340;
+  background: linear-gradient(180deg, #2a2668, #1e1b4b);
   color: #fff;
+  box-shadow: 0 1px 2px rgba(30,27,75,0.30), 0 2px 6px rgba(30,27,75,0.22),
+              inset 0 1px 0 rgba(255,255,255,0.14);
+  transition: background 0.15s, box-shadow 0.18s, transform 0.05s;
 }
-#dra-preset-editor .dra-pe-btn-save:hover { background: #2d2a63; }
+#dra-preset-editor .dra-pe-btn-save:hover {
+  background: linear-gradient(135deg, #363173, #262260);
+  box-shadow: 0 2px 4px rgba(30,27,75,0.32), 0 5px 12px rgba(30,27,75,0.26),
+              inset 0 1px 0 rgba(255,255,255,0.16);
+}
+#dra-preset-editor .dra-pe-btn-save:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 1px 2px rgba(30,27,75,0.20);
+}
 
 /* Reuse existing emotion/label highlight colors from main content.css via CSS vars */
 #dra-preset-editor .dra-pe-emotion-positive { color: var(--dra-positive); font-weight: 500; }
 #dra-preset-editor .dra-pe-emotion-negative { color: var(--dra-negative); font-weight: 500; }
 #dra-preset-editor .dra-pe-emotion-complex  { color: var(--dra-complex);  font-weight: 500; }
+
+/* ── Toggle switch — ported from panel.css material system (hard-coded, no CSS vars) ── */
+#dra-preset-editor .toggle-switch {
+  flex-shrink: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+#dra-preset-editor .toggle-switch input[type="checkbox"] { display: none; }
+#dra-preset-editor .toggle-switch .track {
+  display: block;
+  position: relative;
+  width: 40px;
+  height: 24px;
+  background: linear-gradient(180deg, #d0d1e0, #dcdce9);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(30,27,75,0.14);
+  transition: background 0.3s cubic-bezier(0.34,0.1,0.2,1);
+}
+#dra-preset-editor .toggle-switch .track::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle at 50% 35%, #ffffff, #f1f1f7);
+  border-radius: 50%;
+  box-shadow: 0 1px 2px rgba(30,27,75,0.28), 0 2px 6px rgba(30,27,75,0.14);
+  transition: transform 0.3s cubic-bezier(0.34,0.1,0.2,1);
+}
+#dra-preset-editor .toggle-switch input:checked + .track {
+  background: linear-gradient(135deg, #2a2668, #1e1b4b);
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+}
+#dra-preset-editor .toggle-switch input:checked + .track::after {
+  transform: translateX(16px);
+}
