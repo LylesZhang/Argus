@@ -847,7 +847,7 @@ html.dra-preset-editor-open body {
   display: flex;
   align-items: stretch;
   flex: 0 0 auto;
-  width: 118px;
+  width: 150px;
   margin-left: auto;
   border: 1px solid #c8c6da;
   border-radius: 8px;
@@ -858,7 +858,7 @@ html.dra-preset-editor-open body {
 }
 
 #dra-preset-editor .dra-pe-stepper-control {
-  width: 118px;
+  width: 150px;
   margin-left: 6px;
   flex-shrink: 0;
 }
