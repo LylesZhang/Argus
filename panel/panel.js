@@ -436,6 +436,7 @@ function syncUI() {
   });
 
   document.getElementById('emotion-ai-row').classList.toggle('hidden', !settings.emotionColor || settings.emotionMode !== 'ai');
+  document.getElementById('emotion-word-lists').classList.toggle('hidden', settings.emotionMode !== 'local');
   // Lens is AI-only: status/retry row shows whenever Lens is on
   document.getElementById('labels-ai-row').classList.toggle('hidden', !settings.sentenceLabels);
 }
@@ -738,6 +739,9 @@ function init() {
       if (rowId) {
         const featureOn = feature === 'emotion' ? settings.emotionColor : settings.sentenceLabels;
         document.getElementById(rowId).classList.toggle('hidden', mode !== 'ai' || !featureOn);
+      }
+      if (feature === 'emotion') {
+        document.getElementById('emotion-word-lists').classList.toggle('hidden', mode !== 'local');
       }
       if (mode === 'local') updateAIStatus(STATUS_FEATURE[feature], null);
       broadcast({ [modeKey]: mode });
