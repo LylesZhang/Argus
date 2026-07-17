@@ -24,11 +24,11 @@
   --row-gap: 10px;
   --row-padding-y: 9px;
   --control-height: 36px;
-  --switch-width: 44px;
-  --switch-height: 26px;
-  --switch-knob: 20px;
+  --switch-width: 40px;
+  --switch-height: 24px;
+  --switch-knob: 18px;
   --switch-offset: 3px;
-  --switch-translate: 18px;
+  --switch-translate: 16px;
 }
 
 body[data-panel-size="compact"] {
@@ -41,11 +41,11 @@ body[data-panel-size="compact"] {
   --row-gap: 8px;
   --row-padding-y: 8px;
   --control-height: 34px;
-  --switch-width: 42px;
-  --switch-height: 24px;
-  --switch-knob: 18px;
+  --switch-width: 38px;
+  --switch-height: 22px;
+  --switch-knob: 16px;
   --switch-offset: 3px;
-  --switch-translate: 18px;
+  --switch-translate: 16px;
 }
 
 body[data-panel-size="comfortable"] {
@@ -700,23 +700,17 @@ body {
   color: var(--navy);
 }
 
-.feature-row-ai-controls {
-  flex: 0 0 auto;
-  margin-left: 0;
-}
-
-/* AI feature rows use shared fixed columns so every control type lines up:
-   title/chevron | Local/AI | status | Analyze | toggle. */
+/* AI feature rows: flex layout so hidden status/Analyze reserve no space and
+   the feature name keeps its full width. The name grows to push the AI cluster
+   (Local/AI + status + Analyze) and toggle over to the right edge. */
 .feature-row-head:has(.feature-row-ai-controls) {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 76px 14px 58px var(--switch-width);
-  column-gap: 4px;
+  gap: 6px;
 }
 
 .feature-row-head:has(.feature-row-ai-controls) > .feature-row-expand {
-  grid-column: 1;
+  flex: 1 1 auto;
   min-width: 0;
-  gap: 4px;
+  gap: 6px;
 }
 
 .feature-row-head:has(.feature-row-ai-controls) .feature-row-name {
@@ -726,42 +720,52 @@ body {
   white-space: nowrap;
 }
 
-/* Flatten the wrappers so their children participate in the header grid. */
-.feature-row-head .feature-row-ai-controls,
-.feature-row-head .feature-row-ai-controls > .ai-status-row {
-  display: contents;
+.feature-row-ai-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
-.feature-row-head .feature-row-ai-controls > .mode-pill {
-  grid-column: 2;
-  justify-self: stretch;
-  width: 100%;
+.feature-row-ai-controls > .ai-status-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.feature-row-head .feature-row-ai-controls .mode-btn {
+.feature-row-ai-controls > .mode-pill {
+  width: 78px;
+  flex-shrink: 0;
+}
+
+.feature-row-ai-controls .mode-btn {
   flex: 1;
-  padding-left: 6px;
-  padding-right: 6px;
-}
-
-.feature-row-head .feature-row-ai-controls .ai-status-dot {
-  grid-column: 3;
-  justify-self: center;
-}
-
-.feature-row-head .feature-row-ai-controls .ai-retry-btn {
-  grid-column: 4;
-  justify-self: stretch;
-  width: 100%;
-  margin-left: 0;
+  font-size: 10px;
   padding-left: 5px;
   padding-right: 5px;
 }
 
+.feature-row-ai-controls .ai-status-dot {
+  flex-shrink: 0;
+}
+
+.feature-row-ai-controls .ai-retry-btn {
+  flex-shrink: 0;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
 .feature-row-head:has(.feature-row-ai-controls) > .toggle-switch {
-  grid-column: 5;
-  justify-self: end;
   margin-left: 0;
+}
+
+/* AI rows without a toggle (e.g. Topic Focus) reserve the toggle's slot on the
+   right so their Local/AI pill lines up with the pill in rows that have one.
+   The pill is the rightmost control in every AI cluster, so the Analyze button
+   grows to its left without ever shifting the pill out of the shared column. */
+.feature-row-head:has(.feature-row-ai-controls):not(:has(.toggle-switch))
+  > .feature-row-ai-controls {
+  margin-right: calc(var(--switch-width) + 6px);
 }
 
 /* Detail panel — hidden until the row is expanded */
@@ -911,17 +915,26 @@ body {
 
 /* ── Toggle switch ───────────────────────────────────────────────────── */
 
-.toggle-switch { flex-shrink: 0; cursor: pointer; }
+.toggle-switch {
+  flex-shrink: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
 .toggle-switch input[type="checkbox"] { display: none; }
 
+/* Classic sliding-knob toggle, refined: recessed pill track with a subtle
+   gradient + inset shadow, and a softly domed knob that floats on a layered,
+   navy-tinted shadow. Smooth spring-like easing on both slide and colour. */
 .toggle-switch .track {
-  display: inline-block;
+  display: block;
+  position: relative;
   width: var(--switch-width);
   height: var(--switch-height);
-  background: #d8d8e8;
-  border-radius: calc(var(--switch-height) / 2);
-  position: relative;
-  transition: background 0.25s;
+  background: linear-gradient(180deg, #d0d1e0, #dcdce9);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(30, 27, 75, 0.14);
+  transition: background 0.3s cubic-bezier(0.34, 0.1, 0.2, 1);
 }
 
 .toggle-switch .track::after {
@@ -931,14 +944,20 @@ body {
   left: var(--switch-offset);
   width: var(--switch-knob);
   height: var(--switch-knob);
-  background: #fff;
+  background: radial-gradient(circle at 50% 35%, #ffffff, #f1f1f7);
   border-radius: 50%;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-  transition: transform 0.25s;
+  box-shadow: 0 1px 2px rgba(30, 27, 75, 0.28), 0 2px 6px rgba(30, 27, 75, 0.14);
+  transition: transform 0.3s cubic-bezier(0.34, 0.1, 0.2, 1);
 }
 
-.toggle-switch input:checked + .track { background: var(--navy); }
-.toggle-switch input:checked + .track::after { transform: translateX(var(--switch-translate)); }
+/* ON — track fills with the brand navy (subtle diagonal sheen); knob slides right. */
+.toggle-switch input:checked + .track {
+  background: linear-gradient(135deg, #2a2668, var(--navy));
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+.toggle-switch input:checked + .track::after {
+  transform: translateX(var(--switch-translate));
+}
 
 /* ── Toggle rows ─────────────────────────────────────────────────────── */
 
@@ -1082,16 +1101,41 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 /* ── AI / Local mode pill ────────────────────────────────────────────── */
 
 .mode-pill {
+  position: relative;
   margin-left: auto;
   display: flex;
-  border: 1px solid var(--border);
+  padding: 2px;
+  border: 1px solid #cfd0e0;
   border-radius: var(--ctl-radius);
-  overflow: hidden;
   flex-shrink: 0;
-  background: #fff;
+  background: linear-gradient(180deg, #e4e5ef, #eef0f7);
+  box-shadow: inset 0 1px 2px rgba(30, 27, 75, 0.12);
+}
+
+/* Sliding thumb — mirrors the toggle knob: a softly domed teal segment that
+   floats on a layered, navy-tinted shadow and glides between the two options. */
+.mode-pill::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: var(--ctl-radius-sm);
+  background: linear-gradient(180deg, #66bbb6, var(--teal));
+  box-shadow: 0 1px 2px rgba(30, 27, 75, 0.28),
+              0 1px 3px rgba(30, 27, 75, 0.12),
+              inset 0 1px 0 rgba(255, 255, 255, 0.30);
+  transition: transform 0.28s cubic-bezier(0.34, 0.1, 0.2, 1);
+}
+.mode-pill:has(.mode-btn:nth-of-type(2).active)::before {
+  transform: translateX(100%);
 }
 
 .mode-btn {
+  position: relative;
+  z-index: 1;
+  flex: 1;
   padding: 3px 10px;
   font-size: var(--small-font-size);
   font-weight: 600;
@@ -1099,11 +1143,11 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   background: transparent;
   cursor: pointer;
   color: var(--muted);
-  transition: background 0.15s, color 0.15s;
+  transition: color 0.2s ease;
 }
 
-.mode-btn:hover:not(.active) { background: var(--surface-hover); }
-.mode-btn.active { background: var(--teal); color: #fff; }
+.mode-btn:hover:not(.active) { color: var(--navy); }
+.mode-btn.active { color: #fff; }
 
 /* ── AI controls wrapper (mode-pill + status dot) ───────────────────── */
 
