@@ -3,6 +3,11 @@
 //   1. Load saved settings from chrome.storage.sync and update the UI
 //   2. When the user changes any setting, save it and notify content/index.js via background
 
+function updateSliderFill(el) {
+  const pct = (el.value - el.min) / (el.max - el.min) * 100;
+  el.style.setProperty('--pct', pct + '%');
+}
+
 // ── Default settings (must match DEFAULT_SETTINGS in content/index.js) ─
 
 const DEFAULT_SETTINGS = {
@@ -346,14 +351,17 @@ function syncUI() {
   switchLensLegend(settings.sentenceLabelsLens ?? 'inform');
   document.getElementById('ruler-size-slider').value  = settings.rulerWindowLines;
   document.getElementById('ruler-size-value').textContent = settings.rulerWindowLines.toFixed(1) + ' lines';
+  updateSliderFill(document.getElementById('ruler-size-slider'));
   const autoScrollSpeed = clampAutoScrollSpeed(settings.autoScrollSpeed);
   document.getElementById('auto-scroll-speed-slider').value = autoScrollSpeed;
   document.getElementById('auto-scroll-speed-value').textContent = formatAutoScrollSpeed(autoScrollSpeed);
+  updateSliderFill(document.getElementById('auto-scroll-speed-slider'));
 
   document.getElementById('toggle-typewriter').checked = settings.typewriterActive;
   const typewriterSpeed = clampTypewriterSpeed(settings.typewriterSpeed);
   document.getElementById('typewriter-speed-slider').value = typewriterSpeed;
   document.getElementById('typewriter-speed-value').textContent = formatTypewriterSpeed(typewriterSpeed);
+  updateSliderFill(document.getElementById('typewriter-speed-slider'));
 
   document.getElementById('toggle-labels').checked = settings.sentenceLabels;
 
@@ -481,6 +489,7 @@ function init() {
   document.getElementById('ruler-size-slider').addEventListener('input', e => {
     const v = parseFloat(e.target.value);
     document.getElementById('ruler-size-value').textContent = v.toFixed(1) + ' lines';
+    updateSliderFill(e.target);
     broadcast({ rulerWindowLines: v });
   });
 
@@ -491,12 +500,14 @@ function init() {
   document.getElementById('typewriter-speed-slider').addEventListener('input', e => {
     const v = clampTypewriterSpeed(e.target.value);
     document.getElementById('typewriter-speed-value').textContent = formatTypewriterSpeed(v);
+    updateSliderFill(e.target);
     broadcast({ typewriterSpeed: v });
   });
 
   document.getElementById('auto-scroll-speed-slider').addEventListener('input', e => {
     const v = clampAutoScrollSpeed(e.target.value);
     document.getElementById('auto-scroll-speed-value').textContent = formatAutoScrollSpeed(v);
+    updateSliderFill(e.target);
     broadcast({ autoScrollSpeed: v });
   });
 

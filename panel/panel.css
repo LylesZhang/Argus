@@ -29,6 +29,24 @@
   --switch-knob: 18px;
   --switch-offset: 3px;
   --switch-translate: 16px;
+
+  /* Material system — shared surfaces, shadows & easing (matches the toggle
+     + Local/AI pill so every control reads as one tactile family). */
+  --ease-spring:          cubic-bezier(0.34, 0.1, 0.2, 1);
+  --surface-raised:       linear-gradient(180deg, #ffffff, #eef0f7);
+  --surface-raised-hover: linear-gradient(180deg, #ffffff, #e6e8f3);
+  --surface-recessed:     linear-gradient(180deg, #e4e5ef, #eef0f7);
+  --track-recessed:       linear-gradient(180deg, #d0d1e0, #dcdce9);
+  --surface-navy:         linear-gradient(135deg, #2a2668, var(--navy));
+  --surface-navy-hover:   linear-gradient(135deg, #363173, #262260);
+  --surface-teal:         linear-gradient(180deg, #66bbb6, var(--teal));
+  --shadow-raised:        0 1px 2px rgba(30, 27, 75, 0.16), 0 2px 5px rgba(30, 27, 75, 0.09);
+  --shadow-raised-hover:  0 2px 4px rgba(30, 27, 75, 0.18), 0 5px 12px rgba(30, 27, 75, 0.13);
+  --shadow-recessed:      inset 0 1px 2px rgba(30, 27, 75, 0.13);
+  --shadow-thumb:         0 1px 2px rgba(30, 27, 75, 0.28), 0 1px 3px rgba(30, 27, 75, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.30);
+  --shadow-navy:          0 1px 2px rgba(30, 27, 75, 0.30), 0 2px 6px rgba(30, 27, 75, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  --shadow-navy-hover:    0 2px 4px rgba(30, 27, 75, 0.32), 0 5px 12px rgba(30, 27, 75, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  --focus-ring:           0 0 0 3px rgba(90, 174, 169, 0.22);
 }
 
 body[data-panel-size="compact"] {
@@ -182,11 +200,7 @@ body {
 /* ── Account & cloud sync ───────────────────────────────────────────── */
 
 .account-card {
-  margin: 0 6px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: #fff;
+  padding: 4px 16px 14px;
 }
 
 .account-copy {
@@ -220,21 +234,29 @@ body {
   border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius);
   font: inherit;
+  background: #fff;
+  box-shadow: var(--shadow-recessed);
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
 }
+.account-input-row input:focus { border-color: var(--teal); box-shadow: var(--shadow-recessed), var(--focus-ring); }
 
 .account-card button {
   min-height: var(--control-height);
   padding: 0 11px;
   border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius);
-  background: #fff;
+  background: var(--surface-raised);
   color: var(--navy);
   cursor: pointer;
   font: inherit;
   font-weight: 650;
+  box-shadow: var(--shadow-raised);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.05s;
 }
 
-.account-card button:hover { background: var(--surface-hover); }
+.account-card button:hover { background: var(--surface-raised-hover); box-shadow: var(--shadow-raised-hover); }
+.account-card button:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 .account-card button:disabled { cursor: wait; opacity: 0.55; }
 
 .account-user-row { justify-content: space-between; }
@@ -265,11 +287,12 @@ body {
 
 #account-sync-now {
   border-color: var(--navy);
-  background: var(--navy);
+  background: var(--surface-navy);
   color: #fff;
+  box-shadow: var(--shadow-navy);
 }
 
-#account-sync-now:hover { background: var(--navy-hover); }
+#account-sync-now:hover { background: var(--surface-navy-hover); box-shadow: var(--shadow-navy-hover); }
 
 .account-card .account-delete {
   grid-column: 1 / -1;
@@ -321,9 +344,9 @@ body {
 }
 
 .section-reset-btn {
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius);
-  background: #fff;
+  background: var(--surface-raised);
   color: var(--muted);
   cursor: pointer;
   flex-shrink: 0;
@@ -333,14 +356,16 @@ body {
   padding: 4px 11px;
   text-transform: none;
   letter-spacing: 0;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  box-shadow: var(--shadow-raised);
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.05s;
 }
 
 .section-reset-btn:hover {
   color: var(--navy);
-  background: var(--surface-hover);
-  border-color: var(--border-strong);
+  background: var(--surface-raised-hover);
+  box-shadow: var(--shadow-raised-hover);
 }
+.section-reset-btn:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 
 .collapse-btn:hover {
   background: rgba(90, 174, 168, 0.1);
@@ -385,30 +410,50 @@ body {
   font-size: var(--control-font-size);
 }
 
+/* S / M / L — a segmented control sharing the Local/AI pill's material:
+   a recessed track with a domed teal thumb that glides between the three. */
 .panel-size-pill {
+  position: relative;
   display: flex;
-  border: 1px solid var(--border);
+  padding: 2px;
+  border: 1px solid #cfd0e0;
   border-radius: var(--ctl-radius);
-  overflow: hidden;
-  background: #fff;
+  background: var(--surface-recessed);
+  box-shadow: var(--shadow-recessed);
   flex-shrink: 0;
 }
 
+.panel-size-pill::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / 3);
+  border-radius: var(--ctl-radius-sm);
+  background: var(--surface-teal);
+  box-shadow: var(--shadow-thumb);
+  transition: transform 0.28s var(--ease-spring);
+}
+.panel-size-pill:has(.panel-size-btn:nth-child(2).active)::before { transform: translateX(100%); }
+.panel-size-pill:has(.panel-size-btn:nth-child(3).active)::before { transform: translateX(200%); }
+
 .panel-size-btn {
+  position: relative;
+  z-index: 1;
   width: 32px;
   min-height: 26px;
   border: none;
-  border-right: 1px solid var(--border);
   background: transparent;
   color: var(--muted);
   font-size: var(--small-font-size);
   font-weight: 700;
   cursor: pointer;
+  transition: color 0.2s ease;
 }
 
-.panel-size-btn:last-child { border-right: none; }
-.panel-size-btn:hover:not(.active) { background: var(--surface-hover); }
-.panel-size-btn.active { background: var(--teal); color: #fff; }
+.panel-size-btn:hover:not(.active) { color: var(--navy); }
+.panel-size-btn.active { color: #fff; }
 
 /* ── Control blocks ──────────────────────────────────────────────────── */
 
@@ -466,20 +511,33 @@ body {
   white-space: nowrap;
 }
 
-/* Font select */
+/* Font select — raised control: soft white gradient, layered shadow, lifts on
+   hover, teal focus ring. Chevron layered above the gradient so both show. */
 .font-select {
   width: 100%;
   padding: 8px 28px 8px 12px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius);
-  background: #fff;
   font-size: var(--control-font-size);
-  color: #333;
+  color: var(--navy);
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23aaa' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
   cursor: pointer;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231e1b4b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center,
+    var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+  transition: box-shadow 0.18s, border-color 0.18s, background 0.18s;
+}
+.font-select:hover {
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%231e1b4b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center,
+    var(--surface-raised-hover);
+  box-shadow: var(--shadow-raised-hover);
+}
+.font-select:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: var(--shadow-raised), var(--focus-ring);
 }
 
 /* ── Stepper ─────────────────────────────────────────────────────────── */
@@ -487,10 +545,11 @@ body {
 .stepper {
   display: flex;
   align-items: stretch;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius);
   overflow: hidden;
-  background: #fff;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
   height: var(--control-height);
 }
 
@@ -500,15 +559,16 @@ body {
   background: transparent;
   cursor: pointer;
   font-size: 15px;
-  color: #666;
+  color: var(--navy);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.12s;
 }
-.stepper-btn:hover  { background: var(--surface-hover); }
-.stepper-btn:active { background: #e2e0ee; }
+.stepper-btn:hover  { background: var(--surface-hover); color: var(--navy); }
+/* Physically depress on click — the recessed groove of the material family. */
+.stepper-btn:active { background: #d9d8e6; box-shadow: var(--shadow-recessed); }
 
 .stepper-center {
   flex: 1;
@@ -549,12 +609,60 @@ body {
 
 /* ── Slider ──────────────────────────────────────────────────────────── */
 
+/* Slider — recessed track with a domed teal thumb, echoing the toggle knob. */
 .slider {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
-  accent-color: var(--teal);
+  height: 18px;
+  background: transparent;
   cursor: pointer;
-  height: 4px;
 }
+.slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--teal) var(--pct, 0%),
+    #d4d5e2     var(--pct, 0%)
+  );
+  box-shadow: var(--shadow-recessed);
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #7fc8c3, var(--teal));
+  box-shadow: var(--shadow-thumb);
+  transition: transform 0.12s var(--ease-spring);
+}
+.slider:hover::-webkit-slider-thumb { transform: scale(1.08); }
+.slider:active::-webkit-slider-thumb { transform: scale(1.12); }
+.slider::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px 0 0 999px;
+  background: var(--teal);
+}
+.slider::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #d4d5e2;
+  box-shadow: var(--shadow-recessed);
+}
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #7fc8c3, var(--teal));
+  box-shadow: var(--shadow-thumb);
+}
+.slider:focus { outline: none; }
+.slider:focus-visible::-webkit-slider-thumb { box-shadow: var(--shadow-thumb), var(--focus-ring); }
+.slider:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .slider-value {
   font-size: var(--small-font-size);
@@ -562,16 +670,20 @@ body {
   text-align: right;
 }
 
-/* Color input */
+/* Color input — the swatch sits in a raised frame that lifts on hover. */
 .color-input {
   width: 100%;
   height: var(--control-height);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius);
   cursor: pointer;
   padding: 3px 4px;
-  background: #fff;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+  transition: box-shadow 0.18s, border-color 0.18s;
 }
+.color-input:hover { box-shadow: var(--shadow-raised-hover); border-color: var(--teal); }
+.color-input:focus-visible { outline: none; border-color: var(--teal); box-shadow: var(--shadow-raised), var(--focus-ring); }
 
 .control-block.disabled {
   opacity: 0.4;
@@ -731,6 +843,16 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
+  width: 58px;   /* fixed — keeps the analyze slot from growing/shrinking */
+  flex-shrink: 0;
+}
+
+/* Keep the analyze slot in layout when "hidden" so the pill never shifts.
+   Higher specificity (3 classes) beats .hidden (1 class) even with !important. */
+.feature-row-ai-controls > .ai-status-row.hidden {
+  display: flex !important;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .feature-row-ai-controls > .mode-pill {
@@ -761,11 +883,13 @@ body {
 
 /* AI rows without a toggle (e.g. Topic Focus) reserve the toggle's slot on the
    right so their Local/AI pill lines up with the pill in rows that have one.
-   The pill is the rightmost control in every AI cluster, so the Analyze button
-   grows to its left without ever shifting the pill out of the shared column. */
+   min-width matches the total ai-controls width of rows that DO have an analyze
+   slot (78px pill + 4px gap + 58px analyze-row = 140px) so pills stay in the
+   same column regardless of Analyze visibility. */
 .feature-row-head:has(.feature-row-ai-controls):not(:has(.toggle-switch))
   > .feature-row-ai-controls {
   margin-right: calc(var(--switch-width) + 6px);
+  min-width: 140px;
 }
 
 /* Detail panel — hidden until the row is expanded */
@@ -846,35 +970,40 @@ body {
   align-items: center;
   justify-content: center;
   min-height: 34px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius);
-  background: #fff;
+  background: var(--surface-raised);
   color: var(--muted);
   font-size: var(--control-font-size);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  box-shadow: var(--shadow-raised);
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.05s;
 }
 .pdf-file-button:hover {
   color: var(--navy);
-  background: var(--surface-hover);
-  border-color: var(--border-strong);
+  background: var(--surface-raised-hover);
+  box-shadow: var(--shadow-raised-hover);
 }
+.pdf-file-button:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 
 .pdf-url-row { display: flex; gap: 7px; }
 
 .pdf-url-row input {
   min-width: 0;
   flex: 1;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius);
   padding: 7px 10px;
   font: inherit;
   font-size: var(--control-font-size);
   color: #333;
   outline: none;
+  background: #fff;
+  box-shadow: var(--shadow-recessed);
+  transition: border-color 0.18s, box-shadow 0.18s;
 }
-.pdf-url-row input:focus { border-color: var(--teal); }
+.pdf-url-row input:focus { border-color: var(--teal); box-shadow: var(--shadow-recessed), var(--focus-ring); }
 
 .pdf-url-row button {
   flex: 0 0 auto;
@@ -882,14 +1011,16 @@ body {
   min-height: 34px;
   border: 1px solid var(--navy);
   border-radius: var(--ctl-radius);
-  background: var(--navy);
+  background: var(--surface-navy);
   color: #fff;
   font: inherit;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  box-shadow: var(--shadow-navy);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.05s;
 }
-.pdf-url-row button:hover { background: var(--navy-hover); border-color: var(--navy-hover); }
+.pdf-url-row button:hover { background: var(--surface-navy-hover); box-shadow: var(--shadow-navy-hover); }
+.pdf-url-row button:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 
 .pdf-import-status {
   min-height: 14px;
@@ -997,17 +1128,19 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 .row-shading-color-input {
   width: 28px;
   height: 22px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
   padding: 1px;
   cursor: pointer;
-  background: #fff;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
   margin-left: auto;
   opacity: 0.3;
   filter: grayscale(1);
   pointer-events: none;
-  transition: opacity 0.2s, filter 0.2s;
+  transition: opacity 0.2s, filter 0.2s, box-shadow 0.18s, border-color 0.18s;
 }
+.row-shading-color-input.active:hover { box-shadow: var(--shadow-raised-hover); border-color: var(--teal); }
 
 .row-shading-color-input.active {
   opacity: 1;
@@ -1037,22 +1170,29 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 .color-row input[type="color"] {
   width: 28px;
   height: 22px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
   padding: 1px;
   cursor: pointer;
-  background: #fff;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-raised);
+  transition: box-shadow 0.18s, border-color 0.18s;
 }
+.color-row input[type="color"]:hover { box-shadow: var(--shadow-raised-hover); border-color: var(--teal); }
 .lens-select {
   min-width: 0;
   font-size: var(--small-font-size);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius-sm);
   padding: 3px 6px;
-  background: #fff;
+  background: var(--surface-raised);
   cursor: pointer;
-  color: #333;
+  color: var(--navy);
+  box-shadow: var(--shadow-raised);
+  transition: box-shadow 0.18s, border-color 0.18s, background 0.18s;
 }
+.lens-select:hover { background: var(--surface-raised-hover); box-shadow: var(--shadow-raised-hover); }
+.lens-select:focus { outline: none; border-color: var(--teal); box-shadow: var(--shadow-raised), var(--focus-ring); }
 .label-legend-group {
   display: flex;
   flex-direction: column;
@@ -1213,16 +1353,18 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   padding: 3px 9px;
   font-size: var(--label-font-size);
   font-weight: 600;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius-sm);
-  background: #fff;
+  background: var(--surface-raised);
   color: var(--muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  box-shadow: var(--shadow-raised);
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.05s;
   text-transform: none;
   letter-spacing: normal;
 }
-.ai-retry-btn:hover { background: var(--surface-hover); color: var(--navy); border-color: var(--border-strong); }
+.ai-retry-btn:hover { background: var(--surface-raised-hover); color: var(--navy); box-shadow: var(--shadow-raised-hover); }
+.ai-retry-btn:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 .ai-retry-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .ai-retry-btn:disabled:hover { background: #fff; color: var(--muted); border-color: var(--border); }
 
@@ -1253,15 +1395,17 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   min-width: 0;
   height: 32px;
   padding: 0 9px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--ctl-radius);
   font-size: var(--control-font-size);
   outline: none;
   color: #333;
   background: #fff;
+  box-shadow: var(--shadow-recessed);
+  transition: border-color 0.18s, box-shadow 0.18s;
 }
 
-.topic-focus-area input:focus { border-color: var(--teal); }
+.topic-focus-area input:focus { border-color: var(--teal); box-shadow: var(--shadow-recessed), var(--focus-ring); }
 
 .topic-focus-area button {
   flex: 0 0 auto;
@@ -1271,15 +1415,22 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   font-size: var(--small-font-size);
   font-weight: 600;
   cursor: pointer;
-  border: 1px solid var(--border);
-  background: #fff;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
   color: var(--muted);
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  box-shadow: var(--shadow-raised);
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.05s;
 }
 
-#topic-apply { background: var(--navy); color: #fff; border-color: var(--navy); }
-#topic-apply:hover { background: var(--navy-hover); border-color: var(--navy-hover); }
-#topic-clear:hover { color: var(--navy); background: var(--surface-hover); border-color: var(--border-strong); }
+#topic-apply {
+  background: var(--surface-navy);
+  color: #fff;
+  border-color: var(--navy);
+  box-shadow: var(--shadow-navy);
+}
+#topic-apply:hover { background: var(--surface-navy-hover); box-shadow: var(--shadow-navy-hover); }
+#topic-clear:hover { color: var(--navy); background: var(--surface-raised-hover); box-shadow: var(--shadow-raised-hover); }
+.topic-focus-area button:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 
 /* ── Tab navigation ──────────────────────────────────────────────────── */
 
@@ -1374,26 +1525,31 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 .wordlist-add input {
   flex: 1;
   padding: 6px 10px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   font-size: calc(var(--control-font-size) - 1px);
   outline: none;
   color: #333;
+  background: #fff;
+  box-shadow: var(--shadow-recessed);
+  transition: border-color 0.18s, box-shadow 0.18s;
 }
-.wordlist-add input:focus { border-color: var(--teal); }
+.wordlist-add input:focus { border-color: var(--teal); box-shadow: var(--shadow-recessed), var(--focus-ring); }
 
 .wordlist-add button {
   padding: 6px 12px;
   border: 1px solid var(--navy);
   border-radius: var(--ctl-radius);
-  background: var(--navy);
+  background: var(--surface-navy);
   color: #fff;
   font-size: calc(var(--control-font-size) - 1px);
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  box-shadow: var(--shadow-navy);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.05s;
 }
-.wordlist-add button:hover { background: var(--navy-hover); border-color: var(--navy-hover); }
+.wordlist-add button:hover { background: var(--surface-navy-hover); box-shadow: var(--shadow-navy-hover); }
+.wordlist-add button:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 
 /* ── Effects warning modal ──────────────────────────────────────────── */
 
@@ -1481,9 +1637,9 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 .preset-add-btn {
   width: 24px;
   height: 24px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: transparent;
+  background: var(--surface-raised);
   color: var(--navy);
   font-size: 16px;
   line-height: 1;
@@ -1491,8 +1647,11 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: var(--shadow-raised);
+  transition: background 0.18s, box-shadow 0.18s, transform 0.05s;
 }
-.preset-add-btn:hover { background: #f4f4f9; }
+.preset-add-btn:hover { background: var(--surface-raised-hover); box-shadow: var(--shadow-raised-hover); }
+.preset-add-btn:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 
 .preset-add-menu {
   position: absolute;
@@ -1527,7 +1686,7 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 
 .preset-name-input {
   width: 110px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: 6px;
   padding: 3px 7px;
   font: inherit;
@@ -1535,7 +1694,12 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   font-weight: 400;
   letter-spacing: 0;
   text-transform: none;
+  background: #fff;
+  box-shadow: var(--shadow-recessed);
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
 }
+.preset-name-input:focus { border-color: var(--teal); box-shadow: var(--shadow-recessed), var(--focus-ring); }
 .preset-name-input.error {
   border-color: #ef4444;
 }
@@ -1561,9 +1725,9 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 
 .preset-save-now-confirm {
   padding: 4px 10px;
-  background: var(--teal);
+  background: var(--surface-teal);
   color: #fff;
-  border: none;
+  border: 1px solid #4f9c97;
   border-radius: 6px;
   font: inherit;
   font-size: 12px;
@@ -1571,7 +1735,11 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   letter-spacing: 0;
   text-transform: none;
   cursor: pointer;
+  box-shadow: var(--shadow-raised);
+  transition: box-shadow 0.18s, transform 0.05s;
 }
+.preset-save-now-confirm:hover { box-shadow: var(--shadow-raised-hover); }
+.preset-save-now-confirm:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 
 .preset-save-now-cancel {
   background: transparent;
@@ -1634,13 +1802,16 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   font-size: 11px;
   font-weight: 600;
   border-radius: 5px;
-  border: 1px solid var(--border);
-  background: transparent;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-raised);
   color: var(--muted);
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: var(--shadow-raised);
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, transform 0.05s;
 }
-.preset-row-btn:hover { background: #f4f4f9; color: #333; }
+.preset-row-btn:hover { background: var(--surface-raised-hover); color: #333; box-shadow: var(--shadow-raised-hover); }
+.preset-row-btn:active { transform: translateY(1px); box-shadow: var(--shadow-recessed); }
 .preset-row-btn.delete { border-color: #fecaca; color: #dc2626; }
 .preset-row-btn.delete:hover { background: #fee2e2; }
 
