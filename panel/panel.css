@@ -1756,7 +1756,8 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   max-width: 210px;
   padding: 7px 10px;
   border-radius: var(--ctl-radius);
-  background: var(--bg);
+  /* Match the light raised surface used by the Font & Size controls. */
+  background: var(--surface-raised);
   border: 1px solid var(--border);
   color: var(--navy);
   font-size: 11.5px;

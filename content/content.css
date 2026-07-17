@@ -575,6 +575,9 @@ html.dra-preset-editor-open body {
 
 #dra-preset-editor .dra-pe-card {
   background: #fff;
+  /* Match the side panel UI. The preview body below deliberately overrides
+     this so it can demonstrate the reader's selected article font. */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(30, 27, 75, 0.22);
   width: min(88vw, 1060px);
@@ -582,6 +585,13 @@ html.dra-preset-editor-open body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+#dra-preset-editor .dra-pe-card button,
+#dra-preset-editor .dra-pe-card input,
+#dra-preset-editor .dra-pe-card select,
+#dra-preset-editor .dra-pe-card textarea {
+  font-family: inherit;
 }
 
 #dra-preset-editor .dra-pe-card--onboarding {
