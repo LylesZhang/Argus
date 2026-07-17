@@ -8,6 +8,29 @@ function updateSliderFill(el) {
   el.style.setProperty('--pct', pct + '%');
 }
 
+const STEPPER_BOUNDS = [
+  { dec: 'font-size-dec',      inc: 'font-size-inc',      val: 'font-size-value',      hint: 'font-size-hint',      min: 14,  max: 28,  unit: 'px', precision: 0 },
+  { dec: 'line-height-dec',    inc: 'line-height-inc',    val: 'line-height-value',    hint: 'line-height-hint',    min: 1.4, max: 2.4, unit: '',   precision: 1 },
+  { dec: 'word-spacing-dec',   inc: 'word-spacing-inc',   val: 'word-spacing-value',   hint: 'word-spacing-hint',   min: 0,   max: 0.5, unit: 'em', precision: 2 },
+  { dec: 'letter-spacing-dec', inc: 'letter-spacing-inc', val: 'letter-spacing-value', hint: 'letter-spacing-hint', min: 0,   max: 0.1, unit: 'em', precision: 2 },
+];
+function syncStepperBounds() {
+  for (const { dec, inc, val, hint, min, max, unit, precision } of STEPPER_BOUNDS) {
+    const v = parseFloat(document.getElementById(val)?.value ?? min);
+    const atMin = v <= min, atMax = v >= max;
+    document.getElementById(dec).disabled = atMin;
+    document.getElementById(inc).disabled = atMax;
+    const hintEl = document.getElementById(hint);
+    if (hintEl) {
+      const fmt = n => Number(n).toFixed(precision);
+      const msg = atMax ? `Maximum ${fmt(max)}${unit} reached`
+                : atMin ? `Minimum ${fmt(min)}${unit} reached` : '';
+      hintEl.textContent = msg;
+      hintEl.classList.toggle('hidden', !msg);
+    }
+  }
+}
+
 /* ── Hover tooltips ─────────────────────────────────────────────────────── */
 (function initTooltips() {
   const tip = document.createElement('div');
@@ -369,6 +392,7 @@ function syncUI() {
   document.getElementById('line-height-value').value = lineHeight.toFixed(1);
   document.getElementById('word-spacing-value').value = wordSpacing.toFixed(2);
   document.getElementById('letter-spacing-value').value = letterSpacing.toFixed(2);
+  syncStepperBounds();
 
   document.getElementById('font-color').value         = settings.fontColor;
   document.getElementById('bg-color').value           = settings.bgColor;
@@ -618,6 +642,41 @@ function init() {
     const v = Math.min(0.1, Math.round((current + 0.01) * 1000) / 1000);
     document.getElementById('letter-spacing-value').value = v.toFixed(2);
     broadcast({ letterSpacing: v });
+  });
+
+  // Direct number input handlers — validate range, clamp, apply
+  document.getElementById('font-size-value').addEventListener('change', e => {
+    const v = Math.min(28, Math.max(14, Math.round(parseFloat(e.target.value) || 18)));
+    e.target.value = v;
+    broadcast({ fontSize: v });
+    syncStepperBounds();
+  });
+  document.getElementById('line-height-value').addEventListener('change', e => {
+    const raw = parseFloat(e.target.value);
+    const v = Math.min(2.4, Math.max(1.4, Number.isFinite(raw) ? Math.round(raw * 10) / 10 : 1.8));
+    e.target.value = v.toFixed(1);
+    broadcast({ lineHeight: v });
+    syncStepperBounds();
+  });
+  document.getElementById('word-spacing-value').addEventListener('change', e => {
+    const raw = parseFloat(e.target.value);
+    const v = Math.min(0.5, Math.max(0, Number.isFinite(raw) ? Math.round(raw * 100) / 100 : 0));
+    e.target.value = v.toFixed(2);
+    broadcast({ wordSpacing: v });
+    syncStepperBounds();
+  });
+  document.getElementById('letter-spacing-value').addEventListener('change', e => {
+    const raw = parseFloat(e.target.value);
+    const v = Math.min(0.1, Math.max(0, Number.isFinite(raw) ? Math.round(raw * 1000) / 1000 : 0));
+    e.target.value = v.toFixed(2);
+    broadcast({ letterSpacing: v });
+    syncStepperBounds();
+  });
+
+  // Sync stepper disabled state after every stepper click
+  STEPPER_BOUNDS.forEach(({ dec, inc }) => {
+    document.getElementById(dec).addEventListener('click', syncStepperBounds);
+    document.getElementById(inc).addEventListener('click', syncStepperBounds);
   });
 
   // Colors
