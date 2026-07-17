@@ -8,6 +8,45 @@ function updateSliderFill(el) {
   el.style.setProperty('--pct', pct + '%');
 }
 
+/* ── Hover tooltips ─────────────────────────────────────────────────────── */
+(function initTooltips() {
+  const tip = document.createElement('div');
+  tip.id = 'argus-tooltip';
+  document.body.appendChild(tip);
+
+  let timer = null;
+
+  function show(text, anchor) {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      tip.textContent = text;
+      const r = anchor.getBoundingClientRect();
+      const panelW = document.documentElement.offsetWidth;
+      let left = r.left + 2;
+      if (left + 214 > panelW - 8) left = panelW - 8 - 214;
+      tip.style.top  = (r.bottom + 5) + 'px';
+      tip.style.left = left + 'px';
+      tip.classList.add('visible');
+    }, 700);
+  }
+
+  function hide() {
+    clearTimeout(timer);
+    tip.classList.remove('visible');
+  }
+
+  document.addEventListener('mouseenter', e => {
+    const el = e.target.closest('[data-tooltip]');
+    if (el) show(el.dataset.tooltip, el);
+  }, true);
+
+  document.addEventListener('mouseleave', e => {
+    if (e.target.closest('[data-tooltip]')) hide();
+  }, true);
+
+  document.addEventListener('mousedown', () => hide());
+})();
+
 // ── Default settings (must match DEFAULT_SETTINGS in content/index.js) ─
 
 const DEFAULT_SETTINGS = {

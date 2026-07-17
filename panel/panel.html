@@ -34,7 +34,7 @@
         <!-- Font & Size -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Adjust the typeface and text size for comfortable reading.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 16 4.039-9.69a.5.5 0 0 1 .923 0L11 16"/><path d="M22 9v7"/><path d="M3.304 13h6.392"/><circle cx="18.5" cy="12.5" r="3.5"/></svg>
               <span class="feature-row-name">Font &amp; Size</span>
               <span class="feature-row-chevron"></span>
@@ -80,7 +80,7 @@
         <!-- Spacing -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Fine-tune line height, letter spacing, and paragraph gaps.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h8"/><path d="M3 12h8"/><path d="M3 19h8"/><path d="m15 8 3-3 3 3"/><path d="m15 16 3 3 3-3"/></svg>
               <span class="feature-row-name">Spacing</span>
               <span class="feature-row-chevron"></span>
@@ -117,8 +117,10 @@
         <!-- Bionic Reading -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12H15C16.061 12 17.078 12.421 17.828 13.172C18.579 13.922 19 14.939 19 16C19 17.061 18.579 18.078 17.828 18.828C17.078 19.579 16.061 20 15 20H7C6.735 20 6.48 19.895 6.293 19.707C6.105 19.52 6 19.265 6 19V5C6 4.735 6.105 4.48 6.293 4.293C6.48 4.105 6.735 4 7 4H14C15.061 4 16.078 4.421 16.828 5.172C17.579 5.922 18 6.939 18 8C18 9.061 17.579 10.078 16.828 10.828C16.078 11.579 15.061 12 14 12"/></svg>
-            <span class="feature-row-name">Bionic Reading</span>
+            <span class="feature-row-label" data-tooltip="Bolds the first half of each word so your eyes glide across text faster.">
+              <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 12H15C16.061 12 17.078 12.421 17.828 13.172C18.579 13.922 19 14.939 19 16C19 17.061 18.579 18.078 17.828 18.828C17.078 19.579 16.061 20 15 20H7C6.735 20 6.48 19.895 6.293 19.707C6.105 19.52 6 19.265 6 19V5C6 4.735 6.105 4.48 6.293 4.293C6.48 4.105 6.735 4 7 4H14C15.061 4 16.078 4.421 16.828 5.172C17.579 5.922 18 6.939 18 8C18 9.061 17.579 10.078 16.828 10.828C16.078 11.579 15.061 12 14 12"/></svg>
+              <span class="feature-row-name">Bionic Reading</span>
+            </span>
             <label class="toggle-switch">
               <input type="checkbox" id="toggle-bold">
               <span class="track"></span>
@@ -129,7 +131,7 @@
         <!-- Text Colors -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Color-codes parts of speech (nouns, verbs, adjectives) to aid comprehension.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/></svg>
               <span class="feature-row-name">Text Colors</span>
               <span class="feature-row-chevron"></span>
@@ -152,7 +154,7 @@
         <!-- Row Shading -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Adds alternating background stripes to help you track each line.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 3H5C3.895 3 3 3.895 3 5v14c0 1.105.895 2 2 2h14c1.105 0 2-.895 2-2V5c0-1.105-.895-2-2-2Z"/><rect x="3" y="9" width="18" height="6" fill="currentColor" stroke="none"/></svg>
               <span class="feature-row-name">Row Shading</span>
               <span class="feature-row-chevron"></span>
@@ -178,7 +180,7 @@
         <!-- Open PDF -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Load and read a PDF alongside the current page.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M9 15h6"/><path d="M12 18v-6"/></svg>
               <span class="feature-row-name">Open PDF</span>
               <span class="feature-row-chevron"></span>
@@ -200,7 +202,7 @@
         <!-- Reader Mode -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Removes ads and distractions, leaving only the article text.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
               <span class="feature-row-name">Reader Mode</span>
               <span class="feature-row-chevron"></span>
@@ -226,7 +228,7 @@
         <!-- Reading Ruler -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="A focus band that follows your cursor to hold your place on the page.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3a2.4 2.4 0 0 1 0 3.4l-2.6 2.6a2.4 2.4 0 0 1-3.4 0L2.7 8.7a2.41 2.41 0 0 1 0-3.4l2.6-2.6a2.41 2.41 0 0 1 3.4 0Z"/><path d="m14.5 12.5 2-2"/><path d="m11.5 9.5 2-2"/><path d="m8.5 6.5 2-2"/><path d="m17.5 15.5 2-2"/></svg>
               <span class="feature-row-name">Reading Ruler</span>
               <span class="feature-row-chevron"></span>
@@ -250,7 +252,7 @@
         <!-- Auto Scroll -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Slowly advances the page at a set speed — read completely hands-free.">
               <svg class="feature-row-icon" viewBox="0 0 22 22" fill="currentColor" aria-hidden="true"><path d="M0.8 13.883H5.2C5.628 13.883 5.975 14.231 5.975 14.659V15.059C5.974 15.487 5.628 15.833 5.2 15.833H5.062C4.731 15.833 4.47 16.017 4.35 16.261C4.229 16.506 4.248 16.812 4.476 17.054C5.142 17.761 5.909 18.349 6.775 18.818C8.087 19.528 9.496 19.883 11 19.883C12.922 19.883 14.664 19.332 16.227 18.229C17.593 17.265 18.605 16.026 19.262 14.512C19.42 14.148 19.809 13.93 20.193 14.019L20.589 14.111C21.034 14.214 21.295 14.677 21.121 15.097C20.339 16.983 19.111 18.534 17.436 19.75C15.523 21.139 13.378 21.833 11 21.833C9.204 21.833 7.521 21.422 5.949 20.599C4.98 20.091 4.111 19.459 3.341 18.702C3.106 18.471 2.765 18.434 2.483 18.535C2.202 18.636 1.975 18.877 1.975 19.207C1.974 19.553 1.694 19.833 1.349 19.833H0.8C0.372 19.833 0.026 19.487 0.025 19.059V14.659C0.025 14.231 0.372 13.883 0.8 13.883ZM8.525 7.824C8.526 7.211 9.203 6.841 9.719 7.172L14.44 10.207C14.914 10.512 14.914 11.205 14.44 11.51L9.719 14.545C9.203 14.877 8.525 14.506 8.525 13.893V7.824ZM2.061 4.508C2.324 4.142 2.851 4.12 3.172 4.441L3.482 4.751C3.759 5.028 3.783 5.466 3.563 5.791C3.215 6.307 2.919 6.847 2.677 7.412C2.438 7.967 2.263 8.542 2.152 9.136C2.079 9.53 1.748 9.833 1.35 9.833H0.938C0.477 9.833 0.118 9.434 0.199 8.984C0.343 8.183 0.568 7.407 0.873 6.656C1.182 5.896 1.578 5.18 2.061 4.508ZM18.853 4.441C19.174 4.12 19.702 4.142 19.965 4.508C20.448 5.18 20.843 5.896 21.151 6.656C21.458 7.411 21.68 8.191 21.815 8.996C21.889 9.442 21.531 9.833 21.075 9.833H20.676C20.278 9.833 19.947 9.53 19.873 9.136C19.762 8.542 19.587 7.967 19.348 7.412C19.105 6.847 18.81 6.307 18.462 5.791C18.242 5.466 18.267 5.028 18.543 4.751L18.853 4.441ZM9.147 0.034C9.59 -0.037 9.975 0.32 9.975 0.772V1.183C9.975 1.581 9.671 1.912 9.277 1.986C8.685 2.097 8.115 2.272 7.565 2.511C7.008 2.754 6.472 3.049 5.958 3.397C5.633 3.617 5.193 3.592 4.917 3.316L4.613 3.011C4.291 2.688 4.315 2.158 4.685 1.894C5.365 1.409 6.082 1.009 6.835 0.694C7.583 0.381 8.354 0.161 9.147 0.034ZM12.863 0.044C13.668 0.179 14.448 0.4 15.203 0.706C15.962 1.015 16.678 1.411 17.351 1.894C17.717 2.157 17.739 2.684 17.418 3.005L17.107 3.316C16.831 3.592 16.393 3.617 16.067 3.397C15.552 3.049 15.011 2.753 14.447 2.51C13.892 2.271 13.317 2.097 12.723 1.986C12.329 1.912 12.025 1.581 12.025 1.183V0.784C12.025 0.328 12.416 -0.03 12.863 0.044Z"/></svg>
               <span class="feature-row-name">Auto Scroll</span>
               <span class="feature-row-chevron"></span>
@@ -274,7 +276,7 @@
         <!-- Topic Focus -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Highlights sentences that match a topic or keyword you enter.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/><path d="m16 16-1.9-1.9"/></svg>
               <span class="feature-row-name">Topic Focus</span>
               <span class="feature-row-chevron"></span>
@@ -304,7 +306,7 @@
         <!-- Emotion Colors -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Colors words by sentiment — positive, negative, or nuanced.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/><path d="M15 3v5a1 1 0 0 0 1 1h5"/><path d="M8 13h.01"/><path d="M16 13h.01"/><path d="M10 16s.8 1 2 1c1.3 0 2-1 2-1"/></svg>
               <span class="feature-row-name">Emotion Colors</span>
               <span class="feature-row-chevron"></span>
@@ -381,7 +383,7 @@
         <!-- Lens -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Uses AI to analyze the page and surface key insights.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>
               <span class="feature-row-name">Reading Lens</span>
               <span class="feature-row-chevron"></span>
@@ -464,7 +466,7 @@
         <!-- Transition Words -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <button class="feature-row-expand" type="button">
+            <button class="feature-row-expand" type="button" data-tooltip="Highlights connective words (however, therefore…) to trace argument structure.">
               <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v6"/><circle cx="12" cy="12" r="3"/><path d="M12 15v6"/></svg>
               <span class="feature-row-name">Transition Phrases</span>
               <span class="feature-row-chevron"></span>
@@ -499,8 +501,10 @@
         <!-- Simplify Text -->
         <div class="feature-row">
           <div class="feature-row-head">
-            <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 16H8"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></svg>
-            <span class="feature-row-name">Simplify Text</span>
+            <span class="feature-row-label" data-tooltip="Rewrites selected complex sentences in plain, accessible language.">
+              <svg class="feature-row-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 16H8"/><path d="M14 8H8"/><path d="M16 12H8"/><path d="M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z"/></svg>
+              <span class="feature-row-name">Simplify Text</span>
+            </span>
             <label class="toggle-switch">
               <input type="checkbox" id="toggle-simplify">
               <span class="track"></span>
