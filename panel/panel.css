@@ -814,17 +814,18 @@ body {
 }
 
 .feature-row-ai-controls > .ai-status-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: 54px 14px;
   align-items: center;
   gap: 4px;
-  width: 58px;   /* fixed — keeps the analyze slot from growing/shrinking */
+  width: 72px;   /* fits status icon + Analyze without overflowing into toggle */
   flex-shrink: 0;
 }
 
 /* Keep the analyze slot in layout when "hidden" so the pill never shifts.
    Higher specificity (3 classes) beats .hidden (1 class) even with !important. */
 .feature-row-ai-controls > .ai-status-row.hidden {
-  display: flex !important;
+  display: grid !important;
   visibility: hidden;
   pointer-events: none;
 }
@@ -842,11 +843,24 @@ body {
 }
 
 .feature-row-ai-controls .ai-status-dot {
+  order: 2;
+  grid-column: 2;
+  justify-self: center;
   flex-shrink: 0;
 }
 
+/* Keep the status column reserved before analysis so Analyze never shifts. */
+.feature-row-ai-controls .ai-status-dot.hidden {
+  display: inline-flex !important;
+  visibility: hidden;
+}
+
 .feature-row-ai-controls .ai-retry-btn {
+  order: 1;
+  grid-column: 1;
+  justify-self: end;
   flex-shrink: 0;
+  margin-left: 0;
   padding-left: 6px;
   padding-right: 6px;
 }
@@ -858,12 +872,12 @@ body {
 /* AI rows without a toggle (e.g. Topic Focus) reserve the toggle's slot on the
    right so their Local/AI pill lines up with the pill in rows that have one.
    min-width matches the total ai-controls width of rows that DO have an analyze
-   slot (78px pill + 4px gap + 58px analyze-row = 140px) so pills stay in the
+   slot (78px pill + 4px gap + 72px analyze-row = 154px) so pills stay in the
    same column regardless of Analyze visibility. */
 .feature-row-head:has(.feature-row-ai-controls):not(:has(.toggle-switch))
   > .feature-row-ai-controls {
   margin-right: calc(var(--switch-width) + 6px);
-  min-width: 140px;
+  min-width: 154px;
 }
 
 /* Detail panel — hidden until the row is expanded */

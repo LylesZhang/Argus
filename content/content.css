@@ -962,7 +962,7 @@ html.dra-preset-editor-open body {
 
 /* Comprehension child controls begin on the label side of the parent toggle. */
 #dra-preset-editor .dra-pe-child-options .dra-pe-row {
-  padding-left: 18px;
+  padding-left: 36px;
 }
 
 #dra-preset-editor .dra-pe-toggle-row {
