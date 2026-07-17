@@ -488,6 +488,7 @@ function init() {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('tab-' + target).classList.add('active');
+      document.querySelector('.tab-nav').dataset.active = target;
       chrome.storage.local.set({ activeTab: target });
     });
   });
@@ -1402,6 +1403,7 @@ chrome.storage.sync.get('draSettings', (data) => {
 chrome.storage.local.get(['activeTab', 'effectsWarningDisabled'], (data) => {
   effectsWarningDisabled = Boolean(data.effectsWarningDisabled);
   const tab = data.activeTab || 'effects';
+  document.querySelector('.tab-nav').dataset.active = tab;
   document.querySelectorAll('.tab-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.tab === tab)
   );

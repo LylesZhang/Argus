@@ -1362,10 +1362,26 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
 .tab-nav {
   display: flex;
   border-bottom: 2px solid var(--border);
-  background: #fff;
+  background: var(--bg);
   position: sticky;
   top: 0;
   z-index: 10;
+}
+
+.tab-nav::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 50%;
+  height: 2px;
+  background: var(--navy);
+  border-radius: 1px 1px 0 0;
+  transition: transform 0.28s cubic-bezier(0.34, 0.1, 0.2, 1);
+}
+
+.tab-nav[data-active="settings"]::after {
+  transform: translateX(100%);
 }
 
 .tab-btn {
@@ -1377,21 +1393,27 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   font-weight: 600;
   color: var(--muted);
   cursor: pointer;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  transition: color 0.15s, border-color 0.15s;
+  transition: color 0.2s, background 0.15s;
 }
 
-.tab-btn:hover:not(.active) { color: #555; }
-.tab-btn.active {
-  color: var(--navy);
-  border-bottom-color: var(--navy);
+.tab-btn:hover:not(.active) {
+  color: var(--navy-hover);
+  background: rgba(30, 27, 75, 0.05);
 }
+.tab-btn.active { color: var(--navy); }
 
 /* ── Tab panels ──────────────────────────────────────────────────────── */
 
+@keyframes tab-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .tab-panel { display: none; }
-.tab-panel.active { display: block; }
+.tab-panel.active {
+  display: block;
+  animation: tab-in 0.18s ease both;
+}
 
 /* ── Word list editor ────────────────────────────────────────────────── */
 
