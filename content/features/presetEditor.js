@@ -168,18 +168,30 @@ function slider(id, key, label, min, max, step, unit = '') {
 }
 
 function stepper(id, key, label, min, max, step, unit = '') {
-  const raw = draft.settings[key] ?? DEFAULT_SETTINGS[key] ?? min;
-  const val = Number(raw).toFixed(step < 1 ? (step < 0.05 ? 2 : 1) : 0);
+  const raw = Number(draft.settings[key] ?? DEFAULT_SETTINGS[key] ?? min);
+  const safeValue = Number.isFinite(raw) ? Math.min(max, Math.max(min, raw)) : min;
+  draft.settings[key] = safeValue;
+  const precision = step < 1 ? (step < 0.05 ? 2 : 1) : 0;
+  const format = value => Number(value).toFixed(precision);
+  const val = format(safeValue);
+  const atMin = safeValue <= min;
+  const atMax = safeValue >= max;
+  const showMinimumHint = key === 'fontSize' || key === 'lineHeight';
+  const limitMessage = atMax ? `Maximum ${format(max)}${unit} reached`
+    : atMin && showMinimumHint ? `Minimum ${format(min)}${unit} reached` : '';
   const unitSpan = unit ? `<span class="stepper-unit">${unit}</span>` : '';
   return `<div class="dra-pe-row">
     <span class="dra-pe-label">${label}</span>
-    <div class="stepper">
-      <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="-1">-</button>
-      <div class="stepper-center">
-        <input type="number" id="${id}" class="stepper-num" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${label}">
-        ${unitSpan}
+    <span class="stepper-limit-hint${limitMessage ? '' : ' hidden'}" role="status">${limitMessage}</span>
+    <div class="dra-pe-stepper-control">
+      <div class="stepper">
+        <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="-1" ${atMin ? 'disabled' : ''} aria-label="Decrease ${label}">-</button>
+        <div class="stepper-center">
+          <input type="number" id="${id}" class="stepper-num" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${label}">
+          ${unitSpan}
+        </div>
+        <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="1" ${atMax ? 'disabled' : ''} aria-label="Increase ${label}">+</button>
       </div>
-      <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="1">+</button>
     </div>
   </div>`;
 }
@@ -227,10 +239,10 @@ function buildFormHTML() {
       ['Verdana','Verdana'],['OpenDyslexic, sans-serif','OpenDyslexic'],
     ]),
     toggle('pe-toggle-bold', 'boldBeginning', 'Bionic Effect'),
-    stepper('pe-font-size', 'fontSize', 'Font Size', 14, 28, 1, 'px'),
+    stepper('pe-font-size', 'fontSize', 'Font Size', 14, 28, 1),
     stepper('pe-line-height', 'lineHeight', 'Line Height', 1.4, 2.4, 0.1),
-    stepper('pe-word-spacing', 'wordSpacing', 'Word Space', 0, 0.5, 0.05, 'em'),
-    stepper('pe-letter-spacing', 'letterSpacing', 'Letter Space', 0, 0.1, 0.01, 'em'),
+    stepper('pe-word-spacing', 'wordSpacing', 'Word Space', 0, 0.5, 0.05),
+    stepper('pe-letter-spacing', 'letterSpacing', 'Letter Space', 0, 0.1, 0.01),
     colorInput('pe-font-color', 'fontColor', 'Text Color'),
     colorInput('pe-bg-color', 'bgColor', 'Background'),
     toggle('pe-toggle-gradient', 'gradientRows', 'Row Shading'),
@@ -250,39 +262,43 @@ function buildFormHTML() {
 
   const comprehension = [
     // Emotion Colors
-    `<div class="dra-pe-row dra-pe-ai-row">
+    `<div class="dra-pe-row dra-pe-ai-row dra-pe-toggle-parent">
       ${toggle('pe-toggle-emotion', 'emotionColor', 'Emotion Colors')}
       ${modePill('pe-emotion-mode-pill', 'emotion', 'emotionMode')}
     </div>`,
-    colorInput('pe-emotion-positive', 'emotionPositiveColor', 'Positive Color'),
-    colorInput('pe-emotion-negative', 'emotionNegativeColor', 'Negative Color'),
-    colorInput('pe-emotion-complex',  'emotionComplexColor',  'Complex Color'),
+    `<div class="dra-pe-child-options dra-pe-emotion-options">
+      ${colorInput('pe-emotion-positive', 'emotionPositiveColor', 'Positive Color')}
+      ${colorInput('pe-emotion-negative', 'emotionNegativeColor', 'Negative Color')}
+      ${colorInput('pe-emotion-complex',  'emotionComplexColor',  'Complex Color')}
+    </div>`,
     // Lens (AI-only, no mode pill)
-    `<div class="dra-pe-row">
+    `<div class="dra-pe-row dra-pe-toggle-parent">
       ${toggle('pe-toggle-labels', 'sentenceLabels', 'Lens')}
     </div>`,
-    selectInput('pe-label-lens', 'sentenceLabelsLens', 'Reading Purpose (sets preview article)', [
-      ['inform','Get Information'],['understand','Understand'],
-      ['evaluate','Evaluate'],
-    ]),
-    selectInput('pe-label-density', 'sentenceLabelsDensity', 'Highlight Density', [
-      ['low','Low'],['medium','Medium'],['high','High'],
-    ]),
-    // Label colors grouped by purpose; only the active purpose group is shown
-    `<div id="pe-label-colors" class="dra-pe-label-colors">
-      <div data-pe-lens="inform">
-        ${colorInput('pe-lc-key-point',   'labelKeyPointColor',   'Key Point')}
-        ${colorInput('pe-lc-core-detail', 'labelCoreDetailColor', 'Core Detail')}
-      </div>
-      <div data-pe-lens="understand">
-        ${colorInput('pe-lc-concept',   'labelConceptColor',   'Concept')}
-        ${colorInput('pe-lc-reasoning', 'labelReasoningColor', 'Reasoning')}
-        ${colorInput('pe-lc-takeaway',  'labelTakeawayColor',  'Takeaway')}
-      </div>
-      <div data-pe-lens="evaluate">
-        ${colorInput('pe-lc-claim',        'labelClaimColor',        'Claim')}
-        ${colorInput('pe-lc-evidence',     'labelEvidenceColor',     'Evidence')}
-        ${colorInput('pe-lc-counterpoint', 'labelCounterpointColor', 'Counterpoint')}
+    `<div class="dra-pe-child-options dra-pe-lens-options">
+      ${selectInput('pe-label-lens', 'sentenceLabelsLens', 'Reading Purpose (sets preview article)', [
+        ['inform','Get Information'],['understand','Understand'],
+        ['evaluate','Evaluate'],
+      ])}
+      ${selectInput('pe-label-density', 'sentenceLabelsDensity', 'Highlight Density', [
+        ['low','Low'],['medium','Medium'],['high','High'],
+      ])}
+      <!-- Label colors grouped by purpose; only the active purpose group is shown -->
+      <div id="pe-label-colors" class="dra-pe-label-colors">
+        <div data-pe-lens="inform">
+          ${colorInput('pe-lc-key-point',   'labelKeyPointColor',   'Key Point')}
+          ${colorInput('pe-lc-core-detail', 'labelCoreDetailColor', 'Core Detail')}
+        </div>
+        <div data-pe-lens="understand">
+          ${colorInput('pe-lc-concept',   'labelConceptColor',   'Concept')}
+          ${colorInput('pe-lc-reasoning', 'labelReasoningColor', 'Reasoning')}
+          ${colorInput('pe-lc-takeaway',  'labelTakeawayColor',  'Takeaway')}
+        </div>
+        <div data-pe-lens="evaluate">
+          ${colorInput('pe-lc-claim',        'labelClaimColor',        'Claim')}
+          ${colorInput('pe-lc-evidence',     'labelEvidenceColor',     'Evidence')}
+          ${colorInput('pe-lc-counterpoint', 'labelCounterpointColor', 'Counterpoint')}
+        </div>
       </div>
     </div>`,
     toggle('pe-toggle-transition', 'transitionAnimation', 'Transition Words'),
@@ -339,9 +355,57 @@ function wireForm(root) {
     refreshPreview();
   };
 
+  const STEP_KEY = {
+    'pe-font-size': 'fontSize', 'pe-line-height': 'lineHeight',
+    'pe-word-spacing': 'wordSpacing', 'pe-letter-spacing': 'letterSpacing',
+  };
+
+  const stepperPrecision = input => Number(input.step) < 1
+    ? (Number(input.step) < 0.05 ? 2 : 1) : 0;
+
+  const syncStepperState = input => {
+    const row = input.closest('.dra-pe-row');
+    if (!row) return;
+    const value = Number(input.value);
+    const min = Number(input.min);
+    const max = Number(input.max);
+    const unit = row.querySelector('.stepper-unit')?.textContent.trim() ?? '';
+    const format = number => Number(number).toFixed(stepperPrecision(input));
+    const atMin = value <= min;
+    const atMax = value >= max;
+    const buttons = row.querySelectorAll('[data-pe-dir]');
+    buttons.forEach(button => {
+      button.disabled = button.dataset.peDir === '-1' ? atMin : atMax;
+    });
+    const hint = row.querySelector('.stepper-limit-hint');
+    if (!hint) return;
+    const showMinimumHint = STEP_KEY[input.id] === 'fontSize' || STEP_KEY[input.id] === 'lineHeight';
+    const message = atMax ? `Maximum ${format(max)}${unit} reached`
+      : atMin && showMinimumHint ? `Minimum ${format(min)}${unit} reached` : '';
+    hint.textContent = message;
+    hint.classList.toggle('hidden', !message);
+  };
+
+  const commitStepperValue = input => {
+    const raw = Number(input.value);
+    if (!Number.isFinite(raw)) return;
+    const min = Number(input.min);
+    const max = Number(input.max);
+    const step = Number(input.step);
+    const bounded = Math.min(max, Math.max(min, raw));
+    const value = Math.round((bounded + Number.EPSILON) / step) * step;
+    input.value = Number(value).toFixed(stepperPrecision(input));
+    update(STEP_KEY[input.id], Number(input.value));
+    syncStepperState(input);
+  };
+
   container.addEventListener('change', e => {
     const el = e.target;
     if (!el.id?.startsWith('pe-')) return;
+    if (STEP_KEY[el.id]) {
+      commitStepperValue(el);
+      return;
+    }
     switch (el.id) {
       case 'pe-toggle-bold':         update('boldBeginning',     el.checked); break;
       case 'pe-font-family':         update('fontFamily',        el.value);   break;
@@ -381,6 +445,9 @@ function wireForm(root) {
       'pe-lc-takeaway': 'labelTakeawayColor', 'pe-lc-claim': 'labelClaimColor',
       'pe-lc-evidence': 'labelEvidenceColor', 'pe-lc-counterpoint': 'labelCounterpointColor',
     };
+    // Typing into a stepper stays local until it is explicitly committed,
+    // preventing partial input such as "1" from changing the live preview.
+    if (STEP_KEY[el.id]) return;
     if (numKeys[el.id]) {
       const v = parseFloat(el.value);
       if (!Number.isFinite(v)) return;   // number input can be transiently empty while typing
@@ -393,11 +460,13 @@ function wireForm(root) {
     }
   });
 
-  // Stepper +/- buttons (typography numerics)
-  const STEP_KEY = {
-    'pe-font-size': 'fontSize', 'pe-line-height': 'lineHeight',
-    'pe-word-spacing': 'wordSpacing', 'pe-letter-spacing': 'letterSpacing',
-  };
+  container.addEventListener('keydown', e => {
+    const input = e.target;
+    if (e.key !== 'Enter' || !STEP_KEY[input.id]) return;
+    e.preventDefault();
+    commitStepperValue(input);
+    input.blur();
+  });
 
   // Mode pills
   container.addEventListener('click', e => {
@@ -410,6 +479,7 @@ function wireForm(root) {
         v = Math.min(max, Math.max(min, Math.round(v / step) * step));
         input.value = step < 1 ? v.toFixed(step < 0.05 ? 2 : 1) : String(v);
         update(STEP_KEY[stepBtn.dataset.peStep], Number(input.value));
+        syncStepperState(input);
       }
       return;
     }

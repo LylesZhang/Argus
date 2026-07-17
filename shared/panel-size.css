@@ -1,0 +1,74 @@
+/* Shared S / M / L segmented control for the side panel and preset editor. */
+.dra-panel .panel-size-pill,
+#dra-preset-editor .panel-size-pill {
+  box-sizing: border-box;
+  position: relative;
+  display: flex;
+  padding: 2px;
+  border: 1px solid #cfd0e0;
+  border-radius: var(--ctl-radius, 8px);
+  background: var(--surface-recessed, linear-gradient(180deg, #e4e5ef, #eef0f7));
+  box-shadow: var(--shadow-recessed, inset 0 1px 2px rgba(30, 27, 75, 0.13));
+  flex-shrink: 0;
+}
+
+.dra-panel .panel-size-pill::before,
+#dra-preset-editor .panel-size-pill::before {
+  box-sizing: border-box;
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / 3);
+  border-radius: var(--ctl-radius-sm, 6px);
+  background: var(--surface-teal, linear-gradient(180deg, #66bbb6, #5aaea9));
+  box-shadow: var(--shadow-thumb, 0 1px 2px rgba(30, 27, 75, 0.28), 0 1px 3px rgba(30, 27, 75, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.30));
+  transition: transform 0.28s var(--ease-spring, cubic-bezier(0.34, 0.1, 0.2, 1));
+}
+
+.dra-panel .panel-size-pill:has(.panel-size-btn:nth-child(2).active)::before,
+#dra-preset-editor .panel-size-pill:has(.panel-size-btn:nth-child(2).active)::before {
+  transform: translateX(100%);
+}
+
+.dra-panel .panel-size-pill:has(.panel-size-btn:nth-child(3).active)::before,
+#dra-preset-editor .panel-size-pill:has(.panel-size-btn:nth-child(3).active)::before {
+  transform: translateX(200%);
+}
+
+.dra-panel .panel-size-btn,
+#dra-preset-editor .panel-size-btn {
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  width: 32px;
+  min-height: 26px;
+  padding: 0;
+  border: 0 !important;
+  border-left: 0 !important;
+  border-right: 0 !important;
+  border-radius: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--muted, #9899ab);
+  font-size: var(--small-font-size, 11px);
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.dra-panel .panel-size-btn:hover:not(.active),
+#dra-preset-editor .panel-size-btn:hover:not(.active) {
+  color: var(--navy, #1e1b4b);
+}
+
+.dra-panel .panel-size-btn.active,
+#dra-preset-editor .panel-size-btn.active {
+  color: #fff;
+}

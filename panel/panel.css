@@ -417,51 +417,6 @@ body {
   font-size: var(--control-font-size);
 }
 
-/* S / M / L — a segmented control sharing the Local/AI pill's material:
-   a recessed track with a domed teal thumb that glides between the three. */
-.panel-size-pill {
-  position: relative;
-  display: flex;
-  padding: 2px;
-  border: 1px solid #cfd0e0;
-  border-radius: var(--ctl-radius);
-  background: var(--surface-recessed);
-  box-shadow: var(--shadow-recessed);
-  flex-shrink: 0;
-}
-
-.panel-size-pill::before {
-  content: '';
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  left: 2px;
-  width: calc((100% - 4px) / 3);
-  border-radius: var(--ctl-radius-sm);
-  background: var(--surface-teal);
-  box-shadow: var(--shadow-thumb);
-  transition: transform 0.28s var(--ease-spring);
-}
-.panel-size-pill:has(.panel-size-btn:nth-child(2).active)::before { transform: translateX(100%); }
-.panel-size-pill:has(.panel-size-btn:nth-child(3).active)::before { transform: translateX(200%); }
-
-.panel-size-btn {
-  position: relative;
-  z-index: 1;
-  width: 32px;
-  min-height: 26px;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: var(--small-font-size);
-  font-weight: 700;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-.panel-size-btn:hover:not(.active) { color: var(--navy); }
-.panel-size-btn.active { color: #fff; }
-
 /* ── Control blocks ──────────────────────────────────────────────────── */
 
 .control-block {
@@ -1246,57 +1201,6 @@ body:not([data-panel-size="large"]) .toggle-grid .toggle-row:nth-child(2) {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
 }
-
-/* ── AI / Local mode pill ────────────────────────────────────────────── */
-
-.mode-pill {
-  position: relative;
-  margin-left: auto;
-  display: flex;
-  padding: 2px;
-  border: 1px solid #cfd0e0;
-  border-radius: var(--ctl-radius);
-  flex-shrink: 0;
-  background: linear-gradient(180deg, #e4e5ef, #eef0f7);
-  box-shadow: inset 0 1px 2px rgba(30, 27, 75, 0.12);
-}
-
-/* Sliding thumb — mirrors the toggle knob: a softly domed teal segment that
-   floats on a layered, navy-tinted shadow and glides between the two options. */
-.mode-pill::before {
-  content: '';
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  left: 2px;
-  width: calc(50% - 2px);
-  border-radius: var(--ctl-radius-sm);
-  background: linear-gradient(180deg, #66bbb6, var(--teal));
-  box-shadow: 0 1px 2px rgba(30, 27, 75, 0.28),
-              0 1px 3px rgba(30, 27, 75, 0.12),
-              inset 0 1px 0 rgba(255, 255, 255, 0.30);
-  transition: transform 0.28s cubic-bezier(0.34, 0.1, 0.2, 1);
-}
-.mode-pill:has(.mode-btn:nth-of-type(2).active)::before {
-  transform: translateX(100%);
-}
-
-.mode-btn {
-  position: relative;
-  z-index: 1;
-  flex: 1;
-  padding: 3px 10px;
-  font-size: var(--small-font-size);
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  color: var(--muted);
-  transition: color 0.2s ease;
-}
-
-.mode-btn:hover:not(.active) { color: var(--navy); }
-.mode-btn.active { color: #fff; }
 
 /* ── AI controls wrapper (mode-pill + status dot) ───────────────────── */
 
