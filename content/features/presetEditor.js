@@ -4,6 +4,7 @@ import { render } from '../render.js';
 import { refreshImmersiveReader, openImmersiveReader, closeImmersiveReader } from './immersiveReader.js';
 import { SAMPLE_ARTICLES } from './sampleArticles.js';
 import { renderPreviewArticle, applyPreviewStyles, updateRulerPosition } from './presetPreviewRender.js';
+import { buildTourPageHTML, TOUR_PAGE_COUNT } from './onboardingTour.js';
 
 const EDITOR_ID = 'dra-preset-editor';
 
@@ -48,7 +49,8 @@ function applySettingsLocally(settings, actions) {
 // ── Draft state ────────────────────────────────────────────────────────
 
 let draft = null;  // { settings: {...}, actions: {...}, name: '', mode, presetId? }
-let onboardingStep = null; // null | 'welcome' | 'preview'
+let onboardingStep = null; // null | 'welcome' | 'tour' | 'preview'
+let tourPage = 0;          // 0-based page index while onboardingStep === 'tour'
 
 function initDraft(mode, { currentSettings, preset } = {}) {
   const baseSettings = mode === 'modify' ? { ...preset.settings }
@@ -596,6 +598,7 @@ export function closePresetEditor() {
   _lastRulerLocalY = null;
   draft = null;
   onboardingStep = null;
+  tourPage = 0;
 }
 
 function onEditorKeydown(e) {
@@ -645,6 +648,41 @@ function buildEditorHTML(title, { onboarding = false } = {}) {
       </footer>
     </div>
   </div>`;
+}
+
+// Advance from the tour into the live preset editor.
+function enterPresetFromTour(root) {
+  onboardingStep = 'preview';
+  mountEditor(root, 'Create Your First Preset');
+}
+
+// Render one page of the first-run feature tour and wire its nav controls.
+// Emotion demos need --dra-* set on the card since those classes have no
+// color fallback; the rest of the demo classes are self-sufficient.
+function mountTour(root) {
+  root.innerHTML = `
+    <div class="dra-pe-overlay">
+      <div class="dra-pe-card dra-pe-card--tour" style="--dra-positive:${DEFAULT_SETTINGS.emotionPositiveColor};--dra-negative:${DEFAULT_SETTINGS.emotionNegativeColor};--dra-complex:${DEFAULT_SETTINGS.emotionComplexColor};">
+        ${buildTourPageHTML(tourPage)}
+      </div>
+    </div>`;
+
+  root.querySelector('.dra-ob-next')?.addEventListener('click', () => {
+    if (tourPage < TOUR_PAGE_COUNT - 1) {
+      tourPage++;
+      mountTour(root);
+    } else {
+      enterPresetFromTour(root);
+    }
+  });
+  root.querySelector('.dra-ob-back')?.addEventListener('click', () => {
+    if (tourPage > 0) { tourPage--; mountTour(root); }
+  });
+  root.querySelector('.dra-ob-skip')?.addEventListener('click', () => enterPresetFromTour(root));
+
+  root.querySelector('.dra-pe-overlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closePresetEditor();
+  });
 }
 
 function mountEditor(root, title) {
@@ -697,8 +735,9 @@ export function openPresetEditor({ mode, preset, currentSettings } = {}) {
       </div>`;
 
     root.querySelector('.dra-pe-btn-yes').addEventListener('click', () => {
-      onboardingStep = 'preview';
-      mountEditor(root, 'Create Your First Preset');
+      onboardingStep = 'tour';
+      tourPage = 0;
+      mountTour(root);
     });
     root.querySelector('.dra-pe-overlay').addEventListener('click', e => {
       if (e.target === e.currentTarget) closePresetEditor();

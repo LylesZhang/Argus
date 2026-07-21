@@ -657,6 +657,303 @@ html.dra-preset-editor-open body {
 }
 #dra-preset-editor .dra-pe-btn-no:hover { color: #333; }
 
+/* ── First-run feature tour ──────────────────────────────────────────── */
+
+#dra-preset-editor .dra-pe-card--tour {
+  width: min(94vw, 1040px);
+  padding: 26px 30px 20px;
+  flex-direction: column;
+  gap: 18px;
+  overflow-y: auto;
+}
+
+#dra-preset-editor .dra-ob-tour {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+#dra-preset-editor .dra-ob-tour-head { text-align: center; }
+
+#dra-preset-editor .dra-ob-section {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1e1b4b;
+  margin: 0;
+}
+
+#dra-preset-editor .dra-ob-blurb {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555;
+  margin: 6px 0 0;
+}
+
+#dra-preset-editor .dra-ob-cards {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+}
+
+/* Two-row layout (Focus & Navigation): fixed 3-column grid so the panel grows
+   taller rather than wider and cards never crowd into a single cramped row. */
+#dra-preset-editor .dra-ob-cards--grid {
+  display: grid;
+  grid-template-columns: repeat(3, 168px);
+  justify-content: center;
+  overflow-x: visible;
+}
+
+#dra-preset-editor .dra-ob-card {
+  flex: 0 0 auto;
+  width: 168px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid #c8c6da;
+  background: linear-gradient(180deg, #ffffff, #eef0f7);
+  box-shadow: 0 1px 2px rgba(30, 27, 75, 0.16), 0 2px 5px rgba(30, 27, 75, 0.09);
+}
+
+#dra-preset-editor .dra-ob-demo {
+  height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px;
+  border-radius: 7px;
+  background: #f7f7fb;
+  box-shadow: inset 0 1px 3px rgba(30, 27, 75, 0.12);
+  overflow: hidden;
+}
+
+#dra-preset-editor .dra-ob-demo-text {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #2c2c2c;
+}
+
+#dra-preset-editor .dra-ob-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e1b4b;
+  text-align: center;
+}
+
+#dra-preset-editor .dra-ob-desc {
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: #666;
+  text-align: center;
+}
+
+#dra-preset-editor .dra-ob-nav {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 2px;
+}
+
+/* Absolutely centered so the dots stay put when the Back button (which changes
+   the right group's width) appears or disappears between pages. */
+#dra-preset-editor .dra-ob-dots {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  gap: 7px;
+}
+#dra-preset-editor .dra-ob-dots .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #c8c6da;
+  transition: background 0.2s, transform 0.2s;
+}
+#dra-preset-editor .dra-ob-dots .dot.active {
+  background: #1e1b4b;
+  transform: scale(1.15);
+}
+
+#dra-preset-editor .dra-ob-nav-btns { display: flex; gap: 8px; }
+
+#dra-preset-editor .dra-ob-skip {
+  background: transparent;
+  border: none;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 8px 4px;
+}
+#dra-preset-editor .dra-ob-skip:hover { color: #333; }
+
+#dra-preset-editor .dra-ob-back {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid #c8c6da;
+  background: linear-gradient(180deg, #ffffff, #eef0f7);
+  color: #1e1b4b;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(30, 27, 75, 0.14);
+}
+#dra-preset-editor .dra-ob-back:hover { background: linear-gradient(180deg, #ffffff, #e6e8f2); }
+
+#dra-preset-editor .dra-ob-next {
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: none;
+  background: #1e1b4b;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(30, 27, 75, 0.28);
+}
+#dra-preset-editor .dra-ob-next:hover { background: #2d2a63; }
+
+/* Demo mocks for behavioral features */
+#dra-preset-editor .dra-ob-mock-colors {
+  color: #2c5fa8;
+  background: #eef4ff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+#dra-preset-editor .dra-ob-mock-shade {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+}
+#dra-preset-editor .dra-ob-mock-shade span {
+  height: 8px;
+  border-radius: 2px;
+  background: #eceaf2;
+}
+#dra-preset-editor .dra-ob-mock-shade span:nth-child(odd) { background: #d8d1e2; }
+
+#dra-preset-editor .dra-ob-mock-pdf { display: flex; align-items: center; justify-content: center; }
+#dra-preset-editor .dra-ob-pdf-doc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 52px;
+  border-radius: 4px;
+  background: #fff;
+  border: 1px solid #d33;
+  color: #d33;
+  font-size: 11px;
+  font-weight: 800;
+  box-shadow: 0 2px 5px rgba(30, 27, 75, 0.14);
+}
+
+#dra-preset-editor .dra-ob-mock-reader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+#dra-preset-editor .dra-ob-mock-reader .messy,
+#dra-preset-editor .dra-ob-mock-reader .clean {
+  width: 34px;
+  height: 44px;
+  border-radius: 4px;
+  border: 1px solid #c8c6da;
+}
+#dra-preset-editor .dra-ob-mock-reader .messy {
+  background:
+    linear-gradient(#f0a0a0 0 0) 4px 5px / 12px 4px no-repeat,
+    linear-gradient(#a0c0f0 0 0) 4px 12px / 24px 3px no-repeat,
+    linear-gradient(#c8c6da 0 0) 4px 19px / 24px 3px no-repeat,
+    linear-gradient(#f0c0a0 0 0) 4px 26px / 16px 3px no-repeat,
+    #fff;
+}
+#dra-preset-editor .dra-ob-mock-reader .clean {
+  background:
+    linear-gradient(#1e1b4b 0 0) 6px 7px / 22px 3px no-repeat,
+    linear-gradient(#c8c6da 0 0) 6px 15px / 22px 2px no-repeat,
+    linear-gradient(#c8c6da 0 0) 6px 21px / 22px 2px no-repeat,
+    linear-gradient(#c8c6da 0 0) 6px 27px / 16px 2px no-repeat,
+    #fff;
+}
+#dra-preset-editor .dra-ob-mock-reader .arrow { color: #5aaea9; font-size: 16px; font-weight: 700; }
+
+#dra-preset-editor .dra-ob-mock-tw { text-align: center; }
+#dra-preset-editor .dra-ob-mock-tw p { margin: 2px 0; font-size: 12px; line-height: 1.35; }
+#dra-preset-editor .dra-ob-mock-tw .dim { opacity: 0.32; }
+#dra-preset-editor .dra-ob-mock-tw .lit { opacity: 1; font-weight: 600; color: #1e1b4b; }
+
+#dra-preset-editor .dra-ob-mock-ruler {
+  width: 100%;
+  text-align: center;
+  border-radius: 5px;
+  overflow: hidden;
+}
+#dra-preset-editor .dra-ob-mock-ruler p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.9;
+  color: rgba(0, 0, 0, 0.38);
+}
+#dra-preset-editor .dra-ob-mock-ruler .band {
+  background: rgba(255, 236, 150, 0.6);
+  color: #2c2c2c;
+  font-weight: 600;
+}
+
+#dra-preset-editor .dra-ob-mock-scroll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+#dra-preset-editor .dra-ob-mock-scroll .ln {
+  height: 5px;
+  width: 70%;
+  border-radius: 3px;
+  background: #d3d0de;
+}
+#dra-preset-editor .dra-ob-mock-scroll .ln.short { width: 45%; }
+#dra-preset-editor .dra-ob-mock-scroll .arrow {
+  color: #5aaea9;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+#dra-preset-editor .dra-ob-mock-topic .dim { opacity: 0.34; }
+#dra-preset-editor .dra-ob-mock-topic .hit {
+  background: rgba(90, 174, 169, 0.28);
+  border-radius: 3px;
+  padding: 1px 3px;
+  font-weight: 600;
+  color: #1e1b4b;
+}
+
+#dra-preset-editor .dra-ob-mock-simplify { text-align: center; width: 100%; }
+#dra-preset-editor .dra-ob-mock-simplify p { margin: 1px 0; font-size: 12px; line-height: 1.3; }
+#dra-preset-editor .dra-ob-mock-simplify .before {
+  color: #999;
+  text-decoration: line-through;
+  text-decoration-color: rgba(231, 76, 60, 0.6);
+}
+#dra-preset-editor .dra-ob-mock-simplify .sep { color: #5aaea9; font-size: 13px; font-weight: 700; }
+#dra-preset-editor .dra-ob-mock-simplify .after { color: #1e1b4b; font-weight: 600; }
+
 /* Editor layout */
 #dra-preset-editor .dra-pe-header {
   display: flex;

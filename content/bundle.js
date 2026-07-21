@@ -155,16 +155,16 @@
     "no",
     "vol"
   ]);
-  function splitSentences(text) {
+  function splitSentences(text2) {
     const result = [];
     let start = 0;
-    for (const m of text.matchAll(/(?<=[.!?])(\s+)(?=[A-Z"'\[])/g)) {
-      const word = text.slice(0, m.index).match(/([a-zA-Z]+)[.!?]$/)?.[1] ?? "";
+    for (const m of text2.matchAll(/(?<=[.!?])(\s+)(?=[A-Z"'\[])/g)) {
+      const word = text2.slice(0, m.index).match(/([a-zA-Z]+)[.!?]$/)?.[1] ?? "";
       if (/^[A-Z]$/.test(word) || ABBR.has(word.toLowerCase())) continue;
-      result.push(text.slice(start, m.index));
+      result.push(text2.slice(start, m.index));
       start = m.index + m[1].length;
     }
-    result.push(text.slice(start));
+    result.push(text2.slice(start));
     return result;
   }
 
@@ -201,8 +201,8 @@
     if (len <= 9) return 3;
     return 4;
   }
-  function applyBionicToText(text) {
-    return text.split(/(\s+)/).map((tok) => {
+  function applyBionicToText(text2) {
+    return text2.split(/(\s+)/).map((tok) => {
       if (/^\s+$/.test(tok)) return tok;
       const leading = tok.match(/^[^a-zA-Z]*/)[0];
       const trailing = tok.match(/[^a-zA-Z]*$/)[0];
@@ -422,11 +422,11 @@
     "sobering",
     "chilling"
   ];
-  function matchEmotionWords(text, wordLists) {
+  function matchEmotionWords(text2, wordLists) {
     const pos = wordLists.emotionPositive ?? DEFAULT_EMOTION_POSITIVE;
     const neg = wordLists.emotionNegative ?? DEFAULT_EMOTION_NEGATIVE;
     const cmp = wordLists.emotionComplex ?? DEFAULT_EMOTION_COMPLEX;
-    const lower = text.toLowerCase();
+    const lower = text2.toLowerCase();
     const highlights = [];
     for (const [words, category] of [
       [pos, "emotion-positive"],
@@ -584,12 +584,12 @@
   function generateTransitionHighlights() {
     const words = state.wordLists.transition ?? DEFAULT_TRANSITION_WORDS;
     const area = findContentArea();
-    const text = area.innerText.toLowerCase();
+    const text2 = area.innerText.toLowerCase();
     const highlights = [];
     for (const phrase of words) {
       const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       const regex = new RegExp(`(?<![a-zA-Z-])${escaped}(?![a-zA-Z-])`);
-      if (regex.test(text)) {
+      if (regex.test(text2)) {
         highlights.push({ word: phrase, category: "transition" });
       }
     }
@@ -786,11 +786,11 @@
     "now",
     "still"
   ]);
-  function extractKeywords(text) {
-    return text.toLowerCase().replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+  function extractKeywords(text2) {
+    return text2.toLowerCase().replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length > 2 && !STOP_WORDS.has(w));
   }
-  function scoreSentence(text, keywords) {
-    const words = extractKeywords(text);
+  function scoreSentence(text2, keywords) {
+    const words = extractKeywords(text2);
     const wordSet = new Set(words);
     let score = 0;
     for (const kw of keywords) {
@@ -815,8 +815,8 @@
   }
   function applyFocusMaskByPrefixes(prefixes) {
     document.querySelectorAll(".dra-sentence").forEach((el) => {
-      const text = el.textContent.trim().slice(0, 30);
-      const focused = prefixes.some((p) => text.startsWith(p.slice(0, 25)));
+      const text2 = el.textContent.trim().slice(0, 30);
+      const focused = prefixes.some((p) => text2.startsWith(p.slice(0, 25)));
       el.style.fontWeight = focused ? "700" : "";
       el.style.color = focused ? "" : "#aaa";
       el.style.opacity = "";
@@ -854,8 +854,8 @@
     const safeLevel = Math.min(10, Math.max(1, Math.round(Number(level) || 5)));
     return 70 - (safeLevel - 1) * (60 / 9);
   }
-  function escapeHTML(text) {
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  function escapeHTML(text2) {
+    return text2.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
   function bionicN2(len) {
     if (len <= 3) return 1;
@@ -863,8 +863,8 @@
     if (len <= 9) return 3;
     return 4;
   }
-  function bionicReaderText(text) {
-    return text.split(/(\s+)/).map((tok) => {
+  function bionicReaderText(text2) {
+    return text2.split(/(\s+)/).map((tok) => {
       if (/^\s+$/.test(tok)) return tok;
       const leading = tok.match(/^[^a-zA-Z]*/)[0];
       const trailing = tok.match(/[^a-zA-Z]*$/)[0];
@@ -881,14 +881,14 @@
     const area = findContentArea();
     const title = document.querySelector("h1")?.innerText?.trim() || document.title || "Untitled";
     const seen = /* @__PURE__ */ new Set();
-    const blocks = [...area.querySelectorAll("p, li, blockquote")].map((el) => el.innerText.replace(/\s+/g, " ").trim()).filter((text) => text.length >= MIN_BLOCK_LENGTH).filter((text) => {
-      const key = text.toLowerCase();
+    const blocks = [...area.querySelectorAll("p, li, blockquote")].map((el) => el.innerText.replace(/\s+/g, " ").trim()).filter((text2) => text2.length >= MIN_BLOCK_LENGTH).filter((text2) => {
+      const key = text2.toLowerCase();
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
     });
     if (blocks.length === 0) {
-      const fallback = area.innerText.split(/\n{2,}/).map((text) => text.replace(/\s+/g, " ").trim()).filter((text) => text.length >= MIN_BLOCK_LENGTH);
+      const fallback = area.innerText.split(/\n{2,}/).map((text2) => text2.replace(/\s+/g, " ").trim()).filter((text2) => text2.length >= MIN_BLOCK_LENGTH);
       return { title, blocks: fallback };
     }
     return { title, blocks };
@@ -900,10 +900,10 @@
     if (category === "transition") return state.wordLists.transition ?? DEFAULT_TRANSITION_WORDS;
     return [];
   }
-  function escapeRegex(text) {
-    return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  function escapeRegex(text2) {
+    return text2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
-  function collectMatches(text) {
+  function collectMatches(text2) {
     const matches = [];
     const featureSets = [];
     if (state.settings.emotionColor) {
@@ -927,7 +927,7 @@
       words.forEach((word) => {
         if (!word) return;
         const regex = new RegExp(`(?<![a-zA-Z-])${escapeRegex(word)}(?![a-zA-Z-])`, "gi");
-        for (const m of text.matchAll(regex)) {
+        for (const m of text2.matchAll(regex)) {
           matches.push({ start: m.index, end: m.index + m[0].length, category });
         }
       });
@@ -943,17 +943,17 @@
     });
     return result;
   }
-  function inlineText(text) {
-    return state.settings.boldBeginning ? bionicReaderText(text) : escapeHTML(text);
+  function inlineText(text2) {
+    return state.settings.boldBeginning ? bionicReaderText(text2) : escapeHTML(text2);
   }
-  function renderInlineHighlights(text) {
-    const matches = collectMatches(text);
-    if (matches.length === 0) return inlineText(text);
+  function renderInlineHighlights(text2) {
+    const matches = collectMatches(text2);
+    if (matches.length === 0) return inlineText(text2);
     let result = "";
     let pos = 0;
     matches.forEach(({ start, end, category }) => {
-      if (pos < start) result += inlineText(text.slice(pos, start));
-      const inner = inlineText(text.slice(start, end));
+      if (pos < start) result += inlineText(text2.slice(pos, start));
+      const inner = inlineText(text2.slice(start, end));
       if (category === "transition") {
         result += `<span class="dra-transition-word">${inner}</span>`;
       } else if (category.startsWith("emotion")) {
@@ -963,7 +963,7 @@
       }
       pos = end;
     });
-    if (pos < text.length) result += inlineText(text.slice(pos));
+    if (pos < text2.length) result += inlineText(text2.slice(pos));
     return result;
   }
   function labelClassForSentence(sentence) {
@@ -975,8 +975,8 @@
   }
   function isFocusedSentence(sentence) {
     if (state.topicFocusKeywords) {
-      const text = sentence.toLowerCase();
-      return state.topicFocusKeywords.some((keyword) => text.includes(keyword));
+      const text2 = sentence.toLowerCase();
+      return state.topicFocusKeywords.some((keyword) => text2.includes(keyword));
     }
     if (state.topicFocusAIPrefixes) {
       const prefix = sentence.trim().slice(0, 30);
@@ -988,14 +988,14 @@
     const flat = [];
     readerContent.blocks.forEach((block, blockIndex) => {
       const sentences = splitSentences(block.trim()).filter(Boolean);
-      sentences.forEach((text, i) => flat.push({ text, blockIndex, isBlockStart: i === 0 }));
+      sentences.forEach((text2, i) => flat.push({ text: text2, blockIndex, isBlockStart: i === 0 }));
     });
     return flat;
   }
-  function renderCompletedSentence(text) {
-    const cls = labelClassForSentence(text);
-    const muted = isFocusedSentence(text) ? "" : " dra-reader-muted";
-    return `<span class="dra-sentence${cls}${muted}">${renderInlineHighlights(text)}</span>`;
+  function renderCompletedSentence(text2) {
+    const cls = labelClassForSentence(text2);
+    const muted = isFocusedSentence(text2) ? "" : " dra-reader-muted";
+    return `<span class="dra-sentence${cls}${muted}">${renderInlineHighlights(text2)}</span>`;
   }
   function renderPickStartArticle() {
     let html = '<div class="dra-tw-banner"><div class="dra-tw-banner-main">Click any sentence to start reading from there, or <button data-tw-action="start-beginning">Start from Beginning</button></div><div class="dra-tw-banner-hint">Press Space to continue, or press Space while typing to reveal the full paragraph.</div></div>';
@@ -1067,12 +1067,12 @@
     tw.revealedChars = 0;
     tw.phase = "typing";
     tw.showContinueHint = false;
-    const text = tw.flatSentences[index].text;
+    const text2 = tw.flatSentences[index].text;
     renderTW();
     centerCurrentLine();
     tw.tickTimer = setInterval(() => {
       tw.revealedChars++;
-      if (tw.revealedChars >= text.length) {
+      if (tw.revealedChars >= text2.length) {
         clearInterval(tw.tickTimer);
         tw.phase = "paused";
         scheduleContinueHint();
@@ -1614,14 +1614,14 @@
       hidePopup();
       return;
     }
-    const text = sel.toString().trim();
-    if (!text || text.length < 10) {
+    const text2 = sel.toString().trim();
+    if (!text2 || text2.length < 10) {
       hidePopup();
       return;
     }
     const range = sel.getRangeAt(0);
     const rect = range.getBoundingClientRect();
-    showSimplifyButton(text, rect);
+    showSimplifyButton(text2, rect);
   }
   function onMouseDown(e) {
     const popup = getPopup();
@@ -1988,8 +1988,8 @@
   };
 
   // content/features/presetPreviewRender.js
-  function escapeHTML2(text) {
-    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  function escapeHTML2(text2) {
+    return text2.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
   function renderSentenceText(sentence, settings, emotionHighlights, transitionWords) {
     const lower = sentence.toLowerCase();
@@ -2133,6 +2133,137 @@
     container.style.background = isReaderMode ? "#f4f0e7" : "";
   }
 
+  // content/features/onboardingTour.js
+  var text = (html) => `<div class="dra-ob-demo-text">${html}</div>`;
+  var TOUR_PAGES = [
+    {
+      section: "Readability",
+      blurb: "Shape how the text itself looks \u2014 type, spacing, and color.",
+      features: [
+        {
+          name: "Font & Size",
+          desc: "Adjust the typeface and text size for comfortable reading.",
+          demo: text('<span style="font-size:12px;color:#9899ab;">Aa</span> <span style="font-size:17px;">Aa</span> <span style="font-size:23px;font-weight:600;">Aa</span>')
+        },
+        {
+          name: "Spacing",
+          desc: "Fine-tune line height plus letter and word spacing.",
+          demo: text('<span style="word-spacing:0.32em;letter-spacing:0.07em;">Room to breathe</span>')
+        },
+        {
+          name: "Bionic Reading",
+          desc: "Bolds the first half of each word so your eyes glide faster.",
+          demo: text(applyBionicToText("The quick brown fox jumps"))
+        },
+        {
+          name: "Text Colors",
+          desc: "Set custom text and background colors that suit your eyes.",
+          demo: '<div class="dra-ob-demo-text dra-ob-mock-colors">Colors that suit you</div>'
+        },
+        {
+          name: "Row Shading",
+          desc: "Adds alternating stripes to help you track each line.",
+          demo: '<div class="dra-ob-mock-shade"><span></span><span></span><span></span><span></span><span></span></div>'
+        }
+      ]
+    },
+    {
+      section: "Focus & Navigation",
+      blurb: "Cut distractions and keep your place as you move through a page.",
+      // Six features — lay them out as two rows so the row never feels cramped.
+      twoRows: true,
+      features: [
+        {
+          name: "Open PDF",
+          desc: "Load and read a PDF alongside the current page.",
+          demo: '<div class="dra-ob-mock-pdf"><span class="dra-ob-pdf-doc">PDF</span></div>'
+        },
+        {
+          name: "Reader Mode",
+          desc: "Removes ads and distractions, leaving only the article text.",
+          demo: '<div class="dra-ob-mock-reader"><span class="messy"></span><span class="arrow">\u2192</span><span class="clean"></span></div>'
+        },
+        {
+          name: "Typewriter",
+          desc: "Spotlights the line you are on and dims the rest.",
+          demo: '<div class="dra-ob-demo-text dra-ob-mock-tw"><p class="dim">an earlier line</p><p class="lit">your current line</p><p class="dim">a later line</p></div>'
+        },
+        {
+          name: "Reading Ruler",
+          desc: "A focus band that follows your cursor to hold your place.",
+          demo: '<div class="dra-ob-mock-ruler"><p>line above</p><p class="band">the focus band</p><p>line below</p></div>'
+        },
+        {
+          name: "Auto Scroll",
+          desc: "Slowly advances the page \u2014 read completely hands-free.",
+          demo: '<div class="dra-ob-mock-scroll"><span class="ln"></span><span class="ln"></span><span class="ln short"></span><span class="arrow">\u2193</span></div>'
+        },
+        {
+          name: "Topic Focus",
+          desc: "Highlights sentences that match a topic or keyword you enter.",
+          demo: '<div class="dra-ob-demo-text dra-ob-mock-topic"><span class="dim">Policy shifted, and </span><span class="hit">emissions fell 12%</span><span class="dim"> that year.</span></div>'
+        }
+      ]
+    },
+    {
+      section: "Comprehension",
+      blurb: "Surface meaning and structure so dense text is easier to follow.",
+      features: [
+        {
+          name: "Emotion Colors",
+          desc: "Colors words by sentiment \u2014 positive, negative, or nuanced.",
+          demo: text('A <span class="dra-pe-emotion-positive">triumph</span> tinged with <span class="dra-pe-emotion-complex">bittersweet</span> <span class="dra-pe-emotion-negative">loss</span>.')
+        },
+        {
+          name: "Reading Lens",
+          desc: "Highlights each sentence by the role it plays in the text.",
+          demo: text('<span class="dra-label-concept">Protein folding shapes function.</span> <span class="dra-label-reasoning">So misfolds cause disease.</span>')
+        },
+        {
+          name: "Transition Phrases",
+          desc: "Highlights connective words to trace argument structure.",
+          demo: text('It works; <span class="dra-transition-word">however</span>, costs rise, <span class="dra-transition-word">therefore</span> we adapt.')
+        },
+        {
+          name: "Simplify Text",
+          desc: "Rewrites selected complex sentences in plain language.",
+          demo: '<div class="dra-ob-mock-simplify"><p class="before">Utilize disparate methodologies</p><p class="sep">\u2193</p><p class="after">Use different methods</p></div>'
+        }
+      ]
+    }
+  ];
+  var TOUR_PAGE_COUNT = TOUR_PAGES.length;
+  function featureCard({ name, desc, demo }) {
+    return `<div class="dra-ob-card">
+      <div class="dra-ob-demo">${demo}</div>
+      <div class="dra-ob-name">${name}</div>
+      <div class="dra-ob-desc">${desc}</div>
+    </div>`;
+  }
+  function buildTourPageHTML(pageIndex) {
+    const page = TOUR_PAGES[pageIndex];
+    const isLast = pageIndex === TOUR_PAGES.length - 1;
+    const dots = TOUR_PAGES.map((_, i) => `<span class="dot${i === pageIndex ? " active" : ""}"></span>`).join("");
+    return `
+    <div class="dra-ob-tour">
+      <div class="dra-ob-tour-head">
+        <h2 class="dra-ob-section">${page.section}</h2>
+        <p class="dra-ob-blurb">${page.blurb}</p>
+      </div>
+      <div class="dra-ob-cards${page.twoRows ? " dra-ob-cards--grid" : ""}">
+        ${page.features.map(featureCard).join("")}
+      </div>
+      <div class="dra-ob-nav">
+        <button class="dra-ob-skip" type="button">Skip</button>
+        <div class="dra-ob-dots">${dots}</div>
+        <div class="dra-ob-nav-btns">
+          ${pageIndex > 0 ? '<button class="dra-ob-back" type="button">Back</button>' : ""}
+          <button class="dra-ob-next" type="button">${isLast ? "Continue" : "Next"}</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   // content/features/presetEditor.js
   var EDITOR_ID = "dra-preset-editor";
   function genPresetId() {
@@ -2165,6 +2296,7 @@
   }
   var draft = null;
   var onboardingStep = null;
+  var tourPage = 0;
   function initDraft(mode, { currentSettings, preset } = {}) {
     const baseSettings = mode === "modify" ? { ...preset.settings } : mode === "onboarding" ? { ...DEFAULT_SETTINGS, ...ONBOARDING_PREVIEW_SETTINGS } : { ...DEFAULT_SETTINGS, ...state.settings, ...currentSettings ?? {} };
     const s = {};
@@ -2697,6 +2829,7 @@
     _lastRulerLocalY = null;
     draft = null;
     onboardingStep = null;
+    tourPage = 0;
   }
   function onEditorKeydown(e) {
     if (e.key === "Escape") cancelEditor();
@@ -2741,6 +2874,36 @@
     </div>
   </div>`;
   }
+  function enterPresetFromTour(root) {
+    onboardingStep = "preview";
+    mountEditor(root, "Create Your First Preset");
+  }
+  function mountTour(root) {
+    root.innerHTML = `
+    <div class="dra-pe-overlay">
+      <div class="dra-pe-card dra-pe-card--tour" style="--dra-positive:${DEFAULT_SETTINGS.emotionPositiveColor};--dra-negative:${DEFAULT_SETTINGS.emotionNegativeColor};--dra-complex:${DEFAULT_SETTINGS.emotionComplexColor};">
+        ${buildTourPageHTML(tourPage)}
+      </div>
+    </div>`;
+    root.querySelector(".dra-ob-next")?.addEventListener("click", () => {
+      if (tourPage < TOUR_PAGE_COUNT - 1) {
+        tourPage++;
+        mountTour(root);
+      } else {
+        enterPresetFromTour(root);
+      }
+    });
+    root.querySelector(".dra-ob-back")?.addEventListener("click", () => {
+      if (tourPage > 0) {
+        tourPage--;
+        mountTour(root);
+      }
+    });
+    root.querySelector(".dra-ob-skip")?.addEventListener("click", () => enterPresetFromTour(root));
+    root.querySelector(".dra-pe-overlay").addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) closePresetEditor();
+    });
+  }
   function mountEditor(root, title) {
     const isOnboarding = draft.mode === "onboarding";
     root.innerHTML = buildEditorHTML(title, { onboarding: isOnboarding });
@@ -2783,8 +2946,9 @@
         </div>
       </div>`;
       root.querySelector(".dra-pe-btn-yes").addEventListener("click", () => {
-        onboardingStep = "preview";
-        mountEditor(root, "Create Your First Preset");
+        onboardingStep = "tour";
+        tourPage = 0;
+        mountTour(root);
       });
       root.querySelector(".dra-pe-overlay").addEventListener("click", (e) => {
         if (e.target === e.currentTarget) closePresetEditor();

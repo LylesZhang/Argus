@@ -822,15 +822,18 @@ body {
   flex-shrink: 0;
 }
 
-/* Keep the analyze slot in layout when "hidden" so the pill never shifts.
-   Higher specificity (3 classes) beats .hidden (1 class) even with !important. */
+/* Collapse the analyze slot entirely while hidden so the feature label reclaims
+   its width. It only appears when Emotion is ON and in AI mode, so the default
+   (Local) state keeps full-width labels. */
 .feature-row-ai-controls > .ai-status-row.hidden {
-  display: grid !important;
-  visibility: hidden;
-  pointer-events: none;
+  display: none !important;
 }
 
+/* Anchor the pill to the RIGHT of the AI cluster (order:1) so it sits in a fixed
+   column just left of the toggle — aligned across rows, and unmoved when the
+   Analyze slot appears to its left in AI mode. */
 .feature-row-ai-controls > .mode-pill {
+  order: 1;
   width: 78px;
   flex-shrink: 0;
 }
@@ -855,6 +858,13 @@ body {
   visibility: hidden;
 }
 
+/* Topic Focus's dot is a direct child of the cluster (not inside the Analyze
+   grid), so keep it LEFT of the pill — the pill stays the rightmost item and
+   lines up with the Emotion row's pill. */
+.feature-row-ai-controls > .ai-status-dot {
+  order: 0;
+}
+
 .feature-row-ai-controls .ai-retry-btn {
   order: 1;
   grid-column: 1;
@@ -870,14 +880,12 @@ body {
 }
 
 /* AI rows without a toggle (e.g. Topic Focus) reserve the toggle's slot on the
-   right so their Local/AI pill lines up with the pill in rows that have one.
-   min-width matches the total ai-controls width of rows that DO have an analyze
-   slot (78px pill + 4px gap + 72px analyze-row = 154px) so pills stay in the
-   same column regardless of Analyze visibility. */
+   right so their Local/AI pill sits in the same right-edge zone as the toggles.
+   The cluster sizes to its content (pill only) so the feature label keeps its
+   full width. */
 .feature-row-head:has(.feature-row-ai-controls):not(:has(.toggle-switch))
   > .feature-row-ai-controls {
   margin-right: calc(var(--switch-width) + 6px);
-  min-width: 154px;
 }
 
 /* Detail panel — hidden until the row is expanded */
