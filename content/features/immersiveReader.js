@@ -3,6 +3,7 @@ import { state } from '../state.js';
 import { splitSentences } from '../utils.js';
 import { DEFAULT_EMOTION_POSITIVE, DEFAULT_EMOTION_NEGATIVE, DEFAULT_EMOTION_COMPLEX } from './emotions.js';
 import { DEFAULT_TRANSITION_WORDS } from './transitions.js';
+import { toEmSpacing } from '../styleValues.mjs';
 
 const READER_ID = 'dra-immersive-reader';
 const MIN_BLOCK_LENGTH = 40;
@@ -446,8 +447,8 @@ function applyReaderStyle(root) {
   article.style.fontSize = state.settings.fontSize ? `${state.settings.fontSize}px` : '';
   article.style.lineHeight = state.settings.lineHeight ? String(state.settings.lineHeight) : '';
   article.style.fontFamily = state.settings.fontFamily ? state.settings.fontFamily : '';
-  article.style.wordSpacing = state.settings.wordSpacing ? `${state.settings.wordSpacing}em` : '';
-  article.style.letterSpacing = state.settings.letterSpacing ? `${state.settings.letterSpacing}em` : '';
+  article.style.wordSpacing = toEmSpacing(state.settings.wordSpacing);
+  article.style.letterSpacing = toEmSpacing(state.settings.letterSpacing);
   article.style.color = '';
   article.style.background = '';
   root.classList.toggle('dra-reader-row-shading', Boolean(state.settings.gradientRows));

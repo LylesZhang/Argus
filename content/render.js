@@ -12,6 +12,7 @@ import { applyFocusMask, applyFocusMaskByPrefixes } from './features/topicFocus.
 import { setupSelectionMenu, teardownSelectionMenu } from './features/selectionMenu.js';
 import { setupSimplify, teardownSimplify } from './features/simplify.js';
 import { closeImmersiveReader } from './features/immersiveReader.js';
+import { toEmSpacing } from './styleValues.mjs';
 
 // ── Sentence rendering ─────────────────────────────────────────────────
 
@@ -194,8 +195,8 @@ function applyTransformations() {
       injectOpenDyslexicFont();
       para.style.fontFamily = state.settings.fontFamily;
     }
-    if (state.settings.wordSpacing)   para.style.wordSpacing   = state.settings.wordSpacing + 'em';
-    if (state.settings.letterSpacing) para.style.letterSpacing = state.settings.letterSpacing + 'em';
+    para.style.wordSpacing   = toEmSpacing(state.settings.wordSpacing);
+    para.style.letterSpacing = toEmSpacing(state.settings.letterSpacing);
     if (state.settings.fontColor)     para.style.color         = state.settings.fontColor;
 
     const needsSentenceWrap = state.settings.emotionColor ||

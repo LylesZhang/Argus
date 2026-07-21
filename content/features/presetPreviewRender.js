@@ -3,6 +3,7 @@ import { matchEmotionWords } from './emotions.js';
 import { DEFAULT_TRANSITION_WORDS } from './transitions.js';
 import { applyBionicToText } from './bionic.js';
 import { injectOpenDyslexicFont } from './typography.js';
+import { toEmSpacing } from '../styleValues.mjs';
 
 function escapeHTML(text) {
   return text
@@ -176,8 +177,8 @@ export function applyPreviewStyles(container, settings, actions = {}) {
   article.style.fontFamily    = s.fontFamily    ? s.fontFamily         : '';
   article.style.fontSize      = s.fontSize      ? `${s.fontSize}px`    : '';
   article.style.lineHeight    = s.lineHeight    ? String(s.lineHeight) : '';
-  article.style.wordSpacing   = s.wordSpacing   ? `${s.wordSpacing}em` : '';
-  article.style.letterSpacing = s.letterSpacing ? `${s.letterSpacing}em` : '';
+  article.style.wordSpacing   = toEmSpacing(s.wordSpacing);
+  article.style.letterSpacing = toEmSpacing(s.letterSpacing);
   // Reader Mode overrides typography color and background
   const isReaderMode = Boolean(actions?.autoOpenReaderMode);
   article.style.color      = (s.fontColor && !isReaderMode) ? s.fontColor : '';

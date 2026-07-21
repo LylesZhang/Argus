@@ -179,6 +179,7 @@ function stepper(id, key, label, min, max, step, unit = '') {
   const atMin = safeValue <= min;
   const atMax = safeValue >= max;
   const showMinimumHint = key === 'fontSize' || key === 'lineHeight';
+  const showDefault = (key === 'wordSpacing' || key === 'letterSpacing') && safeValue === 0;
   const limitMessage = atMax ? `Maximum ${format(max)}${unit} reached`
     : atMin && showMinimumHint ? `Minimum ${format(min)}${unit} reached` : '';
   const unitSpan = unit ? `<span class="stepper-unit">${unit}</span>` : '';
@@ -189,7 +190,7 @@ function stepper(id, key, label, min, max, step, unit = '') {
       <div class="stepper">
         <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="-1" ${atMin ? 'disabled' : ''} aria-label="Decrease ${label}">-</button>
         <div class="stepper-center">
-          <input type="number" id="${id}" class="stepper-num" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${label}">
+          <input type="number" id="${id}" class="stepper-num" min="${min}" max="${max}" step="${step}" value="${showDefault ? '' : val}"${showDefault ? ' placeholder="Default"' : ''} aria-label="${label}">
           ${unitSpan}
         </div>
         <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="1" ${atMax ? 'disabled' : ''} aria-label="Increase ${label}">+</button>
@@ -363,6 +364,18 @@ function wireForm(root) {
     'pe-word-spacing': 'wordSpacing', 'pe-letter-spacing': 'letterSpacing',
   };
 
+  const isSpacingStepper = input => {
+    const key = STEP_KEY[input.id];
+    return key === 'wordSpacing' || key === 'letterSpacing';
+  };
+
+  const setStepperDisplayValue = (input, value) => {
+    input.placeholder = isSpacingStepper(input) ? 'Default' : '';
+    input.value = isSpacingStepper(input) && value === 0
+      ? ''
+      : Number(value).toFixed(stepperPrecision(input));
+  };
+
   const stepperPrecision = input => Number(input.step) < 1
     ? (Number(input.step) < 0.05 ? 2 : 1) : 0;
 
@@ -397,8 +410,8 @@ function wireForm(root) {
     const step = Number(input.step);
     const bounded = Math.min(max, Math.max(min, raw));
     const value = Math.round((bounded + Number.EPSILON) / step) * step;
-    input.value = Number(value).toFixed(stepperPrecision(input));
-    update(STEP_KEY[input.id], Number(input.value));
+    setStepperDisplayValue(input, value);
+    update(STEP_KEY[input.id], value);
     syncStepperState(input);
   };
 
@@ -480,8 +493,8 @@ function wireForm(root) {
         const step = Number(input.step), min = Number(input.min), max = Number(input.max);
         let v = Number(input.value) + Number(stepBtn.dataset.peDir) * step;
         v = Math.min(max, Math.max(min, Math.round(v / step) * step));
-        input.value = step < 1 ? v.toFixed(step < 0.05 ? 2 : 1) : String(v);
-        update(STEP_KEY[stepBtn.dataset.peStep], Number(input.value));
+        setStepperDisplayValue(input, v);
+        update(STEP_KEY[stepBtn.dataset.peStep], v);
         syncStepperState(input);
       }
       return;

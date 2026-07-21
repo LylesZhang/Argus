@@ -1226,6 +1226,13 @@ html.dra-preset-editor-open body {
   -moz-appearance: textfield;
 }
 #dra-preset-editor .stepper-num:focus { color: #1e1b4b; }
+#dra-preset-editor .stepper-num::placeholder {
+  color: #9899ab;
+  opacity: 1;
+}
+#dra-preset-editor .stepper-num:placeholder-shown + .stepper-unit { display: none; }
+#dra-preset-editor #pe-word-spacing,
+#dra-preset-editor #pe-letter-spacing { width: 7ch; }
 #dra-preset-editor .stepper-num::-webkit-inner-spin-button,
 #dra-preset-editor .stepper-num::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
 #dra-preset-editor .stepper-unit {

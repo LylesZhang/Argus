@@ -16,7 +16,8 @@ const STEPPER_BOUNDS = [
 ];
 function syncStepperBounds() {
   for (const { dec, inc, val, hint, min, max, unit, precision } of STEPPER_BOUNDS) {
-    const v = parseFloat(document.getElementById(val)?.value ?? min);
+    const raw = parseFloat(document.getElementById(val)?.value ?? '');
+    const v = Number.isFinite(raw) ? raw : min;
     const atMin = v <= min, atMax = v >= max;
     document.getElementById(dec).disabled = atMin;
     document.getElementById(inc).disabled = atMax;
@@ -24,7 +25,7 @@ function syncStepperBounds() {
     if (hintEl) {
       const fmt = n => Number(n).toFixed(precision);
       const msg = atMax ? `Maximum ${fmt(max)}${unit} reached`
-                : atMin ? `Minimum ${fmt(min)}${unit} reached` : '';
+                : atMin && min > 0 ? `Minimum ${fmt(min)}${unit} reached` : '';
       hintEl.textContent = msg;
       hintEl.classList.toggle('hidden', !msg);
     }
@@ -390,8 +391,8 @@ function syncUI() {
   const letterSpacing = numericSetting('letterSpacing', 0);
   document.getElementById('font-size-value').value = fontSize;
   document.getElementById('line-height-value').value = lineHeight.toFixed(1);
-  document.getElementById('word-spacing-value').value = wordSpacing.toFixed(2);
-  document.getElementById('letter-spacing-value').value = letterSpacing.toFixed(2);
+  document.getElementById('word-spacing-value').value = wordSpacing === 0 ? '' : wordSpacing.toFixed(2);
+  document.getElementById('letter-spacing-value').value = letterSpacing === 0 ? '' : letterSpacing.toFixed(2);
   syncStepperBounds();
 
   document.getElementById('font-color').value         = settings.fontColor;
@@ -619,7 +620,7 @@ function init() {
     const current = numericSetting('wordSpacing', 0);
     if (current <= 0) return;
     const v = Math.max(0, Math.round((current - 0.05) * 100) / 100);
-    document.getElementById('word-spacing-value').value = v.toFixed(2);
+    document.getElementById('word-spacing-value').value = v === 0 ? '' : v.toFixed(2);
     broadcast({ wordSpacing: v });
   });
   document.getElementById('word-spacing-inc').addEventListener('click', () => {
@@ -635,7 +636,7 @@ function init() {
     const current = numericSetting('letterSpacing', 0);
     if (current <= 0) return;
     const v = Math.max(0, Math.round((current - 0.01) * 1000) / 1000);
-    document.getElementById('letter-spacing-value').value = v.toFixed(2);
+    document.getElementById('letter-spacing-value').value = v === 0 ? '' : v.toFixed(2);
     broadcast({ letterSpacing: v });
   });
   document.getElementById('letter-spacing-inc').addEventListener('click', () => {
@@ -663,14 +664,14 @@ function init() {
   document.getElementById('word-spacing-value').addEventListener('change', e => {
     const raw = parseFloat(e.target.value);
     const v = Math.min(0.5, Math.max(0, Number.isFinite(raw) ? Math.round(raw * 100) / 100 : 0));
-    e.target.value = v.toFixed(2);
+    e.target.value = v === 0 ? '' : v.toFixed(2);
     broadcast({ wordSpacing: v });
     syncStepperBounds();
   });
   document.getElementById('letter-spacing-value').addEventListener('change', e => {
     const raw = parseFloat(e.target.value);
     const v = Math.min(0.1, Math.max(0, Number.isFinite(raw) ? Math.round(raw * 1000) / 1000 : 0));
-    e.target.value = v.toFixed(2);
+    e.target.value = v === 0 ? '' : v.toFixed(2);
     broadcast({ letterSpacing: v });
     syncStepperBounds();
   });

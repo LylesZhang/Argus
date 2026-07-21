@@ -830,6 +830,12 @@
     });
   }
 
+  // content/styleValues.mjs
+  function toEmSpacing(value) {
+    const numeric = Number(value);
+    return `${Number.isFinite(numeric) ? numeric : 0}em`;
+  }
+
   // content/features/immersiveReader.js
   var READER_ID = "dra-immersive-reader";
   var MIN_BLOCK_LENGTH = 40;
@@ -1222,8 +1228,8 @@
     article.style.fontSize = state.settings.fontSize ? `${state.settings.fontSize}px` : "";
     article.style.lineHeight = state.settings.lineHeight ? String(state.settings.lineHeight) : "";
     article.style.fontFamily = state.settings.fontFamily ? state.settings.fontFamily : "";
-    article.style.wordSpacing = state.settings.wordSpacing ? `${state.settings.wordSpacing}em` : "";
-    article.style.letterSpacing = state.settings.letterSpacing ? `${state.settings.letterSpacing}em` : "";
+    article.style.wordSpacing = toEmSpacing(state.settings.wordSpacing);
+    article.style.letterSpacing = toEmSpacing(state.settings.letterSpacing);
     article.style.color = "";
     article.style.background = "";
     root.classList.toggle("dra-reader-row-shading", Boolean(state.settings.gradientRows));
@@ -1818,8 +1824,8 @@
         injectOpenDyslexicFont();
         para.style.fontFamily = state.settings.fontFamily;
       }
-      if (state.settings.wordSpacing) para.style.wordSpacing = state.settings.wordSpacing + "em";
-      if (state.settings.letterSpacing) para.style.letterSpacing = state.settings.letterSpacing + "em";
+      para.style.wordSpacing = toEmSpacing(state.settings.wordSpacing);
+      para.style.letterSpacing = toEmSpacing(state.settings.letterSpacing);
       if (state.settings.fontColor) para.style.color = state.settings.fontColor;
       const needsSentenceWrap = state.settings.emotionColor || state.settings.transitionAnimation || state.settings.sentenceLabels;
       const shouldWrap = needsSentenceWrap || state.settings.boldBeginning || state.topicFocusKeywords !== null || state.topicFocusAIPrefixes !== null;
@@ -2122,8 +2128,8 @@
     article.style.fontFamily = s.fontFamily ? s.fontFamily : "";
     article.style.fontSize = s.fontSize ? `${s.fontSize}px` : "";
     article.style.lineHeight = s.lineHeight ? String(s.lineHeight) : "";
-    article.style.wordSpacing = s.wordSpacing ? `${s.wordSpacing}em` : "";
-    article.style.letterSpacing = s.letterSpacing ? `${s.letterSpacing}em` : "";
+    article.style.wordSpacing = toEmSpacing(s.wordSpacing);
+    article.style.letterSpacing = toEmSpacing(s.letterSpacing);
     const isReaderMode = Boolean(actions?.autoOpenReaderMode);
     article.style.color = s.fontColor && !isReaderMode ? s.fontColor : "";
     article.style.background = s.bgColor && !isReaderMode ? s.bgColor : "";
@@ -2419,6 +2425,7 @@
     const atMin = safeValue <= min;
     const atMax = safeValue >= max;
     const showMinimumHint = key === "fontSize" || key === "lineHeight";
+    const showDefault = (key === "wordSpacing" || key === "letterSpacing") && safeValue === 0;
     const limitMessage = atMax ? `Maximum ${format(max)}${unit} reached` : atMin && showMinimumHint ? `Minimum ${format(min)}${unit} reached` : "";
     const unitSpan = unit ? `<span class="stepper-unit">${unit}</span>` : "";
     return `<div class="dra-pe-row">
@@ -2428,7 +2435,7 @@
       <div class="stepper">
         <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="-1" ${atMin ? "disabled" : ""} aria-label="Decrease ${label}">-</button>
         <div class="stepper-center">
-          <input type="number" id="${id}" class="stepper-num" min="${min}" max="${max}" step="${step}" value="${val}" aria-label="${label}">
+          <input type="number" id="${id}" class="stepper-num" min="${min}" max="${max}" step="${step}" value="${showDefault ? "" : val}"${showDefault ? ' placeholder="Default"' : ""} aria-label="${label}">
           ${unitSpan}
         </div>
         <button class="stepper-btn" data-pe-step="${id}" data-pe-dir="1" ${atMax ? "disabled" : ""} aria-label="Increase ${label}">+</button>
@@ -2587,6 +2594,14 @@
       "pe-word-spacing": "wordSpacing",
       "pe-letter-spacing": "letterSpacing"
     };
+    const isSpacingStepper = (input) => {
+      const key = STEP_KEY[input.id];
+      return key === "wordSpacing" || key === "letterSpacing";
+    };
+    const setStepperDisplayValue = (input, value) => {
+      input.placeholder = isSpacingStepper(input) ? "Default" : "";
+      input.value = isSpacingStepper(input) && value === 0 ? "" : Number(value).toFixed(stepperPrecision(input));
+    };
     const stepperPrecision = (input) => Number(input.step) < 1 ? Number(input.step) < 0.05 ? 2 : 1 : 0;
     const syncStepperState = (input) => {
       const row = input.closest(".dra-pe-row");
@@ -2617,8 +2632,8 @@
       const step = Number(input.step);
       const bounded = Math.min(max, Math.max(min, raw));
       const value = Math.round((bounded + Number.EPSILON) / step) * step;
-      input.value = Number(value).toFixed(stepperPrecision(input));
-      update(STEP_KEY[input.id], Number(input.value));
+      setStepperDisplayValue(input, value);
+      update(STEP_KEY[input.id], value);
       syncStepperState(input);
     };
     container.addEventListener("change", (e) => {
@@ -2719,8 +2734,8 @@
           const step = Number(input.step), min = Number(input.min), max = Number(input.max);
           let v = Number(input.value) + Number(stepBtn.dataset.peDir) * step;
           v = Math.min(max, Math.max(min, Math.round(v / step) * step));
-          input.value = step < 1 ? v.toFixed(step < 0.05 ? 2 : 1) : String(v);
-          update(STEP_KEY[stepBtn.dataset.peStep], Number(input.value));
+          setStepperDisplayValue(input, v);
+          update(STEP_KEY[stepBtn.dataset.peStep], v);
           syncStepperState(input);
         }
         return;

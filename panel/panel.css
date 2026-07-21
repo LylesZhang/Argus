@@ -571,6 +571,15 @@ body {
 
 #font-size-value { width: 2.2ch; }
 #line-height-value { width: 3ch; }
+#word-spacing-value,
+#letter-spacing-value { width: 7ch; }
+
+.stepper-num::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+
+.stepper-num:placeholder-shown + .stepper-unit { display: none; }
 
 .stepper-num:focus { color: var(--navy); }
 .stepper-num::-webkit-inner-spin-button,
